@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   if (!key) return res.status(500).json({ error: 'ANTHROPIC_API_KEY manquante dans les variables Vercel.' });
 
   try {
-    const { system, messages, max_tokens, useSearch, image } = req.body;
+    const { system, messages, max_tokens, useSearch, image, model } = req.body;
 
     const lastMsg = messages?.[messages.length - 1]?.content || '';
     let userContent;
@@ -24,7 +24,7 @@ export default async function handler(req, res) {
     }
 
     const body = {
-      model: 'claude-opus-4-5',
+      model: model || 'claude-opus-4-5',
       max_tokens: max_tokens || 1000,
       messages: [{ role: 'user', content: userContent }],
     };
