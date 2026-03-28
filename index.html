@@ -302,7 +302,8 @@ async function generateDesc(name, rawDesc, cat) {
     const data = await callAI({
       system: 'Tu es un assistant qui renomme des pieces horlogeres. Reponds avec exactement 2 lignes, rien dautre:\nLIGNE1: le titre en francais (5 mots max, type+style+couleur, sans mm/NH35/ETA/Movement/Lume/Automatic)\nLIGNE2: une description sobre en francais (15-25 mots, sans prix)\nExemple pour "Sunburst Dial Refraction 28.5mm gradient red NH35":\nCadran sunburst refraction - Rouge gradue\nCadran a finition sunburst avec effet refraction, disponible en rouge gradue, compatible mouvements NH35.',
       messages: [{ role:'user', content:'Piece: '+name+' | Categorie: '+cat }],
-      max_tokens: 120,
+      max_tokens: 100,
+      model: 'claude-haiku-4-5-20251001',
     });
     const txt = (extractText(data) || '').trim();
     console.log('[generateDesc] reponse:', txt.slice(0,150));
@@ -873,9 +874,12 @@ async function doScan(){
 
     setSt(`${rawItems.length} pièce${rawItems.length>1?'s':''} trouvée${rawItems.length>1?'s':''}. Traduction et descriptions en français...`,'loading');
     for(let i=0;i<rawItems.length;i++){
+      setSt('Traduction '+(i+1)+'/'+rawItems.length+'...','loading');
       const result = await generateDesc(rawItems[i].name, rawItems[i].rawDesc, rawItems[i].cat);
       rawItems[i].name = result.title || rawItems[i].name;
       rawItems[i].description = result.desc || '';
+      // Pause anti-rate-limit entre chaque appel IA
+      if(i < rawItems.length-1) await new Promise(function(r){setTimeout(r,1500);});
     }
     scanRes=rawItems;
     scanChecked=new Set(rawItems.map((_,i)=>i));
