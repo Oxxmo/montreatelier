@@ -1342,7 +1342,24 @@ function exportDevis(){
   closeDevis();
 }
 
+init();
 
+// Auto-resize iframe WordPress
+function notifyHeight(){
+  if(window.parent===window) return;
+  var h=document.body.scrollHeight;
+  window.parent.postMessage({type:'mwa-resize',height:h},'*');
+}
+var _lastH=0;
+var _roTimer=null;
+new ResizeObserver(function(){
+  clearTimeout(_roTimer);
+  _roTimer=setTimeout(function(){
+    var h=document.body.scrollHeight;
+    if(Math.abs(h-_lastH)>10){ _lastH=h; notifyHeight(); }
+  },200);
+}).observe(document.body);
+notifyHeight();
 </script>
 </body>
 </html>
