@@ -999,29 +999,24 @@ async function delSelected(){
 
 function admCard(i){
   const tc=Number(i.cost||0)+Number(i.ship||0);
-  const mg=Number(i.sell||0)-tc;
-  const pct=tc>0?Math.round(mg/tc*100):0;
-  const hasSell=i.sell&&Number(i.sell)>0;
   const sel=adminSelected.has(i.id);
   return `<div class="adm-item${sel?' adm-sel':''}" id="adm-${i.id}">
     <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
       <div class="adm-cb${sel?' on':''}" onclick="admToggle('${i.id}')" title="Sélectionner">${sel?'✓':''}</div>
       <div class="adm-thumb" onclick="openEdit('${i.id}')" title="Modifier">${i.img?`<img src="${i.img}" onerror="this.parentNode.innerHTML=''" alt="">`:''}</div>
+      <button class="adm-new-btn${i.is_new?' on':''}" onclick="toggleNew('${i.id}')" title="Nouveauté">&#9733;</button>
     </div>
     <div>
-      <div class="adm-name">${i.name}</div>
+      <div class="adm-name">${i.name}${i.is_new?' <span style="font-size:9px;background:#1a1a1a;color:#fff;padding:1px 6px;border-radius:1px;letter-spacing:.06em">NOUVEAU</span>':''}</div>
       <div class="adm-meta">${i.cat} · ${i.supplier||'—'}${i.url?` · <a href="${i.url}" class="link-pill" target="_blank">voir ↗</a>`:''}</div>
       <div style="font-size:11px;color:#888;margin-bottom:6px;line-height:1.5;font-style:italic">${i.description||'Aucune description'}</div>
       <div class="badges">
         <span class="badge b-cost">Achat ${Number(i.cost||0).toLocaleString('fr-FR')} €</span>
         <span class="badge b-ship">Port ${Number(i.ship||0).toLocaleString('fr-FR')} €</span>
-        <span class="badge b-total">Total ${tc.toLocaleString('fr-FR')} €</span>
-        <span class="badge b-sell">Mon prix <input class="sell-inp" type="number" value="${i.sell||''}" placeholder="—" onchange="setSell('${i.id}',this.value)" onclick="event.stopPropagation()"> €</span>
-        ${hasSell?(mg>=0?`<span class="badge b-margin">+${Math.round(mg)} € · ${pct}%</span>`:`<span class="badge b-warn">−${Math.abs(Math.round(mg))} € ⚠</span>`):''}
+        ${tc>0?`<span class="badge b-total">Coût ${tc.toLocaleString('fr-FR')} €</span>`:''}
       </div>
     </div>
     <div class="adm-acts">
-      <button class="adm-new-btn${i.is_new?' on':''}" onclick="toggleNew('${i.id}')" title="Nouveauté">&#9733;</button>
       <button class="btn-xs" onclick="openEdit('${i.id}')">Modifier</button>
     </div>
   </div>`;
@@ -1180,104 +1175,174 @@ async function delItem(id){
 
 /* ══ SÉLECTIONS CLIENTS ══ */
 async function renderSelections(){
-  document.getElementById('view').innerHTML=`<div style="text-align:center;padding:2rem;color:#bbb;font-size:12px;letter-spacing:.06em">Chargement…</div>`;
+  document.getElementById('view').innerHTML='<div style="text-align:center;padding:2rem;color:#bbb;font-size:12px;letter-spacing:.06em">Chargement…</div>';
   const sels = isConfigured() ? await SB.selAll() : [];
   if(!sels.length){
-    document.getElementById('view').innerHTML=`
-      <div class="alert alert-info">Aucune sélection enregistrée pour l'instant. Les sélections de vos clients apparaîtront ici.</div>`;
+    document.getElementById('view').innerHTML='<div class="alert alert-info">Aucune sélection enregistrée pour l instant.</div>';
     return;
   }
-  document.getElementById('view').innerHTML=`
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:1.25rem">
-      <div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#999">${sels.length} sélection${sels.length>1?'s':''} enregistrée${sels.length>1?'s':''}</div>
-    </div>
-    <div id="sels-list">
-      ${sels.map(s=>{
-        const snap=JSON.parse(s.items_snapshot||'[]');
-        const date=new Date(s.created_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
-        return `<div class="sel-card" id="selcard-${s.id}">
-          <div class="sel-card-head">
-            <div>
-              <div class="sel-card-name">${s.client_name}</div>
-              <div class="sel-card-date">${date} · ${snap.length} pièce${snap.length>1?'s':''}</div>
-            </div>
-            <div style="display:flex;gap:6px;align-items:center">
-              <button class="btn-xs" onclick="exportSel('${s.id}')">Exporter PDF</button>
-              <button class="btn-xs del" onclick="deleteSel('${s.id}')">Suppr.</button>
-            </div>
-          </div>
-          <div class="sel-card-grid">
-            ${snap.map(p=>`<div class="sel-card-item">
-              <div class="sel-card-img">${p.img?`<img src="${p.img}" alt="">`:''}</div>
-              <div class="sel-card-pname">${p.name}</div>
-              <div class="sel-card-pcat">${p.cat}</div>
-            </div>`).join('')}
-          </div>
-        </div>`;
-      }).join('')}
-    </div>`;
+  document.getElementById('view').innerHTML=
+    '<div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#999;margin-bottom:1.25rem">'+sels.length+' sélection'+(sels.length>1?'s':'')+' enregistrée'+(sels.length>1?'s':'')+'</div>'
+    +'<div id="sels-list">'
+    +sels.map(function(s){
+      const snap=JSON.parse(s.items_snapshot||'[]');
+      const totalCost=snap.reduce(function(a,p){return a+(Number(p.cost||0)+Number(p.ship||0));},0);
+      const date=new Date(s.created_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+      return '<div class="sel-card" id="selcard-'+s.id+'">'
+        +'<div class="sel-card-head">'
+        +'<div><div class="sel-card-name">'+s.client_name+'</div>'
+        +'<div class="sel-card-date">'+date+' · '+snap.length+' pièce'+(snap.length>1?'s':'')+(totalCost>0?' · Coût pièces : '+totalCost.toLocaleString('fr-FR')+' €':'')+'</div></div>'
+        +'<div style="display:flex;gap:6px;align-items:center">'
+        +"<button class=\"btn-xs\" onclick=\"openDevis('"+s.id+"')\" >Créer le devis</button>"
+        +"<button class=\"btn-xs del\" onclick=\"deleteSel('"+s.id+"')\" >Suppr.</button>"
+        +'</div></div>'
+        +'<div class="sel-card-grid">'
+        +snap.map(function(p){
+          return '<div class="sel-card-item">'
+            +'<div class="sel-card-img">'+(p.img?'<img src="'+p.img+'" alt="">':'')+'</div>'
+            +'<div class="sel-card-pname">'+p.name+'</div>'
+            +'<div class="sel-card-pcat">'+p.cat+'</div>'
+            +(Number(p.cost||0)+Number(p.ship||0)>0?'<div style="font-size:9px;color:#bbb;margin-top:2px">'+(Number(p.cost||0)+Number(p.ship||0)).toFixed(2)+' €</div>':'')
+            +'</div>';
+        }).join('')
+        +'</div></div>';
+    }).join('')
+    +'</div>';
 }
 
-async function deleteSel(id){
-  if(!confirm('Supprimer cette sélection client ?')) return;
-  if(isConfigured()) await SB.selRemove(id);
-  const el=document.getElementById('selcard-'+id);
-  if(el) el.remove();
-}
+function closeDevis(){ var m=document.getElementById("devis-modal"); if(m) m.remove(); }
+// Stockage temporaire pour le devis
+var _devisData = {};
 
-function exportSel(id){
-  // Ouvre une fenêtre d'impression formatée
-  const card=document.getElementById('selcard-'+id);
+function openDevis(id){
+  var card=document.getElementById('selcard-'+id);
   if(!card) return;
-  const name=card.querySelector('.sel-card-name')?.textContent||'Client';
-  const date=card.querySelector('.sel-card-date')?.textContent||'';
-  const items_html=Array.from(card.querySelectorAll('.sel-card-item')).map(it=>{
-    const img=it.querySelector('img')?.src||'';
-    const nm=it.querySelector('.sel-card-pname')?.textContent||'';
-    const cat=it.querySelector('.sel-card-pcat')?.textContent||'';
-    return `<div style="display:inline-block;width:130px;vertical-align:top;margin:8px;text-align:center;font-family:sans-serif">
-      ${img?`<img src="${img}" style="width:120px;height:90px;object-fit:contain;border:1px solid #eee;border-radius:3px;background:#f8f7f4;padding:4px">` : '<div style="width:120px;height:90px;background:#f5f5f5;display:inline-block;border-radius:3px"></div>'}
-      <div style="font-size:11px;font-weight:600;margin-top:5px;color:#1a1a1a">${nm}</div>
-      <div style="font-size:10px;color:#999;text-transform:uppercase;letter-spacing:.05em">${cat}</div>
-    </div>`;
-  }).join('');
-  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Sélection ${name}</title>
-  <style>body{font-family:'Helvetica Neue',sans-serif;padding:2rem;color:#1a1a1a;background:#fff}
-  h1{font-size:22px;font-weight:300;margin-bottom:.25rem;letter-spacing:.04em}
-  .sub{font-size:12px;color:#999;margin-bottom:2rem;letter-spacing:.03em}
-  .grid{border-top:1px solid #eee;padding-top:1.5rem}
-  @media print{button{display:none!important}}</style></head>
-  <body>
-  <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:2rem;border-bottom:2px solid #1a1a1a;padding-bottom:1rem">
-    <div><h1>${CONFIG.shop_name}</h1><div class="sub">Sélection de ${name} — ${date}</div></div>
-    <div style="font-size:11px;color:#bbb;text-align:right">${CONFIG.shop_name}<br>${CONFIG.shop_tagline}</div>
-  </div>
-  <div class="grid">${items_html}</div>
-  <div style="margin-top:3rem;border-top:1px solid #eee;padding-top:1rem;font-size:11px;color:#bbb">Document généré par ${CONFIG.shop_name} · ${new Date().toLocaleDateString('fr-FR')}</div>
-  <script>window.onload=()=>window.print()<\/script>
-  </body></html>`;
-  const w=window.open('','_blank','width=900,height=700');
-  if(w){ w.document.write(html); w.document.close(); }
-}
-init();
+  var clientName=card.querySelector('.sel-card-name').textContent;
+  var items=Array.from(card.querySelectorAll('.sel-card-item')).map(function(it){
+    return {
+      img: it.querySelector('img')?it.querySelector('img').src:'',
+      name: it.querySelector('.sel-card-pname').textContent,
+      cat: it.querySelector('.sel-card-pcat').textContent,
+      cost: parseFloat((it.querySelector('[style*="9px"]')||{textContent:'0'}).textContent)||0
+    };
+  });
+  var totalCost=items.reduce(function(a,p){return a+p.cost;},0);
+  _devisData={id:id, clientName:clientName, items:items, totalCost:totalCost};
 
-// Auto-resize iframe WordPress
-function notifyHeight(){
-  if(window.parent===window) return;
-  var h=document.body.scrollHeight;
-  window.parent.postMessage({type:'mwa-resize',height:h},'*');
+  var existing=document.getElementById('devis-modal'); if(existing) existing.remove();
+  var wrap=document.createElement('div');
+  wrap.id='devis-modal';
+  wrap.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;z-index:300;padding:1.5rem;backdrop-filter:blur(3px)';
+  wrap.onclick=function(e){if(e.target===wrap) closeDevis();};
+  var html='<div style="background:#fff;border-radius:2px;max-width:520px;width:100%;padding:2rem;box-shadow:0 30px 80px rgba(0,0,0,.2);max-height:90vh;overflow-y:auto">'
+    +'<div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#999;margin-bottom:.5rem">Devis pour</div>'
+    +'<div style="font-size:20px;font-weight:300;color:#1a1a1a;margin-bottom:1.5rem">'+clientName+'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:.875rem;margin-bottom:1.25rem">'
+    +'<div><div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#999;margin-bottom:4px">Cout pieces (auto)</div>'
+    +'<div style="font-size:16px;font-weight:500;color:#1a1a1a">'+totalCost.toFixed(2)+' €</div></div>'
+    +'<div><label style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#999;display:block;margin-bottom:4px">Main oeuvre (€)</label>'
+    +'<input id="dv-mo" type="number" value="0" min="0" oninput="calcDevis()" style="width:100%;padding:8px 10px;border:1px solid #d4cfc8;border-radius:2px;font-size:14px;font-family:inherit;outline:none"></div>'
+    +'<div><label style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#999;display:block;margin-bottom:4px">Marge (%)</label>'
+    +'<input id="dv-mg" type="number" value="30" min="0" max="300" oninput="calcDevis()" style="width:100%;padding:8px 10px;border:1px solid #d4cfc8;border-radius:2px;font-size:14px;font-family:inherit;outline:none"></div>'
+    +'<div><div style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:#999;margin-bottom:4px">Prix final client</div>'
+    +'<div id="dv-total" style="font-size:24px;font-weight:600;color:#1a1a1a;padding-top:2px">—</div></div>'
+    +'</div>'
+    +'<div style="display:flex;gap:8px;margin-top:1rem">'
+    +'<button class="btn btn-s" style="flex:1" onclick="closeDevis()">Annuler</button>'
+    +'<button class="btn btn-p" style="flex:1" onclick="exportDevis()">Générer le devis PDF</button>'
+    +'</div></div>';
+  wrap.innerHTML=html;
+  document.body.appendChild(wrap);
+  calcDevis();
 }
-// Observer avec debounce anti-boucle : n'envoie que si hauteur vraiment changée
-var _lastH=0;
-var _roTimer=null;
-new ResizeObserver(function(){
-  clearTimeout(_roTimer);
-  _roTimer=setTimeout(function(){
-    var h=document.body.scrollHeight;
-    if(Math.abs(h-_lastH)>10){ _lastH=h; notifyHeight(); }
-  },200);
-}).observe(document.body);
-notifyHeight();
+
+function calcDevis(){
+  var tc=_devisData.totalCost||0;
+  var mo=parseFloat((document.getElementById('dv-mo')||{value:0}).value)||0;
+  var mg=parseFloat((document.getElementById('dv-mg')||{value:30}).value)||0;
+  var total=(tc+mo)*(1+mg/100);
+  var el=document.getElementById('dv-total');
+  if(el) el.textContent=total.toFixed(2)+' €';
+}
+
+function exportDevis(){
+  var d=_devisData;
+  if(!d.clientName) return;
+  var mo=parseFloat((document.getElementById('dv-mo')||{value:0}).value)||0;
+  var mg=parseFloat((document.getElementById('dv-mg')||{value:30}).value)||0;
+  var base=(d.totalCost||0)+mo;
+  var total=base*(1+mg/100);
+  var date=new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+  var num='DEV-'+Date.now().toString().slice(-6);
+
+  var rows=d.items.map(function(p){
+    return '<tr style="border-bottom:1px solid #f0ede8">'
+      +'<td style="padding:10px 8px;width:60px"><div style="width:52px;height:52px;background:#f8f7f4;border-radius:2px;overflow:hidden;display:flex;align-items:center;justify-content:center">'
+      +(p.img?'<img src="'+p.img+'" style="width:100%;height:100%;object-fit:contain;padding:3px">':'')
+      +'</div></td>'
+      +'<td style="padding:10px 8px"><div style="font-size:12px;font-weight:500;color:#1a1a1a;margin-bottom:2px">'+p.name+'</div>'
+      +'<div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:.05em">'+p.cat+'</div></td>'
+      +'</tr>';
+  }).join('');
+
+  var html='<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Devis '+num+'</title>'
+    +'<link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@300;400;500;600&display=swap" rel="stylesheet">'
+    +'<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:"League Spartan",sans-serif;background:#fff;color:#1a1a1a;font-size:13px;-webkit-print-color-adjust:exact;print-color-adjust:exact}@media print{.noprint{display:none!important}@page{margin:1.2cm;size:A4}}</style>'
+    +'</head><body>'
+
+    // En-tête noire
+    +'<div style="background:#1a1a1a;padding:1.75rem 2.5rem;display:flex;justify-content:space-between;align-items:flex-end">'
+    +'<div><div style="font-size:28px;font-weight:300;letter-spacing:.12em;color:#fff;text-transform:lowercase">bang.</div>'
+    +'<div style="font-size:9px;letter-spacing:.18em;color:#777;text-transform:uppercase;margin-top:5px">atelier de montres custom</div></div>'
+    +'<div style="text-align:right"><div style="font-size:9px;letter-spacing:.12em;color:#666;text-transform:uppercase;margin-bottom:3px">Devis</div>'
+    +'<div style="font-size:20px;font-weight:500;color:#fff;letter-spacing:.06em">'+num+'</div></div>'
+    +'</div>'
+    // Ligne dorée
+    +'<div style="height:2px;background:linear-gradient(90deg,transparent,#c9a96e 20%,#e8d5a3 50%,#c9a96e 80%,transparent)"></div>'
+
+    // Client + date
+    +'<div style="display:flex;justify-content:space-between;padding:1.5rem 2.5rem 1.25rem;border-bottom:1px solid #f0ede8">'
+    +'<div><div style="font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#bbb;margin-bottom:6px">Etabli pour</div>'
+    +'<div style="font-size:20px;font-weight:300;letter-spacing:.02em">'+d.clientName+'</div></div>'
+    +'<div style="text-align:right"><div style="font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#bbb;margin-bottom:6px">Date</div>'
+    +'<div style="font-size:13px;font-weight:400">'+date+'</div>'
+    +'<div style="font-size:10px;color:#bbb;margin-top:3px">Valable 30 jours</div></div>'
+    +'</div>'
+
+    // Pièces
+    +'<div style="padding:1.25rem 2.5rem">'
+    +'<div style="font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#bbb;margin-bottom:.875rem">Pieces selectionnees ('+d.items.length+')</div>'
+    +'<table style="width:100%;border-collapse:collapse">'+rows+'</table>'
+    +'</div>'
+
+    // Total
+    +'<div style="margin:0 2.5rem 1.5rem;background:#f8f7f4;border-radius:2px;padding:1.25rem 1.5rem">'
+    +'<div style="font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#bbb;margin-bottom:.875rem">Recapitulatif</div>'
+    +(mo>0?'<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #ede9e3;font-size:12px"><span style="color:#666">Main oeuvre</span><span style="font-weight:500">'+mo.toFixed(2)+' €</span></div>':'')
+    +(mg>0?'<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #ede9e3;font-size:12px"><span style="color:#666">Marge atelier ('+mg+'%)</span><span style="font-weight:500">'+(base*mg/100).toFixed(2)+' €</span></div>':'')
+    +'<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0 0">'
+    +'<span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;font-weight:600">Total</span>'
+    +'<span style="font-size:28px;font-weight:600;letter-spacing:.02em">'+total.toFixed(2)+' €</span>'
+    +'</div></div>'
+
+    // Pied de page
+    +'<div style="padding:1rem 2.5rem;border-top:1px solid #f0ede8;display:flex;justify-content:space-between;align-items:flex-end">'
+    +'<div style="font-size:10px;color:#bbb;line-height:1.8">Ce devis est indicatif et valable 30 jours.<br>Les prix peuvent varier selon les disponibilites fournisseurs.</div>'
+    +'<div style="font-size:10px;color:#bbb;text-align:right">atelier-bang.com<br>Dissay, Nouvelle-Aquitaine</div>'
+    +'</div>'
+
+    +'<div class="noprint" style="padding:1.5rem;text-align:center;border-top:1px solid #f0ede8">'
+    +'<button onclick="window.print()" style="background:#1a1a1a;color:#fff;border:none;padding:12px 36px;font-family:inherit;font-size:11px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;border-radius:2px">Imprimer / Enregistrer PDF</button>'
+    +'</div>'
+    +'<script>setTimeout(function(){window.print();},600);<\/script>'
+    +'</body></html>';
+
+  var w=window.open('','_blank','width=860,height=900');
+  if(w){w.document.write(html);w.document.close();}
+  closeDevis();
+}
+
+
 </script>
 </body>
 </html>
