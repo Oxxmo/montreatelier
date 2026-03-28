@@ -299,36 +299,17 @@ function extractText(data) { return data?.text?.trim() || null; }
 /* ══ DESCRIPTION + TITRE IA ══ */
 async function generateDesc(name, rawDesc, cat) {
   try {
-    const prompt = 'Nom: '+name+' | Cat: '+cat;
     const data = await callAI({
-      system: 'Reponds UNIQUEMENT avec ce JSON exact sans rien dautre: {"title":"TITRE_FR","desc":"DESC_FR"}. Le TITRE_FR = type piece + style + couleur en francais, 5 mots max, ex: Cadran sunburst rouge gradue, Boitier vintage noir, Lunette ceramique bleu. Supprime mm/NH35/NH36/ETA/Movement/Lume. La DESC_FR = 1 phrase sobre 15-25 mots sans prix.',
-      messages: [{ role:'user', content: prompt }],
-      max_tokens: 150,
+      system: 'Tu es un assistant qui renomme des pieces horlogeres. Reponds avec exactement 2 lignes, rien dautre:\nLIGNE1: le titre en francais (5 mots max, type+style+couleur, sans mm/NH35/ETA/Movement/Lume/Automatic)\nLIGNE2: une description sobre en francais (15-25 mots, sans prix)\nExemple pour "Sunburst Dial Refraction 28.5mm gradient red NH35":\nCadran sunburst refraction - Rouge gradue\nCadran a finition sunburst avec effet refraction, disponible en rouge gradue, compatible mouvements NH35.',
+      messages: [{ role:'user', content:'Piece: '+name+' | Categorie: '+cat }],
+      max_tokens: 120,
     });
     const txt = (extractText(data) || '').trim();
-    console.log('[generateDesc] reponse brute:', txt.slice(0,120));
-    // Tentative 1 : parse JSON direct
-    try {
-      const clean = txt.replace(/```json|```/g,'').trim();
-      const obj = JSON.parse(clean);
-      if (obj.title) return { title: obj.title, desc: obj.desc||'' };
-    } catch(e1) {}
-    // Tentative 2 : extraire le JSON par regex
-    try {
-      const m = txt.match(/\{[^{}]*\}/);
-      if (m) {
-        const obj = JSON.parse(m[0]);
-        if (obj.title) return { title: obj.title, desc: obj.desc||'' };
-      }
-    } catch(e2) {}
-    // Tentative 3 : extraire juste la valeur de title
-    try {
-      const mt = txt.match(/"title"\s*:\s*"([^"]+)"/);
-      const md = txt.match(/"desc"\s*:\s*"([^"]+)"/);
-      if (mt) return { title: mt[1], desc: md?md[1]:'' };
-    } catch(e3) {}
-    console.warn('[generateDesc] parsing echoue, nom original conserve. Reponse:', txt.slice(0,200));
-    return { title: name, desc: '' };
+    console.log('[generateDesc] reponse:', txt.slice(0,150));
+    const lines = txt.split('\n').map(function(l){ return l.replace(/^LIGNE\d+:?\s*/i,'').trim(); }).filter(function(l){ return l.length>2; });
+    const title = lines[0] || name;
+    const desc = lines[1] || '';
+    return { title: title, desc: desc };
   } catch(err) {
     console.error('[generateDesc] erreur:', err.message);
     return { title: name, desc: '' };
