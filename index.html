@@ -663,7 +663,7 @@ async function saveClientSel(){
     id:uid(),
     client_name:name,
     item_ids:JSON.stringify([...basket]),
-    items_snapshot:JSON.stringify(sel.map(i=>({id:i.id,name:i.name,cat:i.cat,img:i.img,description:i.description}))),
+    items_snapshot:JSON.stringify(sel.map(i=>({id:i.id,name:i.name,cat:i.cat,img:i.img,description:i.description,cost:Number(i.cost||0),ship:Number(i.ship||0)}))),
     created_at:new Date().toISOString(),
   };
   let ok=false;
@@ -1181,6 +1181,12 @@ async function renderSelections(){
     document.getElementById('view').innerHTML='<div class="alert alert-info">Aucune sélection enregistrée pour l instant.</div>';
     return;
   }
+  // Remplir le cache pour openDevis
+  _selCache={};
+  sels.forEach(function(s){
+    var snap=JSON.parse(s.items_snapshot||'[]');
+    _selCache[s.id]={clientName:s.client_name, items:snap};
+  });
   document.getElementById('view').innerHTML=
     '<div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#999;margin-bottom:1.25rem">'+sels.length+' sélection'+(sels.length>1?'s':'')+' enregistrée'+(sels.length>1?'s':'')+'</div>'
     +'<div id="sels-list">'
@@ -1193,8 +1199,8 @@ async function renderSelections(){
         +'<div><div class="sel-card-name">'+s.client_name+'</div>'
         +'<div class="sel-card-date">'+date+' · '+snap.length+' pièce'+(snap.length>1?'s':'')+(totalCost>0?' · Coût pièces : '+totalCost.toLocaleString('fr-FR')+' €':'')+'</div></div>'
         +'<div style="display:flex;gap:6px;align-items:center">'
-        +"<button class=\"btn-xs\" onclick=\"openDevis('"+s.id+"')\" >Créer le devis</button>"
-        +"<button class=\"btn-xs del\" onclick=\"deleteSel('"+s.id+"')\" >Suppr.</button>"
+        +"<button class=\"btn-xs\" data-id='"+s.id+"' data-action='devis'>Créer le devis</button>"
+        +"<button class=\"btn-xs del\" data-id='"+s.id+"' data-action='del'>Suppr.</button>"
         +'</div></div>'
         +'<div class="sel-card-grid">'
         +snap.map(function(p){
@@ -1208,25 +1214,31 @@ async function renderSelections(){
         +'</div></div>';
     }).join('')
     +'</div>';
+  // Attacher les événements après rendu
+  setTimeout(bindSelButtons, 0);
+}
+
+function bindSelButtons(){
+  document.querySelectorAll('[data-action="devis"]').forEach(function(btn){
+    btn.onclick=function(){ openDevis(this.getAttribute('data-id')); };
+  });
+  document.querySelectorAll('[data-action="del"]').forEach(function(btn){
+    btn.onclick=function(){ deleteSel(this.getAttribute('data-id')); };
+  });
 }
 
 function closeDevis(){ var m=document.getElementById("devis-modal"); if(m) m.remove(); }
 // Stockage temporaire pour le devis
 var _devisData = {};
+var _selCache = {};
 
 function openDevis(id){
-  var card=document.getElementById('selcard-'+id);
-  if(!card) return;
-  var clientName=card.querySelector('.sel-card-name').textContent;
-  var items=Array.from(card.querySelectorAll('.sel-card-item')).map(function(it){
-    return {
-      img: it.querySelector('img')?it.querySelector('img').src:'',
-      name: it.querySelector('.sel-card-pname').textContent,
-      cat: it.querySelector('.sel-card-pcat').textContent,
-      cost: parseFloat((it.querySelector('[style*="9px"]')||{textContent:'0'}).textContent)||0
-    };
-  });
-  var totalCost=items.reduce(function(a,p){return a+p.cost;},0);
+  // Lire les données depuis _selCache (stocké lors du rendu)
+  var data=_selCache[id];
+  if(!data) return;
+  var clientName=data.clientName;
+  var items=data.items;
+  var totalCost=items.reduce(function(a,p){return a+(Number(p.cost||0)+Number(p.ship||0));},0);
   _devisData={id:id, clientName:clientName, items:items, totalCost:totalCost};
 
   var existing=document.getElementById('devis-modal'); if(existing) existing.remove();
