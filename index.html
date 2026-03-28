@@ -1218,6 +1218,14 @@ async function renderSelections(){
   setTimeout(bindSelButtons, 0);
 }
 
+async function deleteSel(id){
+  if(!confirm('Supprimer cette sélection ?')) return;
+  if(isConfigured()) await SB.selRemove(id);
+  var el=document.getElementById('selcard-'+id);
+  if(el) el.remove();
+  delete _selCache[id];
+}
+
 function bindSelButtons(){
   document.querySelectorAll('[data-action="devis"]').forEach(function(btn){
     btn.onclick=function(){ openDevis(this.getAttribute('data-id')); };
