@@ -688,6 +688,10 @@ function openModal(id){
   const i=items.find(x=>x.id===id); if(!i) return;
   closeModal();
   if(!i.img){ return; }
+  // Scroll tout en haut avant d'afficher (fix iframe mobile)
+  document.documentElement.scrollTop=0;
+  document.body.scrollTop=0;
+  window.parent.postMessage({type:'mwa-scroll-top'},'*');
   // Zoom plein écran
   const ov=document.createElement('div');
   ov.id='modal-wrap';
