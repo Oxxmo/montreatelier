@@ -687,25 +687,35 @@ async function saveClientSel(){
 function openModal(id){
   const i=items.find(x=>x.id===id); if(!i) return;
   closeModal();
-  if(!i.img){ return; }
-  // Scroll tout en haut avant d'afficher (fix iframe mobile)
-  document.documentElement.scrollTop=0;
-  document.body.scrollTop=0;
-  window.parent.postMessage({type:'mwa-scroll-top'},'*');
-  // Zoom plein écran
-  const ov=document.createElement('div');
-  ov.id='modal-wrap';
-  ov.className='zoom-overlay';
-  ov.onclick=function(e){ if(e.target===ov||e.target.tagName==='IMG') closeModal(); };
-  ov.innerHTML='<button class="zoom-close" onclick="closeModal()" title="Fermer">&times;</button>'
-    +'<img src="'+i.img+'" alt="'+i.name+'" onerror="this.src=\'\'">';
-  document.body.appendChild(ov);
-  // Fermer avec Echap
-  document._zoomKey=function(e){ if(e.key==='Escape') closeModal(); };
-  document.addEventListener('keydown', document._zoomKey);
+  // Panneau inline après la carte cliquée
+  const panel=document.createElement('div');
+  panel.id='modal-wrap';
+  panel.style.cssText='grid-column:1/-1;background:#fff;border:1px solid #e0ddd8;border-radius:3px;overflow:hidden;margin-bottom:.5rem;box-shadow:0 4px 24px rgba(0,0,0,.1)';
+  const imgH=i.img?('<div style="background:#f8f7f4;display:flex;align-items:center;justify-content:center;padding:1rem">'
+    +'<img src="'+i.img+'" alt="" style="max-width:100%;max-height:340px;object-fit:contain;border-radius:2px"></div>'):'';
+  panel.innerHTML=imgH
+    +'<div style="padding:1.25rem">'
+    +'<div style="font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#bbb;margin-bottom:5px">'+(i.cat||'')+'</div>'
+    +'<div style="font-size:17px;font-weight:300;color:#1a1a1a;margin-bottom:.75rem">'+(i.name||'')+'</div>'
+    +'<div style="font-size:13px;color:#777;line-height:1.7;margin-bottom:1rem">'+(i.description||'Aucune description.')+'</div>'
+    +'<button onclick="closeModal()" style="padding:10px 24px;background:#1a1a1a;color:#fff;border:none;border-radius:2px;cursor:pointer;font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-family:inherit">Fermer</button>'
+    +'</div>';
+  const card=document.getElementById('crd-'+id);
+  if(card&&card.parentNode) card.parentNode.insertBefore(panel,card.nextSibling);
+  else { const g=document.getElementById('g-client'); if(g) g.appendChild(panel); }
+  // Scroller précisément sur le panneau via postMessage au parent
+  setTimeout(function(){
+    const rect=panel.getBoundingClientRect();
+    const scrollY=window.pageYOffset||document.documentElement.scrollTop;
+    const panelTop=rect.top+scrollY;
+    // Scroll interne iframe
+    window.scrollTo({top:Math.max(0,panelTop-16),behavior:'smooth'});
+    // Demander au parent de scroller à la bonne position dans la page
+    window.parent.postMessage({type:'mwa-scroll-to',y:Math.max(0,panelTop-16)},'*');
+  },50);
 }
 
-function closeModal(){ const w=document.getElementById('modal-wrap'); if(w) w.remove(); if(document._zoomKey){document.removeEventListener('keydown',document._zoomKey);document._zoomKey=null;} }
+function closeModal(){ const w=document.getElementById('modal-wrap'); if(w) w.remove(); }
 
 /* ══ SCANNER ══ */
 function renderScan(){
