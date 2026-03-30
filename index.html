@@ -50,7 +50,7 @@ a{color:inherit;text-decoration:none}
 .bbar-btns{display:flex;gap:6px}
 
 /* ── GRID ── */
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:1rem;margin-bottom:1.5rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:1.25rem;margin-bottom:1.5rem}
 .card{background:#fff;border:1px solid #e8e5e0;border-radius:2px;overflow:hidden;cursor:pointer;transition:.2s}
 .card:hover{border-color:#aaa;box-shadow:0 4px 16px rgba(0,0,0,.08)}
 .card.sel{border-color:#1a1a1a;box-shadow:0 0 0 2px #1a1a1a}
@@ -180,6 +180,12 @@ a{color:inherit;text-decoration:none}
 /* ── MODAL INLINE (pas de fixed, compatible iframe mobile) ── */
 .modal-inline{background:#fff;border:1px solid #e0ddd8;border-radius:3px;margin-bottom:1rem;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.12);animation:fadeIn .2s ease}
 @keyframes fadeIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+/* Zoom photo */
+.zoom-overlay{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:500;display:flex;align-items:center;justify-content:center;cursor:zoom-out;animation:fadeIn .15s ease}
+.zoom-overlay img{max-width:92vw;max-height:88vh;object-fit:contain;border-radius:2px;box-shadow:0 8px 40px rgba(0,0,0,.5)}
+.zoom-close{position:fixed;top:1.25rem;right:1.25rem;width:36px;height:36px;background:rgba(255,255,255,.15);border:none;border-radius:50%;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.15s}
+.zoom-close:hover{background:rgba(255,255,255,.3)}
+.c-img-zoom{cursor:zoom-in}
 
 
 /* ── DRAG & DROP ── */
@@ -222,7 +228,7 @@ a{color:inherit;text-decoration:none}
   .topbar{margin:0 0 1.25rem;border-radius:0;padding:.875rem 1rem}
   .logo{font-size:16px}
   .nb{padding:5px 10px;font-size:10px}
-  .grid{grid-template-columns:repeat(2,1fr);gap:.625rem;padding:0 .75rem}
+  .grid{grid-template-columns:repeat(2,1fr);gap:.75rem;padding:0 .75rem}
   .filter-bar{padding:0 .75rem}
   .bbar{margin:0 .75rem 1rem;border-radius:2px}
   .btn{padding:7px 13px;font-size:10px}
@@ -680,35 +686,22 @@ async function saveClientSel(){
 
 function openModal(id){
   const i=items.find(x=>x.id===id); if(!i) return;
-  // Fermer un panneau déjà ouvert
   closeModal();
-  // Construire le panneau inline
-  const panel=document.createElement('div');
-  panel.id='modal-wrap';
-  panel.className='modal-inline';
-  panel.style.cssText='grid-column:1/-1;';
-  panel.innerHTML=''
-    +'<div style="display:flex;gap:0;flex-direction:column">'
-    +(i.img?'<div style="width:100%;height:220px;background:#f8f7f4;overflow:hidden;display:flex;align-items:center;justify-content:center"><img src="'+i.img+'" alt="" style="width:100%;height:100%;object-fit:contain;padding:12px" id="modal-img-el"></div>':'')
-    +'<div style="padding:1.25rem">'
-    +'<div style="font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#bbb;margin-bottom:5px">'+(i.cat||'')+'</div>'
-    +'<div style="font-size:18px;font-weight:300;color:#1a1a1a;margin-bottom:.75rem;line-height:1.35">'+(i.name||'')+'</div>'
-    +'<div style="font-size:13px;color:#777;line-height:1.7;margin-bottom:1rem">'+(i.description||'Aucune description.')+'</div>'
-    +'<div style="font-size:10px;color:#ccc;margin-bottom:1rem">Réf. '+String(i.id).slice(-4).toUpperCase()+'</div>'
-    +'<button onclick="closeModal()" style="width:100%;padding:10px;background:#1a1a1a;border:none;border-radius:2px;cursor:pointer;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#fff;font-family:inherit">Fermer</button>'
-    +'</div></div>';
-  // Trouver la carte cliquée et insérer le panneau après elle dans la grille
-  const card=document.getElementById('crd-'+id);
-  if(card && card.parentNode){
-    card.parentNode.insertBefore(panel, card.nextSibling);
-    // Scroller pour amener le panneau visible
-    setTimeout(function(){ panel.scrollIntoView({behavior:'smooth',block:'nearest'}); },50);
-  } else {
-    document.getElementById('g-client').appendChild(panel);
-    setTimeout(function(){ panel.scrollIntoView({behavior:'smooth',block:'start'}); },50);
-  }
+  if(!i.img){ return; }
+  // Zoom plein écran
+  const ov=document.createElement('div');
+  ov.id='modal-wrap';
+  ov.className='zoom-overlay';
+  ov.onclick=function(e){ if(e.target===ov||e.target.tagName==='IMG') closeModal(); };
+  ov.innerHTML='<button class="zoom-close" onclick="closeModal()" title="Fermer">&times;</button>'
+    +'<img src="'+i.img+'" alt="'+i.name+'" onerror="this.src=\'\'">';
+  document.body.appendChild(ov);
+  // Fermer avec Echap
+  document._zoomKey=function(e){ if(e.key==='Escape') closeModal(); };
+  document.addEventListener('keydown', document._zoomKey);
 }
-function closeModal(){ const w=document.getElementById('modal-wrap'); if(w) w.remove(); }
+
+function closeModal(){ const w=document.getElementById('modal-wrap'); if(w) w.remove(); if(document._zoomKey){document.removeEventListener('keydown',document._zoomKey);document._zoomKey=null;} }
 
 /* ══ SCANNER ══ */
 function renderScan(){
@@ -1036,6 +1029,13 @@ function openEdit(id){
         <input type="text" id="edit-title" value="${(i.name||'').replace(/"/g,'&quot;')}">
       </div>
 
+      <div class="field">
+        <label>Catégorie</label>
+        <select id="edit-cat">
+          ${['Boîtier','Cadran','Lunette','Bracelet','Aiguilles','Verre','Couronne','Mouvement','Rotor','Insert lunette','Fond','Anneau','Joint','Axe','Barre ressort','Autre'].map(c=>'<option value="'+c+'"'+(i.cat===c?' selected':'')+'>'+c+'</option>').join('')}
+        </select>
+      </div>
+
       <div class="field" style="margin-bottom:.5rem">
         <label>Image</label>
       </div>
@@ -1147,8 +1147,9 @@ async function saveEdit(id){
   const fileData=(document.getElementById('edit-img-data')||{}).value||'';
   const img = fileData || urlVal || items.find(x=>x.id===id)?.img || '';
   const description=(document.getElementById('edit-desc')||{}).value?.trim()||'';
-  items=items.map(i=>i.id===id?{...i,name:name||i.name,img,description}:i);
-  if(isConfigured()) await SB.update(id,{name:name||undefined,img,description});
+  const cat=(document.getElementById('edit-cat')||{}).value||'';
+  items=items.map(i=>i.id===id?{...i,name:name||i.name,img,description,cat:cat||i.cat}:i);
+  if(isConfigured()) await SB.update(id,{name:name||undefined,img,description,cat:cat||undefined});
   closeEdit();
   renderAdmin();
 }
