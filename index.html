@@ -343,10 +343,21 @@ function detectUrlType(url) {
 
 /* ══ SHOPIFY API ══ */
 async function fetchShopify(info) {
-  const r = await fetch(`${info.cleanHost}/collections/${info.collection}/products.json?limit=24`);
-  if (!r.ok) throw new Error('API Shopify inaccessible');
-  const d = await r.json();
-  return (d.products||[]);
+  // Pagination : max 250 par page, on récupère toutes les pages
+  let all = [];
+  let page = 1;
+  while(true) {
+    const r = await fetch(info.cleanHost+'/collections/'+info.collection+'/products.json?limit=250&page='+page);
+    if (!r.ok) throw new Error('API Shopify inaccessible');
+    const d = await r.json();
+    const prods = d.products||[];
+    all = all.concat(prods);
+    setSt('Chargement... '+all.length+' produits récupérés','loading');
+    if(prods.length < 250) break; // dernière page
+    page++;
+    if(page > 20) break; // sécurité max 5000 produits
+  }
+  return all;
 }
 
 async function fetchShopifyProduct(info) {
