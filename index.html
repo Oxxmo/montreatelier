@@ -215,6 +215,16 @@ a{color:inherit;text-decoration:none}
 .sel-card-pname{font-size:10px;font-weight:500;color:#333;line-height:1.3;margin-bottom:1px}
 .sel-card-pcat{font-size:9px;color:#bbb;text-transform:uppercase;letter-spacing:.05em}
 
+/* ── DOUBLONS ── */
+.dup-badge{display:inline-block;background:#fff3cd;color:#856404;border:1px solid #ffc107;font-size:9px;padding:1px 7px;border-radius:2px;letter-spacing:.05em;margin-left:6px;vertical-align:middle}
+.dup-item{border-left:3px solid #ffc107!important}
+.dup-block{background:#fffbf0;border:1px solid #ffc107;border-radius:2px;padding:.875rem 1rem;margin-bottom:1rem}
+.dup-block-title{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#856404;margin-bottom:.625rem;font-weight:600}
+.dup-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid #fde9a0;font-size:12px;color:#1a1a1a}
+.dup-row:last-child{border:none;padding-bottom:0}
+.dup-thumb{width:36px;height:36px;border-radius:2px;background:#f5f3ef;overflow:hidden;flex-shrink:0;border:1px solid #eee}
+.dup-thumb img{width:100%;height:100%;object-fit:contain}
+
 /* ── EMPTY ── */
 .empty{text-align:center;padding:3rem;color:#ccc;font-size:11px;letter-spacing:.06em;text-transform:uppercase;grid-column:1/-1}
 
@@ -910,10 +920,20 @@ async function doScan(){
 }
 
 function renderScanResults(){
+  // Détecter les doublons dans le scan vs catalogue existant
+  const scanDups=findDuplicates(scanRes.map(function(p,i){return {id:String(i),name:p.name,img:p.img,cat:p.cat};}));
+  const dupScanIds=new Set();
+  scanDups.forEach(function(g){g.slice(1).forEach(function(x){dupScanIds.add(x.id);});});
+  // Doublons avec catalogue existant
+  const existDupIds=new Set();
+  scanRes.forEach(function(p,i){
+    function norm(s){return (s||'').toLowerCase().replace(/[^a-z0-9]/g,' ').replace(/\s+/g,' ').trim();}
+    if(items.some(function(ex){return norm(ex.name)===norm(p.name);})) existDupIds.add(String(i));
+  });
   document.getElementById('scan-res').innerHTML=`
     <div class="section">
       <div class="scan-top">
-        <div class="sec-title" style="margin:0">${scanRes.length} pièce(s) trouvée(s)</div>
+        <div class="sec-title" style="margin:0">${scanRes.length} pièce(s) trouvée(s)${(dupScanIds.size+existDupIds.size)>0?' — <span style=\"color:#856404;font-size:10px\">⚠ '+(dupScanIds.size+existDupIds.size)+' doublon(s)</span>':''}</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
           <button class="btn btn-s" onclick="toggleAll()">Tout cocher / décocher</button>
           <button class="btn btn-p" onclick="doImport()">Importer la sélection</button>
@@ -925,7 +945,7 @@ function renderScanResults(){
           <div class="sc-check${scanChecked.has(i)?' on':''}" id="scc-${i}">${scanChecked.has(i)?'✓':''}</div>
           <div class="sc-thumb">${p.img?`<img src="${p.img}" onerror="this.parentNode.innerHTML=''" alt="">`:''}</div>
           <div class="sc-info">
-            <div class="sc-name">${p.name||'—'}</div>
+            <div class="sc-name">${p.name||'—'}${dupScanIds.has(String(i))?'<span class="dup-badge">doublon</span>':''}${existDupIds.has(String(i))?'<span class="dup-badge" style="background:#fde8e8;color:#c0392b;border-color:#e74c3c">déjà dans catalogue</span>':''}</div>
             <div class="sc-meta">${p.cat||'?'} · ${p.supplier||'—'}</div>
             <div class="sc-price">${p.price?Number(p.price).toLocaleString('fr-FR')+' €':'—'}</div>
             ${p.description?`<div class="sc-desc-preview">${p.description}</div>`:''}
@@ -970,6 +990,41 @@ async function doImport(){
 /* ══ ADMIN ══ */
 let adminSelected = new Set();
 
+/* ══ DOUBLONS ══ */
+function findDuplicates(list){
+  // Normaliser le titre : minuscules, sans ponctuation ni espaces multiples
+  function norm(s){ return (s||'').toLowerCase().replace(/[^a-z0-9à-ÿ]/g,' ').replace(/\s+/g,' ').trim(); }
+  const groups={};
+  list.forEach(function(item){
+    const key=norm(item.name);
+    if(!key) return;
+    if(!groups[key]) groups[key]=[];
+    groups[key].push(item);
+  });
+  // Ne garder que les groupes avec 2+ items
+  return Object.values(groups).filter(function(g){return g.length>1;});
+}
+
+function buildDupBlock(dups, onDelete){
+  if(!dups.length) return '';
+  var html='<div class="dup-block">'
+    +'<div class="dup-block-title">⚠ '+dups.reduce(function(a,g){return a+g.length;},0)+' doublons détectés dans '+dups.length+' groupe'+(dups.length>1?'s':'')+'</div>';
+  dups.forEach(function(group){
+    html+='<div style="margin-bottom:.625rem;padding-bottom:.625rem;border-bottom:1px solid #fde9a0">';
+    group.forEach(function(item, idx){
+      html+='<div class="dup-row">'
+        +'<div class="dup-thumb">'+(item.img?'<img src="'+item.img+'" alt="">':'')+'</div>'
+        +'<div style="flex:1;min-width:0"><div style="font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+item.name+'</div>'
+        +'<div style="font-size:10px;color:#aaa">'+item.cat+'</div></div>'
+        +(idx>0?'<button data-delid="'+item.id+'" data-delfn="'+onDelete+'" class="dup-del-btn" style="font-size:9px;padding:2px 8px;background:transparent;border:1px solid #ffc107;border-radius:2px;cursor:pointer;color:#856404;white-space:nowrap">Supprimer</button>':'<span style="font-size:9px;color:#aaa;padding:2px 8px">original</span>')
+        +'</div>';
+    });
+    html+='</div>';
+  });
+  html+='</div>';
+  return html;
+}
+
 function renderAdmin(){
   const marge=items.reduce((a,i)=>a+(Number(i.sell||0)-Number(i.cost||0)-Number(i.ship||0)),0);
   const att=items.filter(i=>!i.sell||Number(i.sell)===0).length;
@@ -987,6 +1042,10 @@ function renderAdmin(){
       </div>
       ${adminSelected.size>0?`<button class="btn-xs del" onclick="delSelected()">Supprimer la sélection (${adminSelected.size})</button>`:''}
     </div>
+    ${(function(){
+      var dups=findDuplicates(items);
+      return dups.length?buildDupBlock(dups,'delItem'):'';
+    })()}
     <div id="adm-list">
       ${items.length?items.map(admCard).join(''):`<div class="alert alert-info">Aucune pièce — utilisez le Scanner pour importer votre catalogue.</div>`}
     </div>`;
@@ -1387,6 +1446,15 @@ function exportDevis(){
   if(w){w.document.write(html);w.document.close();}
   closeDevis();
 }
+
+// Délégation pour boutons suppression doublons
+document.addEventListener('click', function(e){
+  var btn = e.target.closest('.dup-del-btn');
+  if(!btn) return;
+  var id = btn.getAttribute('data-delid');
+  var fn = btn.getAttribute('data-delfn');
+  if(fn === 'delItem' && id) delItem(id);
+});
 
 init();
 
