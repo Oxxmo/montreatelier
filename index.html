@@ -1191,11 +1191,8 @@ function openEdit(id){
       <button id="btn-cancel-edit" class="modal-close" style="margin-top:.625rem">Annuler</button>
     </div>`;
   // Event listeners sur les boutons (pas d'onclick inline)
-  console.log('[openEdit] attaching listeners, btn-back-edit:', document.getElementById('btn-back-edit'));
-  document.getElementById('btn-back-edit').onclick=closeEdit;
-  document.getElementById('btn-cancel-edit').onclick=closeEdit;
-  document.getElementById('btn-save-edit').onclick=function(){ saveEdit(id); };
-  document.getElementById('btn-regen-edit').onclick=function(){ regenDesc(id); };
+  // Stocker l'id courant pour la délégation
+  window._editId = id;
   document.getElementById('edit-file').onchange=function(){ handleEditFile(this); };
   document.getElementById('edit-img-url').oninput=function(){ handleEditUrl(this.value); };
   // Drag & drop
@@ -1211,9 +1208,7 @@ function openEdit(id){
 
 
 function closeEdit(){
-  console.log('[closeEdit] appelé');
   renderAdmin();
-  console.log('[closeEdit] renderAdmin fait');
   window.scrollTo({top:0,behavior:'instant'});
   window.parent.postMessage({type:'mwa-scroll-top'},'*');
 }
@@ -1518,13 +1513,21 @@ function exportDevis(){
   closeDevis();
 }
 
-// Délégation pour boutons suppression doublons
+// Délégation globale pour tous les boutons de l'app
 document.addEventListener('click', function(e){
-  var btn = e.target.closest('.dup-del-btn');
-  if(!btn) return;
-  var id = btn.getAttribute('data-delid');
-  var fn = btn.getAttribute('data-delfn');
-  if(fn === 'delItem' && id) delItem(id);
+  var t = e.target;
+  // Doublons
+  var dupBtn = t.closest('.dup-del-btn');
+  if(dupBtn){ var id=dupBtn.getAttribute('data-delid'); var fn=dupBtn.getAttribute('data-delfn'); if(fn==='delItem'&&id) delItem(id); return; }
+  // Sélections
+  var selDevis = t.closest('[data-action="devis"]');
+  if(selDevis){ openDevis(selDevis.getAttribute('data-id')); return; }
+  var selDel = t.closest('[data-action="del"]');
+  if(selDel){ deleteSel(selDel.getAttribute('data-id')); return; }
+  // Édition pièce
+  if(t.id==='btn-back-edit'||t.id==='btn-cancel-edit'){ closeEdit(); return; }
+  if(t.id==='btn-save-edit'){ if(window._editId) saveEdit(window._editId); return; }
+  if(t.id==='btn-regen-edit'){ if(window._editId) regenDesc(window._editId); return; }
 });
 
 init();
