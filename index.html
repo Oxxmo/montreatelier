@@ -1191,6 +1191,7 @@ function openEdit(id){
       <button id="btn-cancel-edit" class="modal-close" style="margin-top:.625rem">Annuler</button>
     </div>`;
   // Event listeners sur les boutons (pas d'onclick inline)
+  console.log('[openEdit] attaching listeners, btn-back-edit:', document.getElementById('btn-back-edit'));
   document.getElementById('btn-back-edit').onclick=closeEdit;
   document.getElementById('btn-cancel-edit').onclick=closeEdit;
   document.getElementById('btn-save-edit').onclick=function(){ saveEdit(id); };
@@ -1210,7 +1211,9 @@ function openEdit(id){
 
 
 function closeEdit(){
+  console.log('[closeEdit] appelé');
   renderAdmin();
+  console.log('[closeEdit] renderAdmin fait');
   window.scrollTo({top:0,behavior:'instant'});
   window.parent.postMessage({type:'mwa-scroll-top'},'*');
 }
