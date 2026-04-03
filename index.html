@@ -1153,49 +1153,61 @@ function admCard(i){
 
 function openEdit(id){
   const i=items.find(x=>x.id===id); if(!i) return;
-  // Fermer tout modal existant
-  const existing=document.getElementById('edit-modal'); if(existing) existing.remove();
-  // Remplacer la vue par le formulaire d'édition
+  const allCats=['Boitier','Cadran','Lunette','Bracelet','Aiguilles','Verre','Couronne','Mouvement','Rotor','Insert lunette','Fond','Anneau','Joint','Axe','Barre ressort','Autre'];
+  const catOpts=allCats.map(c=>`<option value="${c}"${i.cat===c?' selected':''}>${c}</option>`).join('');
+  const imgPreview=i.img?`<img src="${i.img}" class="drop-preview" alt="" id="edit-preview-img">`:'<div class="drop-zone-icon">↑</div>';
+  const imgUrl=i.img&&!i.img.startsWith('data:')?i.img:'';
   const view=document.getElementById('view'); if(!view) return;
-  const allCatsList=['Boitier','Cadran','Lunette','Bracelet','Aiguilles','Verre','Couronne','Mouvement','Rotor','Insert lunette','Fond','Anneau','Joint','Axe','Barre ressort','Autre'];
-  view.innerHTML=
-    '<button onclick="closeEdit()" style="display:flex;align-items:center;gap:6px;background:transparent;border:none;cursor:pointer;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#888;font-family:inherit;padding:.5rem 0;margin-bottom:1.25rem">'
-    +'<span style="font-size:16px">←</span> Retour à la gestion</button>'
-    +'<div class="section"><div class="sec-title">Modifier la pièce</div>'
-    +'<div class="field"><label>Titre</label><input type="text" id="edit-title" value="'+((i.name||'').replace(/"/g,'&quot;'))+'"></div>'
-    +'<div class="field"><label>Catégorie</label><select id="edit-cat">'
-    +allCatsList.map(function(c){return '<option value="'+c+'"'+(i.cat===c?' selected':'')+'>'+c+'</option>';}).join('')
-    +'</select></div>'
-    +'<div class="field" style="margin-bottom:.5rem"><label>Image — glisser ou choisir un fichier</label></div>'
-    +'<div class="drop-zone" id="drop-zone"><input type="file" id="edit-file" accept="image/*" onchange="handleEditFile(this)">'
-    +'<div id="drop-content">'
-    +(i.img?'<img src="'+i.img+'" class="drop-preview" alt="" id="edit-preview-img">':'<div class="drop-zone-icon">↑</div>')
-    +'<div class="drop-zone-text">'+(i.img?'Changer l image':'Glisser une image ici')+'</div>'
-    +'<div class="drop-zone-hint">ou cliquer pour choisir un fichier</div>'
-    +'</div></div>'
-    +'<div class="field" style="margin-bottom:.5rem"><label>URL d image</label>'
-    +'<input type="text" id="edit-img-url" value="'+(i.img&&!i.img.startsWith('data:')?i.img:'')+'" placeholder="https://..." oninput="handleEditUrl(this.value)"></div>'
-    +'<div class="field"><label>Description client</label>'
-    +'<textarea id="edit-desc" rows="4" style="resize:vertical;font-size:13px;padding:8px 11px;border:1px solid #d8d4ce;border-radius:2px;background:#fff;color:#1a1a1a;outline:none;width:100%">'+(i.description||'')+'</textarea></div>'
-    +'<div style="display:flex;gap:8px;margin-top:.5rem">'
-    +"<button class=\"btn btn-s\" style=\"flex:1\" onclick=\"regenDesc('"+id+"')\">↻ Régénérer</button>"
-    +"<button class=\"btn btn-p\" style=\"flex:1\" onclick=\"saveEdit('"+id+"')\" >Enregistrer</button>"
-    +'</div>'
-    +"<button class=\"modal-close\" style=\"margin-top:.625rem\" onclick=\"closeEdit()\">Annuler</button>"
-    +'</div>';
-
+  view.innerHTML=`
+    <button id="btn-back-edit" style="display:flex;align-items:center;gap:6px;background:transparent;border:none;cursor:pointer;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#888;font-family:inherit;padding:.5rem 0;margin-bottom:1.25rem">
+      <span style="font-size:16px">←</span> Retour à la gestion
+    </button>
+    <div class="section">
+      <div class="sec-title">Modifier la pièce</div>
+      <div class="field"><label>Titre</label>
+        <input type="text" id="edit-title" value="${(i.name||'').replace(/"/g,'&quot;')}">
+      </div>
+      <div class="field"><label>Catégorie</label>
+        <select id="edit-cat">${catOpts}</select>
+      </div>
+      <div class="field" style="margin-bottom:.5rem"><label>Image</label></div>
+      <div class="drop-zone" id="drop-zone">
+        <input type="file" id="edit-file" accept="image/*">
+        <div id="drop-content">${imgPreview}
+          <div class="drop-zone-text">${i.img?'Changer l image':'Glisser une image ici'}</div>
+          <div class="drop-zone-hint">ou cliquer pour choisir</div>
+        </div>
+      </div>
+      <div class="field" style="margin-bottom:.5rem"><label>URL image</label>
+        <input type="text" id="edit-img-url" value="${imgUrl}" placeholder="https://...">
+      </div>
+      <div class="field"><label>Description client</label>
+        <textarea id="edit-desc" rows="4" style="resize:vertical;font-size:13px;padding:8px 11px;border:1px solid #d8d4ce;border-radius:2px;background:#fff;color:#1a1a1a;outline:none;width:100%">${i.description||''}</textarea>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:.5rem">
+        <button id="btn-regen-edit" class="btn btn-s" style="flex:1">↻ Régénérer</button>
+        <button id="btn-save-edit" class="btn btn-p" style="flex:1">Enregistrer</button>
+      </div>
+      <button id="btn-cancel-edit" class="modal-close" style="margin-top:.625rem">Annuler</button>
+    </div>`;
+  // Event listeners sur les boutons (pas d'onclick inline)
+  document.getElementById('btn-back-edit').onclick=closeEdit;
+  document.getElementById('btn-cancel-edit').onclick=closeEdit;
+  document.getElementById('btn-save-edit').onclick=function(){ saveEdit(id); };
+  document.getElementById('btn-regen-edit').onclick=function(){ regenDesc(id); };
+  document.getElementById('edit-file').onchange=function(){ handleEditFile(this); };
+  document.getElementById('edit-img-url').oninput=function(){ handleEditUrl(this.value); };
   // Drag & drop
   const zone=document.getElementById('drop-zone');
-  if(zone){
-    zone.addEventListener('dragover',function(e){e.preventDefault();zone.classList.add('drag-over');});
-    zone.addEventListener('dragleave',function(){zone.classList.remove('drag-over');});
-    zone.addEventListener('drop',function(e){e.preventDefault();zone.classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/'))processEditFile(f);});
-  }
+  zone.addEventListener('dragover',function(e){e.preventDefault();zone.classList.add('drag-over');});
+  zone.addEventListener('dragleave',function(){zone.classList.remove('drag-over');});
+  zone.addEventListener('drop',function(e){e.preventDefault();zone.classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/'))processEditFile(f);});
   // Scroll en haut
   window.scrollTo({top:0,behavior:'instant'});
   window.parent.postMessage({type:'mwa-scroll-top'},'*');
   setTimeout(function(){const t=document.getElementById('edit-title');if(t)t.focus();},80);
 }
+
 
 function closeEdit(){
   renderAdmin();
