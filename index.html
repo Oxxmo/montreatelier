@@ -991,6 +991,10 @@ async function doImport(){
 
 /* ══ ADMIN ══ */
 let adminSelected = new Set();
+let adminFilterCat = 'Tout';
+let adminFilterSup = 'Tout';
+let adminSort = 'date';
+let adminSearch = '';
 
 /* ══ DOUBLONS ══ */
 function findDuplicates(list){
@@ -1028,34 +1032,80 @@ function buildDupBlock(dups, onDelete){
 }
 
 function renderAdmin(){
-  const marge=items.reduce((a,i)=>a+(Number(i.sell||0)-Number(i.cost||0)-Number(i.ship||0)),0);
-  const att=items.filter(i=>!i.sell||Number(i.sell)===0).length;
+  const totalCost=items.reduce(function(a,i){return a+Number(i.cost||0)+Number(i.ship||0);},0);
+  const allCats=['Tout',...new Set(items.map(function(i){return i.cat;}).filter(Boolean))].sort();
+  const allSups=['Tout',...new Set(items.map(function(i){return i.supplier;}).filter(Boolean))].sort();
+
+  // Filtrer
+  let list=items.filter(function(i){
+    const matchCat=adminFilterCat==='Tout'||i.cat===adminFilterCat;
+    const matchSup=adminFilterSup==='Tout'||i.supplier===adminFilterSup;
+    const matchSearch=!adminSearch||i.name.toLowerCase().includes(adminSearch.toLowerCase());
+    return matchCat&&matchSup&&matchSearch;
+  });
+
+  // Trier
+  list=[...list].sort(function(a,b){
+    if(adminSort==='nom') return (a.name||'').localeCompare(b.name||'','fr');
+    if(adminSort==='cout') return (Number(a.cost||0)+Number(a.ship||0))-(Number(b.cost||0)+Number(b.ship||0));
+    if(adminSort==='cout-desc') return (Number(b.cost||0)+Number(b.ship||0))-(Number(a.cost||0)+Number(a.ship||0));
+    return Number(b.ts||0)-Number(a.ts||0); // date desc
+  });
+
+  const dups=findDuplicates(items);
+
   document.getElementById('view').innerHTML=`
     <div class="stat-row">
       <div class="stat"><div class="stat-l">Pièces</div><div class="stat-v">${items.length}</div></div>
-      <div class="stat"><div class="stat-l">Marge totale</div><div class="stat-v">${Math.round(marge).toLocaleString('fr-FR')} €</div></div>
-      <div class="stat"><div class="stat-l">À pricer</div><div class="stat-v">${att}</div></div>
+      <div class="stat"><div class="stat-l">Coût catalogue</div><div class="stat-v">${Math.round(totalCost).toLocaleString('fr-FR')} €</div></div>
       <div class="stat"><div class="stat-l">Catégories</div><div class="stat-v">${cats().length-1}</div></div>
+      <div class="stat"><div class="stat-l">Fournisseurs</div><div class="stat-v">${allSups.length-1}</div></div>
     </div>
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:.875rem">
-      <div style="display:flex;align-items:center;gap:8px">
-        <button class="btn-xs" onclick="admToggleAll()">${adminSelected.size===items.length&&items.length>0?'Tout décocher':'Tout cocher'}</button>
-        ${adminSelected.size>0?`<span style="font-size:11px;color:#999;letter-spacing:.04em">${adminSelected.size} sélectionnée${adminSelected.size>1?'s':''}</span>`:''}
+
+    ${dups.length?buildDupBlock(dups,'delItem'):''}
+
+    <div style="background:#fff;border:1px solid #e8e5e0;border-radius:2px;padding:1rem;margin-bottom:1rem">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:.75rem">
+        <input class="s-in" style="flex:1;min-width:160px" placeholder="Rechercher une pièce..." value="${adminSearch}" oninput="adminSearch=this.value;renderAdmin()">
+        <select onchange="adminFilterCat=this.value;renderAdmin()" style="padding:7px 10px;border:1px solid #d4cfc8;border-radius:2px;font-family:inherit;font-size:12px;background:#fff;color:#1a1a1a;outline:none">
+          ${allCats.map(function(c){return '<option value="'+c+'"'+(adminFilterCat===c?' selected':'')+'>'+c+'</option>';}).join('')}
+        </select>
+        <select onchange="adminFilterSup=this.value;renderAdmin()" style="padding:7px 10px;border:1px solid #d4cfc8;border-radius:2px;font-family:inherit;font-size:12px;background:#fff;color:#1a1a1a;outline:none;max-width:180px">
+          ${allSups.map(function(s){return '<option value="'+s+'"'+(adminFilterSup===s?' selected':'')+'>'+s+'</option>';}).join('')}
+        </select>
+        <select onchange="adminSort=this.value;renderAdmin()" style="padding:7px 10px;border:1px solid #d4cfc8;border-radius:2px;font-family:inherit;font-size:12px;background:#fff;color:#1a1a1a;outline:none">
+          <option value="date" ${adminSort==='date'?'selected':''}>Plus récent</option>
+          <option value="nom" ${adminSort==='nom'?'selected':''}>Nom A→Z</option>
+          <option value="cout" ${adminSort==='cout'?'selected':''}>Coût ↑</option>
+          <option value="cout-desc" ${adminSort==='cout-desc'?'selected':''}>Coût ↓</option>
+        </select>
       </div>
-      ${adminSelected.size>0?`<button class="btn-xs del" onclick="delSelected()">Supprimer la sélection (${adminSelected.size})</button>`:''}
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="btn-xs" onclick="admToggleAll()">${adminSelected.size===list.length&&list.length>0?'Tout décocher':'Tout cocher'}</button>
+          ${adminSelected.size>0?`<span style="font-size:11px;color:#999">${adminSelected.size} sélectionnée${adminSelected.size>1?'s':''}</span>`:''}
+          <span style="font-size:11px;color:#bbb">${list.length} pièce${list.length>1?'s':''} affichée${list.length>1?'s':''}</span>
+        </div>
+        ${adminSelected.size>0?`<button class="btn-xs del" onclick="delSelected()">Supprimer (${adminSelected.size})</button>`:''}
+      </div>
     </div>
-    ${(function(){
-      var dups=findDuplicates(items);
-      return dups.length?buildDupBlock(dups,'delItem'):'';
-    })()}
+
     <div id="adm-list">
-      ${items.length?items.map(admCard).join(''):`<div class="alert alert-info">Aucune pièce — utilisez le Scanner pour importer votre catalogue.</div>`}
+      ${list.length?list.map(admCard).join(''):`<div class="alert alert-info">Aucune pièce ne correspond aux filtres.</div>`}
     </div>`;
 }
 
 function admToggleAll(){
-  if(adminSelected.size===items.length) adminSelected.clear();
-  else items.forEach(i=>adminSelected.add(i.id));
+  // Sélectionner seulement les items visibles (filtrés)
+  const visible=items.filter(function(i){
+    const matchCat=adminFilterCat==='Tout'||i.cat===adminFilterCat;
+    const matchSup=adminFilterSup==='Tout'||i.supplier===adminFilterSup;
+    const matchSearch=!adminSearch||i.name.toLowerCase().includes(adminSearch.toLowerCase());
+    return matchCat&&matchSup&&matchSearch;
+  });
+  const allSelected=visible.every(function(i){return adminSelected.has(i.id);});
+  if(allSelected) visible.forEach(function(i){adminSelected.delete(i.id);});
+  else visible.forEach(function(i){adminSelected.add(i.id);});
   renderAdmin();
 }
 
