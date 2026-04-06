@@ -1079,6 +1079,9 @@ function renderAdmin(){
   const dups=findDuplicates(items);
 
   document.getElementById('view').innerHTML=`
+    <div style="text-align:right;margin-bottom:.5rem">
+      <button class="btn-xs" onclick="normalizeCats()" title="Corriger automatiquement les accents dans les catégories">✓ Normaliser les catégories</button>
+    </div>
     <div class="stat-row">
       <div class="stat"><div class="stat-l">Pièces</div><div class="stat-v">${items.length}</div></div>
       <div class="stat"><div class="stat-l">Coût catalogue</div><div class="stat-v">${Math.round(totalCost).toLocaleString('fr-FR')} €</div></div>
@@ -1177,7 +1180,10 @@ function admCard(i){
 
 function openEdit(id){
   const i=items.find(x=>x.id===id); if(!i) return;
-  const allCats=['Boitier','Cadran','Lunette','Bracelet','Aiguilles','Verre','Couronne','Mouvement','Rotor','Insert lunette','Fond','Anneau','Joint','Axe','Barre ressort','Autre'];
+  // Fusionner catégories existantes + standards, dédupliquées et triées
+  const stdCats=['Boîtier','Cadran','Lunette','Bracelet','Aiguilles','Verre','Couronne','Mouvement','Rotor','Insert lunette','Fond','Anneau','Joint','Axe','Barre ressort','Autre'];
+  const existCats=items.map(function(i){return i.cat;}).filter(Boolean);
+  const allCats=[...new Set([...stdCats,...existCats])].sort();
   const catOpts=allCats.map(c=>`<option value="${c}"${i.cat===c?' selected':''}>${c}</option>`).join('');
   const imgPreview=i.img?`<img src="${i.img}" class="drop-preview" alt="" id="edit-preview-img">`:'<div class="drop-zone-icon">↑</div>';
   const imgUrl=i.img&&!i.img.startsWith('data:')?i.img:'';
@@ -1556,6 +1562,31 @@ document.addEventListener('click', function(e){
   if(t.id==='btn-save-edit'){ if(window._editId) saveEdit(window._editId); return; }
   if(t.id==='btn-regen-edit'){ if(window._editId) regenDesc(window._editId); return; }
 });
+
+// Normaliser les catégories au chargement (Boitier → Boîtier etc)
+async function normalizeCats(){
+  const map={'Boitier':'Boîtier','boitier':'Boîtier','boîtier':'Boîtier',
+             'Lunette':'Lunette','lunette':'Lunette',
+             'Cadran':'Cadran','cadran':'Cadran',
+             'Aiguille':'Aiguilles','aiguilles':'Aiguilles',
+             'Bracelet':'Bracelet','bracelet':'Bracelet'};
+  var changed=[];
+  for(var i=0;i<items.length;i++){
+    var correct=map[items[i].cat];
+    if(correct && correct!==items[i].cat){
+      changed.push({id:items[i].id, cat:correct});
+      items[i]={...items[i],cat:correct};
+    }
+  }
+  if(!changed.length){ alert('Aucune correction nécessaire.'); return; }
+  if(isConfigured()){
+    for(var c=0;c<changed.length;c++){
+      await SB.update(changed[c].id,{cat:changed[c].cat});
+    }
+  }
+  alert(changed.length+' pièce(s) corrigée(s) !');
+  renderAdmin();
+}
 
 init();
 
