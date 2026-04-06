@@ -1042,10 +1042,10 @@ function buildDupBlock(dups, onDelete){
   dups.forEach(function(group){
     html+='<div style="margin-bottom:.625rem;padding-bottom:.625rem;border-bottom:1px solid #fde9a0">';
     group.forEach(function(item, idx){
-      html+='<div class="dup-row">'
+      html+='<div class="dup-row" style="cursor:pointer" data-editid="'+item.id+'" title="Cliquer pour modifier">'
         +'<div class="dup-thumb">'+(item.img?'<img src="'+item.img+'" alt="">':'')+'</div>'
         +'<div style="flex:1;min-width:0"><div style="font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+item.name+'</div>'
-        +'<div style="font-size:10px;color:#aaa">'+item.cat+'</div></div>'
+        +'<div style="font-size:10px;color:#aaa">'+item.cat+' — <span style="color:#c9a050">Cliquer pour voir / modifier</span></div></div>'
         +(idx>0?'<button data-delid="'+item.id+'" data-delfn="'+onDelete+'" class="dup-del-btn" style="font-size:9px;padding:2px 8px;background:transparent;border:1px solid #ffc107;border-radius:2px;cursor:pointer;color:#856404;white-space:nowrap">Supprimer</button>':'<span style="font-size:9px;color:#aaa;padding:2px 8px">original</span>')
         +'</div>';
     });
@@ -1548,6 +1548,9 @@ document.addEventListener('click', function(e){
   if(selDevis){ openDevis(selDevis.getAttribute('data-id')); return; }
   var selDel = t.closest('[data-action="del"]');
   if(selDel){ deleteSel(selDel.getAttribute('data-id')); return; }
+  // Clic sur ligne doublon → ouvrir édition
+  var dupRow = t.closest('.dup-row[data-editid]');
+  if(dupRow && !t.closest('.dup-del-btn')){ openEdit(dupRow.getAttribute('data-editid')); return; }
   // Édition pièce
   if(t.id==='btn-back-edit'||t.id==='btn-cancel-edit'){ closeEdit(); return; }
   if(t.id==='btn-save-edit'){ if(window._editId) saveEdit(window._editId); return; }
