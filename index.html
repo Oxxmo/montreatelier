@@ -30,10 +30,11 @@ a{color:inherit;text-decoration:none}
 .nb.danger:hover{border-color:#c06060;color:#e08080}
 
 /* ── FILTER ── */
-.filter-bar{display:flex;gap:6px;margin-bottom:1.25rem;flex-wrap:wrap;align-items:center}
+.filter-bar{display:flex;gap:6px;margin-bottom:1.25rem;align-items:center;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;padding-bottom:4px;scrollbar-width:none}
 .chip{padding:5px 14px;border:1px solid #d8d4ce;border-radius:2px;font-size:11px;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;background:#fff;color:#888;transition:.15s;white-space:nowrap}
 .chip.active{border-color:#1a1a1a;color:#1a1a1a;background:#1a1a1a;color:#fff}
 .chip:hover:not(.active){border-color:#999;color:#555}
+.filter-bar::-webkit-scrollbar{display:none}
 .s-in{flex:1;min-width:130px;font-size:13px;padding:7px 13px;border:1px solid #d8d4ce;border-radius:2px;background:#fff;color:#1a1a1a;outline:none}
 .s-in:focus{border-color:#1a1a1a}
 .s-in::placeholder{color:#bbb}
@@ -601,11 +602,32 @@ function renderClient(){
     </div>
     <div id="sel-panel"></div>
     ${buildStatsBar()}
-    <div class="filter-bar">
-      <input class="s-in" id="search" placeholder="Rechercher..." oninput="refreshCards()">
-      <div id="chips">${cats().map(c=>`<span class="chip${filterCat===c?' active':''}" onclick="setCat('${c}')">${c}</span>`).join('')}</div>
+    <div style="margin-bottom:.75rem">
+      <input class="s-in" style="width:100%" id="search" placeholder="Rechercher..." oninput="refreshCards()">
+    </div>
+    <div class="filter-bar" id="chips-bar">
+      ${cats().map(c=>`<span class="chip${filterCat===c?' active':''}" onclick="setCat('${c}')">${c}</span>`).join('')}
     </div>
     <div id="g-client">${buildCards()}</div>`;
+}
+
+function shuffleByCategory(arr){
+  // Regroupe par catégorie puis alterne : 1 cadran, 1 boitier, 1 lunette...
+  var groups={};
+  arr.forEach(function(i){
+    var k=i.cat||'Autre';
+    if(!groups[k]) groups[k]=[];
+    groups[k].push(i);
+  });
+  var keys=Object.keys(groups);
+  var result=[];
+  var maxLen=Math.max.apply(null,keys.map(function(k){return groups[k].length;}));
+  for(var idx=0;idx<maxLen;idx++){
+    keys.forEach(function(k){
+      if(groups[k][idx]) result.push(groups[k][idx]);
+    });
+  }
+  return result;
 }
 
 function buildCards(){
@@ -614,6 +636,8 @@ function buildCards(){
     return (filterCat==='Tout'||i.cat===filterCat)&&
       (!q||i.name.toLowerCase().includes(q.toLowerCase())||(i.description||'').toLowerCase().includes(q.toLowerCase()));
   });
+  // Mélanger par catégorie seulement si on affiche tout sans recherche
+  if(filterCat==='Tout'&&!q) list=shuffleByCategory(list);
   if(!list.length) return '<div class="empty">Aucune pièce</div>';
   function oneCard(i){
     var sel=basket.has(i.id);
