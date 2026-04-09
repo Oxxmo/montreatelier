@@ -413,6 +413,35 @@ function detectCat(name) {
   return 'Autre';
 }
 
+function parsePrice(val){
+  if(!val) return 0;
+  var s = String(val).trim();
+  // Shopify renvoie parfois les prix en centimes (ex: 3990 = 39.90€)
+  // Détecter : nombre entier sans décimale et > 100 → diviser par 100
+  // Si virgule et point
+  if(s.indexOf(',')!==-1 && s.indexOf('.')!==-1){
+    if(s.lastIndexOf('.')>s.lastIndexOf(',')) s=s.replace(/,/g,''); // 1,234.56
+    else s=s.replace(/\./g,'').replace(',','.');                     // 1.234,56
+  } else if(s.indexOf(',')!==-1){
+    var parts=s.split(',');
+    if(parts[parts.length-1].length===2) s=s.replace(',','.');       // 39,90 → 39.90
+    else if(parts[parts.length-1].length===3) s=s.replace(/,/g,''); // 1,234 → 1234
+    else s=s.replace(',','.');
+  } else if(s.indexOf('.')!==-1){
+    var dparts=s.split('.');
+    // 39.900 → peut être 39.9 ou milliers → si 3 décimales c'est milliers
+    if(dparts[dparts.length-1].length===3) s=s.replace(/\./g,'');   // 39.900 → 39900 centimes
+  }
+  var n=parseFloat(s);
+  if(isNaN(n)) return 0;
+  // Si valeur entière ronde > 500 et pas de décimale dans l'original
+  // → probablement des centimes (Shopify USD en centimes)
+  if(Number.isInteger(n) && n > 500 && s.indexOf('.')===-1 && s.indexOf(',')===-1){
+    n = n / 100;
+  }
+  return Math.round(n*100)/100;
+}
+
 function shopifyToRaw(products, supplier) {
   return products.map(p => ({
     name: p.title,
@@ -420,7 +449,7 @@ function shopifyToRaw(products, supplier) {
     rawDesc: (p.body_html||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim(),
     img: p.images?.[0]?.src || '',
     url: `https://${supplier.replace('www.','')}${p.handle?'/products/'+p.handle:''}`,
-    price: parseFloat(p.variants?.[0]?.price||0),
+    price: parsePrice(p.variants?.[0]?.price||0),
     supplier,
   }));
 }
@@ -995,7 +1024,7 @@ async function doImport(){
   const sel=scanRes.filter((_,i)=>scanChecked.has(i));
   if(!sel.length){setSt('Aucun produit sélectionné.','err');return;}
   setSt('Importation...','loading');
-  const newItems=sel.map(p=>({id:uid(),name:p.name||'Sans nom',cat:p.cat||'Autre',description:p.description||'',img:p.img||'',url:p.url||'',cost:p.price||0,ship,sell:0,supplier:p.supplier||'',ts:Date.now()}));
+  const newItems=sel.map(p=>({id:uid(),name:p.name||'Sans nom',cat:p.cat||'Autre',description:p.description||'',img:p.img||'',url:p.url||'',cost:parsePrice(p.price)||0,ship,sell:0,supplier:p.supplier||'',ts:Date.now()}));
   if(isConfigured()){
     const ok=await SB.insert(newItems);
     if(ok){
