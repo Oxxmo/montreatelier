@@ -436,28 +436,31 @@ function detectCat(name) {
 function parsePrice(val){
   if(!val) return 0;
   var s = String(val).trim();
-  // Shopify renvoie parfois les prix en centimes (ex: 3990 = 39.90€)
-  // Détecter : nombre entier sans décimale et > 100 → diviser par 100
-  // Si virgule et point
+  // Supprimer tous les symboles monétaires et espaces
+  s = s.replace(/[₱$€£¥₩฿₫]/g,'').replace(/\s/g,'').trim();
+  if(!s) return 0;
+  // Virgule ET point présents
   if(s.indexOf(',')!==-1 && s.indexOf('.')!==-1){
-    if(s.lastIndexOf('.')>s.lastIndexOf(',')) s=s.replace(/,/g,''); // 1,234.56
-    else s=s.replace(/\./g,'').replace(',','.');                     // 1.234,56
+    if(s.lastIndexOf('.')>s.lastIndexOf(',')) s=s.replace(/,/g,''); // 1,234.56 → 1234.56
+    else s=s.replace(/\./g,'').replace(',','.');                    // 1.234,56 → 1234.56
   } else if(s.indexOf(',')!==-1){
     var parts=s.split(',');
-    if(parts[parts.length-1].length===2) s=s.replace(',','.');       // 39,90 → 39.90
-    else if(parts[parts.length-1].length===3) s=s.replace(/,/g,''); // 1,234 → 1234
+    var after=parts[parts.length-1];
+    if(after.length===2) s=s.replace(',','.');      // 39,90 → 39.90
+    else if(after.length===3) s=s.replace(/,/g,''); // 1,850 → 1850
     else s=s.replace(',','.');
   } else if(s.indexOf('.')!==-1){
     var dparts=s.split('.');
-    // 39.900 → peut être 39.9 ou milliers → si 3 décimales c'est milliers
-    if(dparts[dparts.length-1].length===3) s=s.replace(/\./g,'');   // 39.900 → 39900 centimes
+    if(dparts[dparts.length-1].length===3) s=s.replace(/\./g,''); // 1.850 → 1850
   }
   var n=parseFloat(s);
   if(isNaN(n)) return 0;
-  // Si valeur entière ronde > 500 et pas de décimale dans l'original
-  // → probablement des centimes (Shopify USD en centimes)
-  if(Number.isInteger(n) && n > 500 && s.indexOf('.')===-1 && s.indexOf(',')===-1){
-    n = n / 100;
+  // Centimes Shopify : entier sans décimale dans la valeur originale ET > 100
+  var origClean=String(val).replace(/[₱$€£¥₩฿₫\s,]/g,'');
+  if(Number.isInteger(n) && n>100 && origClean.indexOf('.')===-1){
+    // Vérifier si c'est vraiment des centimes (divisible par 5, commun en e-commerce)
+    // Heuristique : si > 500 et pas de décimale → probablement centimes
+    if(n>500) n=n/100;
   }
   return Math.round(n*100)/100;
 }
