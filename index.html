@@ -353,6 +353,26 @@ function detectUrlType(url) {
 }
 
 /* ══ SHOPIFY API ══ */
+async function getShopCurrency(cleanHost){
+  try {
+    const r = await fetch(cleanHost+'/shop.json');
+    if(!r.ok) return 'EUR';
+    const d = await r.json();
+    return d.shop?.currency || 'EUR';
+  } catch { return 'EUR'; }
+}
+
+async function getEurRate(currency){
+  if(currency==='EUR') return 1;
+  try {
+    // API de taux de change gratuite
+    const r = await fetch('https://api.frankfurter.app/latest?from='+currency+'&to=EUR');
+    if(!r.ok) return null;
+    const d = await r.json();
+    return d.rates?.EUR || null;
+  } catch { return null; }
+}
+
 async function fetchShopify(info) {
   // Pagination : max 250 par page, on récupère toutes les pages
   let all = [];
@@ -442,14 +462,15 @@ function parsePrice(val){
   return Math.round(n*100)/100;
 }
 
-function shopifyToRaw(products, supplier) {
+function shopifyToRaw(products, supplier, eurRate) {
+  eurRate = eurRate || 1;
   return products.map(p => ({
     name: p.title,
     cat: detectCat(p.title),
     rawDesc: (p.body_html||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim(),
     img: p.images?.[0]?.src || '',
     url: `https://${supplier.replace('www.','')}${p.handle?'/products/'+p.handle:''}`,
-    price: parsePrice(p.variants?.[0]?.price||0),
+    price: Math.round(parsePrice(p.variants?.[0]?.price||0) * eurRate * 100) / 100,
     supplier,
   }));
 }
@@ -929,10 +950,27 @@ async function doScan(){
       setSt('Connexion à l\'API Shopify...','loading');
       const info=detectUrlType(url);
       if(info.type==='shopify'){
+        // Détecter la devise du shop et le taux de conversion
+        setSt('Détection de la devise...','loading');
+        const currency = await getShopCurrency(info.cleanHost);
+        let eurRate = 1;
+        if(currency !== 'EUR'){
+          setSt('Devise détectée : '+currency+' — récupération du taux de change...','loading');
+          const rate = await getEurRate(currency);
+          if(rate){ eurRate=rate; setSt('1 '+currency+' = '+rate.toFixed(4)+' € — chargement des produits...','loading'); }
+          else { setSt('Impossible de récupérer le taux '+currency+'/EUR — prix non convertis.',''); }
+        }
         const prods=await fetchShopify(info);
         if(!prods.length){setSt('Aucun produit trouvé dans cette collection.','err');document.getElementById('bscan').disabled=false;return;}
-        rawItems=shopifyToRaw(prods, info.hostname);
+        rawItems=shopifyToRaw(prods, info.hostname, eurRate);
       } else if(info.type==='shopify_product'){
+        setSt('Détection de la devise...','loading');
+        const currency2 = await getShopCurrency(info.cleanHost);
+        window._eurRate = 1;
+        if(currency2 !== 'EUR'){
+          const rate2 = await getEurRate(currency2);
+          if(rate2){ window._eurRate=rate2; setSt('Devise : '+currency2+' → '+rate2.toFixed(4)+' €','loading'); }
+        }
         setSt('Produit individuel détecté — récupération des variantes...','loading');
         const prods=await fetchShopifyProduct(info);
         if(!prods.length){setSt('Aucune variante trouvée.','err');document.getElementById('bscan').disabled=false;return;}
