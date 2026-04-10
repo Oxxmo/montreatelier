@@ -297,11 +297,11 @@ const SB = {
 };
 
 /* ══ AI PROXY — Gemini ══ */
-async function callAI({ system, messages, max_tokens, useSearch, image }) {
+async function callAI({ system, messages, max_tokens, useSearch, image, model }) {
   const r = await fetch('/api/ai-proxy', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ system, messages, max_tokens, useSearch, image }),
+    body: JSON.stringify({ system, messages, max_tokens, useSearch, image, model }),
   });
   const data = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(data.error || `Erreur proxy HTTP ${r.status}`);
@@ -317,19 +317,18 @@ function extractText(data) { return data?.text?.trim() || null; }
 async function generateDesc(name, rawDesc, cat) {
   try {
     const data = await callAI({
-      system: 'Tu traduis des noms de pieces horlogeres anglais en francais. REGLE ABSOLUE: reponds UNIQUEMENT en francais, jamais en anglais. Format: 2 lignes, rien dautre.\nLigne 1 (TITRE EN FRANCAIS, 5-8 mots): type de piece + style + couleur en francais. Traductions obligatoires: silver→argent, gold→or, black→noir, blue→bleu, red→rouge, white→blanc, rose gold→or rose, green→vert, bezel→lunette, dial→cadran, hands→aiguilles, case→boitier, crown→couronne, crystal→verre, bracelet→bracelet. Supprime: mm, NH35/36, ETA, Movement, Automatic.\nLigne 2 (DESCRIPTION EN FRANCAIS, 15-25 mots): description de la piece sans prix.',
-      messages: [{ role:'user', content:'Traduis en francais - Piece: '+name+' | Categorie: '+cat }],
+      system: 'You are a translator for a French watch atelier. Always respond in FRENCH only. Respond with exactly 2 lines:\nLine 1: French title (5-8 words). Translate: silver=argent, gold=or, black=noir, blue=bleu, red=rouge, white=blanc, rose gold=or rose, green=vert, bezel=lunette, dial=cadran, hands=aiguilles, case=boitier, crown=couronne, crystal=verre, strap=bracelet, insert=insert. Remove: mm, NH35, NH36, ETA, Movement, Automatic.\nLine 2: French product description (15-25 words, no price).',
+      messages: [{ role:'user', content:'Translate to French. Product: '+name+'. Category: '+cat }],
       max_tokens: 120,
       model: 'claude-haiku-4-5-20251001',
     });
     const txt = (extractText(data) || '').trim();
-    console.log('[generateDesc] reponse:', txt.slice(0,150));
-    // Parser les 2 lignes en ignorant préfixes et flèches
+    console.log('[generateDesc] raw:', txt.slice(0,150));
     const lines = txt.split('\n')
       .map(function(l){
         return l
-          .replace(/^(ligne|line|titre|title|desc|description|\d+)[\s.:)-]+/i,'')
-          .replace(/^[→•\-–—]+\s*/,'')
+          .replace(/^(ligne|line|titre|title|desc|description|[0-9]+)[\s.:)-]+/i,'')
+          .replace(/^[→•*\-–—]+\s*/,'')
           .trim();
       })
       .filter(function(l){ return l.length>3; });
@@ -341,6 +340,7 @@ async function generateDesc(name, rawDesc, cat) {
     return { title: name, desc: '' };
   }
 }
+
 
 /* ══ DETECT SITE TYPE ══ */
 function detectUrlType(url) {
