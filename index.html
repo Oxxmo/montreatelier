@@ -30,11 +30,10 @@ a{color:inherit;text-decoration:none}
 .nb.danger:hover{border-color:#c06060;color:#e08080}
 
 /* ── FILTER ── */
-.filter-bar{display:flex;gap:6px;margin-bottom:1.25rem;align-items:center;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;padding-bottom:4px;scrollbar-width:none}
+.filter-bar{display:flex;gap:6px;margin-bottom:1.25rem;flex-wrap:wrap;align-items:center}
 .chip{padding:5px 14px;border:1px solid #d8d4ce;border-radius:2px;font-size:11px;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;background:#fff;color:#888;transition:.15s;white-space:nowrap}
 .chip.active{border-color:#1a1a1a;color:#1a1a1a;background:#1a1a1a;color:#fff}
 .chip:hover:not(.active){border-color:#999;color:#555}
-.filter-bar::-webkit-scrollbar{display:none}
 .s-in{flex:1;min-width:130px;font-size:13px;padding:7px 13px;border:1px solid #d8d4ce;border-radius:2px;background:#fff;color:#1a1a1a;outline:none}
 .s-in:focus{border-color:#1a1a1a}
 .s-in::placeholder{color:#bbb}
@@ -317,21 +316,14 @@ function extractText(data) { return data?.text?.trim() || null; }
 async function generateDesc(name, rawDesc, cat) {
   try {
     const data = await callAI({
-      system: 'You are a translator for a French watch atelier. Always respond in FRENCH only. Respond with exactly 2 lines:\nLine 1: French title (5-8 words). Translate: silver=argent, gold=or, black=noir, blue=bleu, red=rouge, white=blanc, rose gold=or rose, green=vert, bezel=lunette, dial=cadran, hands=aiguilles, case=boitier, crown=couronne, crystal=verre, strap=bracelet, insert=insert. Remove: mm, NH35, NH36, ETA, Movement, Automatic.\nLine 2: French product description (15-25 words, no price).',
-      messages: [{ role:'user', content:'Translate to French. Product: '+name+'. Category: '+cat }],
-      max_tokens: 120,
+      system: 'Tu es un assistant qui renomme des pieces horlogeres. Reponds avec exactement 2 lignes, rien dautre:\nLIGNE1: le titre en francais (5 mots max, type+style+couleur, sans mm/NH35/ETA/Movement/Lume/Automatic)\nLIGNE2: une description sobre en francais (15-25 mots, sans prix)\nExemple pour "Sunburst Dial Refraction 28.5mm gradient red NH35":\nCadran sunburst refraction - Rouge gradue\nCadran a finition sunburst avec effet refraction, disponible en rouge gradue, compatible mouvements NH35.',
+      messages: [{ role:'user', content:'Piece: '+name+' | Categorie: '+cat }],
+      max_tokens: 100,
       model: 'claude-haiku-4-5-20251001',
     });
     const txt = (extractText(data) || '').trim();
-    console.log('[generateDesc] raw:', txt.slice(0,150));
-    const lines = txt.split('\n')
-      .map(function(l){
-        return l
-          .replace(/^(ligne|line|titre|title|desc|description|[0-9]+)[\s.:)-]+/i,'')
-          .replace(/^[→•*\-–—]+\s*/,'')
-          .trim();
-      })
-      .filter(function(l){ return l.length>3; });
+    console.log('[generateDesc] reponse:', txt.slice(0,150));
+    const lines = txt.split('\n').map(function(l){ return l.replace(/^LIGNE\d+:?\s*/i,'').trim(); }).filter(function(l){ return l.length>2; });
     const title = lines[0] || name;
     const desc = lines[1] || '';
     return { title: title, desc: desc };
@@ -340,7 +332,6 @@ async function generateDesc(name, rawDesc, cat) {
     return { title: name, desc: '' };
   }
 }
-
 
 /* ══ DETECT SITE TYPE ══ */
 function detectUrlType(url) {
@@ -361,26 +352,6 @@ function detectUrlType(url) {
 }
 
 /* ══ SHOPIFY API ══ */
-async function getShopCurrency(cleanHost){
-  try {
-    const r = await fetch(cleanHost+'/shop.json');
-    if(!r.ok) return 'EUR';
-    const d = await r.json();
-    return d.shop?.currency || 'EUR';
-  } catch { return 'EUR'; }
-}
-
-async function getEurRate(currency){
-  if(currency==='EUR') return 1;
-  try {
-    // API de taux de change gratuite
-    const r = await fetch('https://api.frankfurter.app/latest?from='+currency+'&to=EUR');
-    if(!r.ok) return null;
-    const d = await r.json();
-    return d.rates?.EUR || null;
-  } catch { return null; }
-}
-
 async function fetchShopify(info) {
   // Pagination : max 250 par page, on récupère toutes les pages
   let all = [];
@@ -441,38 +412,6 @@ function detectCat(name) {
   return 'Autre';
 }
 
-function parsePrice(val){
-  if(!val) return 0;
-  var s = String(val).trim();
-  // Supprimer tous les symboles monétaires et espaces
-  s = s.replace(/[₱$€£¥₩฿₫]/g,'').replace(/\s/g,'').trim();
-  if(!s) return 0;
-  // Virgule ET point présents
-  if(s.indexOf(',')!==-1 && s.indexOf('.')!==-1){
-    if(s.lastIndexOf('.')>s.lastIndexOf(',')) s=s.replace(/,/g,''); // 1,234.56 → 1234.56
-    else s=s.replace(/\./g,'').replace(',','.');                    // 1.234,56 → 1234.56
-  } else if(s.indexOf(',')!==-1){
-    var parts=s.split(',');
-    var after=parts[parts.length-1];
-    if(after.length===2) s=s.replace(',','.');      // 39,90 → 39.90
-    else if(after.length===3) s=s.replace(/,/g,''); // 1,850 → 1850
-    else s=s.replace(',','.');
-  } else if(s.indexOf('.')!==-1){
-    var dparts=s.split('.');
-    if(dparts[dparts.length-1].length===3) s=s.replace(/\./g,''); // 1.850 → 1850
-  }
-  var n=parseFloat(s);
-  if(isNaN(n)) return 0;
-  // Centimes Shopify : entier sans décimale dans la valeur originale ET > 100
-  var origClean=String(val).replace(/[₱$€£¥₩฿₫\s,]/g,'');
-  if(Number.isInteger(n) && n>100 && origClean.indexOf('.')===-1){
-    // Vérifier si c'est vraiment des centimes (divisible par 5, commun en e-commerce)
-    // Heuristique : si > 500 et pas de décimale → probablement centimes
-    if(n>500) n=n/100;
-  }
-  return Math.round(n*100)/100;
-}
-
 function shopifyToRaw(products, supplier, eurRate) {
   eurRate = eurRate || 1;
   return products.map(p => ({
@@ -481,7 +420,7 @@ function shopifyToRaw(products, supplier, eurRate) {
     rawDesc: (p.body_html||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim(),
     img: p.images?.[0]?.src || '',
     url: `https://${supplier.replace('www.','')}${p.handle?'/products/'+p.handle:''}`,
-    price: Math.round(parsePrice(p.variants?.[0]?.price||0) * eurRate * 100) / 100,
+    price: parseFloat(p.variants?.[0]?.price||0),
     supplier,
   }));
 }
@@ -663,32 +602,11 @@ function renderClient(){
     </div>
     <div id="sel-panel"></div>
     ${buildStatsBar()}
-    <div style="margin-bottom:.75rem">
-      <input class="s-in" style="width:100%" id="search" placeholder="Rechercher..." oninput="refreshCards()">
-    </div>
-    <div class="filter-bar" id="chips-bar">
-      ${cats().map(c=>`<span class="chip${filterCat===c?' active':''}" onclick="setCat('${c}')">${c}</span>`).join('')}
+    <div class="filter-bar">
+      <input class="s-in" id="search" placeholder="Rechercher..." oninput="refreshCards()">
+      <div id="chips">${cats().map(c=>`<span class="chip${filterCat===c?' active':''}" onclick="setCat('${c}')">${c}</span>`).join('')}</div>
     </div>
     <div id="g-client">${buildCards()}</div>`;
-}
-
-function shuffleByCategory(arr){
-  // Regroupe par catégorie puis alterne : 1 cadran, 1 boitier, 1 lunette...
-  var groups={};
-  arr.forEach(function(i){
-    var k=i.cat||'Autre';
-    if(!groups[k]) groups[k]=[];
-    groups[k].push(i);
-  });
-  var keys=Object.keys(groups);
-  var result=[];
-  var maxLen=Math.max.apply(null,keys.map(function(k){return groups[k].length;}));
-  for(var idx=0;idx<maxLen;idx++){
-    keys.forEach(function(k){
-      if(groups[k][idx]) result.push(groups[k][idx]);
-    });
-  }
-  return result;
 }
 
 function buildCards(){
@@ -697,8 +615,6 @@ function buildCards(){
     return (filterCat==='Tout'||i.cat===filterCat)&&
       (!q||i.name.toLowerCase().includes(q.toLowerCase())||(i.description||'').toLowerCase().includes(q.toLowerCase()));
   });
-  // Mélanger par catégorie seulement si on affiche tout sans recherche
-  if(filterCat==='Tout'&&!q) list=shuffleByCategory(list);
   if(!list.length) return '<div class="empty">Aucune pièce</div>';
   function oneCard(i){
     var sel=basket.has(i.id);
@@ -792,38 +708,36 @@ async function saveClientSel(){
 
 function openModal(id){
   const i=items.find(x=>x.id===id); if(!i) return;
-  window.parent.postMessage({
-    type:'mwa-preview',
-    item:{
-      id:i.id, name:i.name, cat:i.cat||'',
-      description:i.description||'', img:i.img||'',
-      ref:String(i.id).slice(-4).toUpperCase(),
-      inBasket:basket.has(i.id)
-    }
-  },'*');
+  closeModal();
+  // Panneau inline après la carte cliquée
+  const panel=document.createElement('div');
+  panel.id='modal-wrap';
+  panel.style.cssText='grid-column:1/-1;background:#fff;border:1px solid #e0ddd8;border-radius:3px;overflow:hidden;margin-bottom:.5rem;box-shadow:0 4px 24px rgba(0,0,0,.1)';
+  const imgH=i.img?('<div style="background:#f8f7f4;display:flex;align-items:center;justify-content:center;padding:1rem">'
+    +'<img src="'+i.img+'" alt="" style="max-width:100%;max-height:340px;object-fit:contain;border-radius:2px"></div>'):'';
+  panel.innerHTML=imgH
+    +'<div style="padding:1.25rem">'
+    +'<div style="font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:#bbb;margin-bottom:5px">'+(i.cat||'')+'</div>'
+    +'<div style="font-size:17px;font-weight:300;color:#1a1a1a;margin-bottom:.75rem">'+(i.name||'')+'</div>'
+    +'<div style="font-size:13px;color:#777;line-height:1.7;margin-bottom:1rem">'+(i.description||'Aucune description.')+'</div>'
+    +'<button onclick="closeModal()" style="padding:10px 24px;background:#1a1a1a;color:#fff;border:none;border-radius:2px;cursor:pointer;font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-family:inherit">Fermer</button>'
+    +'</div>';
+  const card=document.getElementById('crd-'+id);
+  if(card&&card.parentNode) card.parentNode.insertBefore(panel,card.nextSibling);
+  else { const g=document.getElementById('g-client'); if(g) g.appendChild(panel); }
+  // Scroller précisément sur le panneau via postMessage au parent
+  setTimeout(function(){
+    const rect=panel.getBoundingClientRect();
+    const scrollY=window.pageYOffset||document.documentElement.scrollTop;
+    const panelTop=rect.top+scrollY;
+    // Scroll interne iframe
+    window.scrollTo({top:Math.max(0,panelTop-16),behavior:'smooth'});
+    // Demander au parent de scroller à la bonne position dans la page
+    window.parent.postMessage({type:'mwa-scroll-to',y:Math.max(0,panelTop-16)},'*');
+  },50);
 }
 
-function closeModal(){
-  window.parent.postMessage({type:'mwa-preview-close'},'*');
-}
-
-function modalToggle(btn){
-  var id=btn.getAttribute('data-pid');
-  toggleB(id);
-  var inSel=basket.has(id);
-  btn.textContent=inSel?'\u2713 Dans ma s\u00e9lection':'+ Ajouter \u00e0 ma s\u00e9lection';
-  btn.style.background=inSel?'#1a1a1a':'transparent';
-  btn.style.color=inSel?'#fff':'#1a1a1a';
-  window.parent.postMessage({type:'mwa-basket-update',id:id,inBasket:inSel},'*');
-}
-
-window.addEventListener('message',function(e){
-  if(!e.data) return;
-  if(e.data.type==='mwa-add-to-basket'){
-    var id=e.data.id;
-    if(id){ toggleB(id); window.parent.postMessage({type:'mwa-basket-update',id:id,inBasket:basket.has(id)},'*'); }
-  }
-});
+function closeModal(){ const w=document.getElementById('modal-wrap'); if(w) w.remove(); }
 
 /* ══ SCANNER ══ */
 function renderScan(){
@@ -861,7 +775,7 @@ function renderScan(){
         <div class="ship-row" style="margin-top:.5rem">
           <label>Taux de conversion :</label>
           <input type="number" id="conv-rate" value="1" min="0.0001" step="0.001" style="width:80px">
-          <span style="font-size:11px;color:#888">× prix → € &nbsp;<em style="color:#bbb">(1 = EUR, PHP→EUR ≈ 0.016)</em></span>
+          <span style="font-size:11px;color:#888">× prix → € <em style="color:#bbb">(1=EUR, PHP≈0.016, USD≈0.92)</em></span>
         </div>
       `:scanMode==='screenshot'?`
         <div style="margin-bottom:.875rem">
@@ -930,7 +844,7 @@ function renderScan(){
         <div class="ship-row" style="margin-top:.5rem">
           <label>Taux de conversion :</label>
           <input type="number" id="conv-rate" value="1" min="0.0001" step="0.001" style="width:80px">
-          <span style="font-size:11px;color:#888">× prix → € &nbsp;<em style="color:#bbb">(1 = EUR, PHP→EUR ≈ 0.016)</em></span>
+          <span style="font-size:11px;color:#888">× prix → € <em style="color:#bbb">(1=EUR, PHP≈0.016, USD≈0.92)</em></span>
         </div>
       `}
       <div class="status" id="scan-st"></div>
@@ -971,12 +885,11 @@ async function doScan(){
       setSt('Connexion à l\'API Shopify...','loading');
       const info=detectUrlType(url);
       if(info.type==='shopify'){
-        const eurRate = parseFloat(document.getElementById('conv-rate')?.value||'1')||1;
+        const eurRate=parseFloat(document.getElementById('conv-rate')?.value||'1')||1;
         const prods=await fetchShopify(info);
         if(!prods.length){setSt('Aucun produit trouvé dans cette collection.','err');document.getElementById('bscan').disabled=false;return;}
         rawItems=shopifyToRaw(prods, info.hostname, eurRate);
       } else if(info.type==='shopify_product'){
-        window._eurRate = parseFloat(document.getElementById('conv-rate')?.value||'1')||1;
         setSt('Produit individuel détecté — récupération des variantes...','loading');
         const prods=await fetchShopifyProduct(info);
         if(!prods.length){setSt('Aucune variante trouvée.','err');document.getElementById('bscan').disabled=false;return;}
@@ -1026,11 +939,8 @@ function renderScanResults(){
   // Doublons avec catalogue existant
   const existDupIds=new Set();
   scanRes.forEach(function(p,i){
-    var pName=(p.name||'').trim().toLowerCase();
-    var isDup=items.some(function(ex){
-      return pName && ex.name && pName===ex.name.trim().toLowerCase();
-    });
-    if(isDup) existDupIds.add(String(i));
+    function norm(s){return (s||'').toLowerCase().replace(/[^a-z0-9]/g,' ').replace(/\s+/g,' ').trim();}
+    if(items.some(function(ex){return norm(ex.name)===norm(p.name);})) existDupIds.add(String(i));
   });
   document.getElementById('scan-res').innerHTML=`
     <div class="section">
@@ -1070,60 +980,47 @@ async function doImport(){
   const ship=parseFloat(document.getElementById('ship-val').value)||0;
   const sel=scanRes.filter((_,i)=>scanChecked.has(i));
   if(!sel.length){setSt('Aucun produit sélectionné.','err');return;}
-  setSt('Préparation de l\'importation...','loading');
+  setSt('Préparation...','loading');
   const newItems=sel.map(p=>({id:uid(),name:p.name||'Sans nom',cat:p.cat||'Autre',description:p.description||'',img:p.img||'',url:p.url||'',cost:parsePrice(p.price)||0,ship,sell:0,supplier:p.supplier||'',ts:Date.now()}));
   if(isConfigured()){
-    // Importer par lots de 50 pour éviter les limites Supabase
-    const BATCH=50;
-    let imported=0;
-    let hasError=false;
+    const BATCH=50; let imported=0; let hasError=false;
     for(let i=0;i<newItems.length;i+=BATCH){
-      const batch=newItems.slice(i,i+BATCH);
-      setSt('Importation... '+imported+'/'+newItems.length+' pièces','loading');
-      const ok=await SB.insert(batch);
+      setSt('Importation... '+imported+'/'+newItems.length,'loading');
+      const ok=await SB.insert(newItems.slice(i,i+BATCH));
       if(!ok){ hasError=true; break; }
-      imported+=batch.length;
+      imported+=BATCH;
     }
     if(!hasError){
       items=await SB.all();
-      setSt(imported+' pièce(s) importée(s) avec succès.','');
+      setSt(newItems.length+' pièce(s) importée(s).','');
       document.getElementById('scan-res').innerHTML='';
       document.getElementById('scan-url').value='';
       scanRes=[]; scanChecked.clear();
-    } else {
-      setSt('Erreur à la pièce '+imported+'. '+imported+' pièces déjà importées.','err');
-      items=await SB.all();
-    }
+    } else { setSt('Erreur à '+imported+' pièces.','err'); items=await SB.all(); }
   } else {
     items=[...newItems,...items];
-    setSt(newItems.length+' pièce(s) ajoutée(s) (temporaire, Supabase non configuré).','');
+    setSt(newItems.length+' pièce(s) ajoutée(s).','');
     document.getElementById('scan-res').innerHTML='';
     scanRes=[]; scanChecked.clear();
   }
 }
 
+
 /* ══ ADMIN ══ */
 let adminSelected = new Set();
-let adminFilterCat = 'Tout';
-let adminFilterSup = 'Tout';
-let adminSort = 'date';
-let adminSearch = '';
 
 /* ══ DOUBLONS ══ */
 function findDuplicates(list){
-  // Normalisation légère : juste minuscules + espaces multiples
-  // On garde les couleurs, matières, variantes pour éviter les faux positifs
-  function normLight(s){
-    return (s||'').toLowerCase()
-      .replace(/\s+/g,' ').trim();
-  }
+  // Normaliser le titre : minuscules, sans ponctuation ni espaces multiples
+  function norm(s){ return (s||'').toLowerCase().replace(/[^a-z0-9à-ÿ]/g,' ').replace(/\s+/g,' ').trim(); }
   const groups={};
   list.forEach(function(item){
-    var key=normLight(item.name);
+    const key=norm(item.name);
     if(!key) return;
     if(!groups[key]) groups[key]=[];
     groups[key].push(item);
   });
+  // Ne garder que les groupes avec 2+ items
   return Object.values(groups).filter(function(g){return g.length>1;});
 }
 
@@ -1134,10 +1031,10 @@ function buildDupBlock(dups, onDelete){
   dups.forEach(function(group){
     html+='<div style="margin-bottom:.625rem;padding-bottom:.625rem;border-bottom:1px solid #fde9a0">';
     group.forEach(function(item, idx){
-      html+='<div class="dup-row" style="cursor:pointer" data-editid="'+item.id+'" title="Cliquer pour modifier">'
+      html+='<div class="dup-row">'
         +'<div class="dup-thumb">'+(item.img?'<img src="'+item.img+'" alt="">':'')+'</div>'
         +'<div style="flex:1;min-width:0"><div style="font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+item.name+'</div>'
-        +'<div style="font-size:10px;color:#aaa">'+item.cat+' — <span style="color:#c9a050">Cliquer pour voir / modifier</span></div></div>'
+        +'<div style="font-size:10px;color:#aaa">'+item.cat+'</div></div>'
         +(idx>0?'<button data-delid="'+item.id+'" data-delfn="'+onDelete+'" class="dup-del-btn" style="font-size:9px;padding:2px 8px;background:transparent;border:1px solid #ffc107;border-radius:2px;cursor:pointer;color:#856404;white-space:nowrap">Supprimer</button>':'<span style="font-size:9px;color:#aaa;padding:2px 8px">original</span>')
         +'</div>';
     });
@@ -1148,83 +1045,34 @@ function buildDupBlock(dups, onDelete){
 }
 
 function renderAdmin(){
-  const totalCost=items.reduce(function(a,i){return a+Number(i.cost||0)+Number(i.ship||0);},0);
-  const allCats=['Tout',...new Set(items.map(function(i){return i.cat;}).filter(Boolean))].sort();
-  const allSups=['Tout',...new Set(items.map(function(i){return i.supplier;}).filter(Boolean))].sort();
-
-  // Filtrer
-  let list=items.filter(function(i){
-    const matchCat=adminFilterCat==='Tout'||i.cat===adminFilterCat;
-    const matchSup=adminFilterSup==='Tout'||i.supplier===adminFilterSup;
-    const matchSearch=!adminSearch||i.name.toLowerCase().includes(adminSearch.toLowerCase());
-    return matchCat&&matchSup&&matchSearch;
-  });
-
-  // Trier
-  list=[...list].sort(function(a,b){
-    if(adminSort==='nom') return (a.name||'').localeCompare(b.name||'','fr');
-    if(adminSort==='cout') return (Number(a.cost||0)+Number(a.ship||0))-(Number(b.cost||0)+Number(b.ship||0));
-    if(adminSort==='cout-desc') return (Number(b.cost||0)+Number(b.ship||0))-(Number(a.cost||0)+Number(a.ship||0));
-    return Number(b.ts||0)-Number(a.ts||0); // date desc
-  });
-
-  const dups=findDuplicates(items);
-
+  const marge=items.reduce((a,i)=>a+(Number(i.sell||0)-Number(i.cost||0)-Number(i.ship||0)),0);
+  const att=items.filter(i=>!i.sell||Number(i.sell)===0).length;
   document.getElementById('view').innerHTML=`
-    <div style="text-align:right;margin-bottom:.5rem">
-      <button class="btn-xs" onclick="normalizeCats()" title="Corriger automatiquement les accents dans les catégories">✓ Normaliser les catégories</button>
-    </div>
     <div class="stat-row">
       <div class="stat"><div class="stat-l">Pièces</div><div class="stat-v">${items.length}</div></div>
-      <div class="stat"><div class="stat-l">Coût catalogue</div><div class="stat-v">${Math.round(totalCost).toLocaleString('fr-FR')} €</div></div>
+      <div class="stat"><div class="stat-l">Marge totale</div><div class="stat-v">${Math.round(marge).toLocaleString('fr-FR')} €</div></div>
+      <div class="stat"><div class="stat-l">À pricer</div><div class="stat-v">${att}</div></div>
       <div class="stat"><div class="stat-l">Catégories</div><div class="stat-v">${cats().length-1}</div></div>
-      <div class="stat"><div class="stat-l">Fournisseurs</div><div class="stat-v">${allSups.length-1}</div></div>
     </div>
-
-    ${dups.length?buildDupBlock(dups,'delItem'):''}
-
-    <div style="background:#fff;border:1px solid #e8e5e0;border-radius:2px;padding:1rem;margin-bottom:1rem">
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:.75rem">
-        <input class="s-in" style="flex:1;min-width:160px" placeholder="Rechercher une pièce..." value="${adminSearch}" oninput="adminSearch=this.value;renderAdmin()">
-        <select onchange="adminFilterCat=this.value;renderAdmin()" style="padding:7px 10px;border:1px solid #d4cfc8;border-radius:2px;font-family:inherit;font-size:12px;background:#fff;color:#1a1a1a;outline:none">
-          ${allCats.map(function(c){return '<option value="'+c+'"'+(adminFilterCat===c?' selected':'')+'>'+c+'</option>';}).join('')}
-        </select>
-        <select onchange="adminFilterSup=this.value;renderAdmin()" style="padding:7px 10px;border:1px solid #d4cfc8;border-radius:2px;font-family:inherit;font-size:12px;background:#fff;color:#1a1a1a;outline:none;max-width:180px">
-          ${allSups.map(function(s){return '<option value="'+s+'"'+(adminFilterSup===s?' selected':'')+'>'+s+'</option>';}).join('')}
-        </select>
-        <select onchange="adminSort=this.value;renderAdmin()" style="padding:7px 10px;border:1px solid #d4cfc8;border-radius:2px;font-family:inherit;font-size:12px;background:#fff;color:#1a1a1a;outline:none">
-          <option value="date" ${adminSort==='date'?'selected':''}>Plus récent</option>
-          <option value="nom" ${adminSort==='nom'?'selected':''}>Nom A→Z</option>
-          <option value="cout" ${adminSort==='cout'?'selected':''}>Coût ↑</option>
-          <option value="cout-desc" ${adminSort==='cout-desc'?'selected':''}>Coût ↓</option>
-        </select>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:.875rem">
+      <div style="display:flex;align-items:center;gap:8px">
+        <button class="btn-xs" onclick="admToggleAll()">${adminSelected.size===items.length&&items.length>0?'Tout décocher':'Tout cocher'}</button>
+        ${adminSelected.size>0?`<span style="font-size:11px;color:#999;letter-spacing:.04em">${adminSelected.size} sélectionnée${adminSelected.size>1?'s':''}</span>`:''}
       </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
-        <div style="display:flex;align-items:center;gap:8px">
-          <button class="btn-xs" onclick="admToggleAll()">${adminSelected.size===list.length&&list.length>0?'Tout décocher':'Tout cocher'}</button>
-          ${adminSelected.size>0?`<span style="font-size:11px;color:#999">${adminSelected.size} sélectionnée${adminSelected.size>1?'s':''}</span>`:''}
-          <span style="font-size:11px;color:#bbb">${list.length} pièce${list.length>1?'s':''} affichée${list.length>1?'s':''}</span>
-        </div>
-        ${adminSelected.size>0?`<button class="btn-xs del" onclick="delSelected()">Supprimer (${adminSelected.size})</button>`:''}
-      </div>
+      ${adminSelected.size>0?`<button class="btn-xs del" onclick="delSelected()">Supprimer la sélection (${adminSelected.size})</button>`:''}
     </div>
-
+    ${(function(){
+      var dups=findDuplicates(items);
+      return dups.length?buildDupBlock(dups,'delItem'):'';
+    })()}
     <div id="adm-list">
-      ${list.length?list.map(admCard).join(''):`<div class="alert alert-info">Aucune pièce ne correspond aux filtres.</div>`}
+      ${items.length?items.map(admCard).join(''):`<div class="alert alert-info">Aucune pièce — utilisez le Scanner pour importer votre catalogue.</div>`}
     </div>`;
 }
 
 function admToggleAll(){
-  // Sélectionner seulement les items visibles (filtrés)
-  const visible=items.filter(function(i){
-    const matchCat=adminFilterCat==='Tout'||i.cat===adminFilterCat;
-    const matchSup=adminFilterSup==='Tout'||i.supplier===adminFilterSup;
-    const matchSearch=!adminSearch||i.name.toLowerCase().includes(adminSearch.toLowerCase());
-    return matchCat&&matchSup&&matchSearch;
-  });
-  const allSelected=visible.every(function(i){return adminSelected.has(i.id);});
-  if(allSelected) visible.forEach(function(i){adminSelected.delete(i.id);});
-  else visible.forEach(function(i){adminSelected.add(i.id);});
+  if(adminSelected.size===items.length) adminSelected.clear();
+  else items.forEach(i=>adminSelected.add(i.id));
   renderAdmin();
 }
 
@@ -1272,91 +1120,74 @@ function admCard(i){
 
 function openEdit(id){
   const i=items.find(x=>x.id===id); if(!i) return;
-  // Fusionner catégories existantes + standards, dédupliquées et triées
-  const stdCats=['Boîtier','Cadran','Lunette','Bracelet','Aiguilles','Verre','Couronne','Mouvement','Rotor','Insert lunette','Fond','Anneau','Joint','Axe','Barre ressort','Autre'];
-  const existCats=items.map(function(i){return i.cat;}).filter(Boolean);
-  const allCats=[...new Set([...stdCats,...existCats])].sort();
-  const catOpts=allCats.map(c=>`<option value="${c}"${i.cat===c?' selected':''}>${c}</option>`).join('');
-  const imgPreview=i.img?`<img src="${i.img}" class="drop-preview" alt="" id="edit-preview-img">`:'<div class="drop-zone-icon">↑</div>';
-  const imgUrl=i.img&&!i.img.startsWith('data:')?i.img:'';
-  const view=document.getElementById('view'); if(!view) return;
-  view.innerHTML=`
-    <button id="btn-back-edit" class="btn-back-nav" style="display:flex;align-items:center;gap:6px;background:transparent;border:none;cursor:pointer;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#888;font-family:inherit;padding:.5rem 0;margin-bottom:1.25rem">
-      <span style="font-size:16px">←</span> Retour à la gestion
-    </button>
-    <div class="section">
-      <div class="sec-title">Modifier la pièce</div>
-      <div class="field"><label>Titre</label>
+  const wrap=document.createElement('div');
+  wrap.id='edit-modal'; wrap.className='modal-wrap';
+  wrap.onclick=e=>{ if(e.target===wrap) closeEdit(); };
+  wrap.innerHTML=`<div class="modal-box">
+    <div class="modal-body">
+      <div class="modal-cat" style="margin-bottom:.875rem">Modifier la pièce</div>
+
+      <div class="field">
+        <label>Titre</label>
         <input type="text" id="edit-title" value="${(i.name||'').replace(/"/g,'&quot;')}">
       </div>
-      <div class="field"><label>Catégorie</label>
-        <select id="edit-cat">${catOpts}</select>
+
+      <div class="field">
+        <label>Catégorie</label>
+        <select id="edit-cat">
+          ${['Boîtier','Cadran','Lunette','Bracelet','Aiguilles','Verre','Couronne','Mouvement','Rotor','Insert lunette','Fond','Anneau','Joint','Axe','Barre ressort','Autre'].map(c=>'<option value="'+c+'"'+(i.cat===c?' selected':'')+'>'+c+'</option>').join('')}
+        </select>
       </div>
-      <div class="field" style="margin-bottom:.5rem"><label>Image</label></div>
+
+      <div class="field" style="margin-bottom:.5rem">
+        <label>Image</label>
+      </div>
+
       <div class="drop-zone" id="drop-zone">
-        <input type="file" id="edit-file" accept="image/*">
-        <div id="drop-content">${imgPreview}
-          <div class="drop-zone-text">${i.img?'Changer l image':'Glisser une image ici'}</div>
-          <div class="drop-zone-hint">ou cliquer pour choisir</div>
+        <input type="file" id="edit-file" accept="image/*" onchange="handleEditFile(this)">
+        <div id="drop-content">
+          ${i.img
+            ? `<img src="${i.img}" class="drop-preview" onerror="this.style.display='none'" alt="">`
+            : `<div class="drop-zone-icon">↑</div>`
+          }
+          <div class="drop-zone-text">${i.img?'Changer l\'image':'Glisser une image ici'}</div>
+          <div class="drop-zone-hint">ou cliquer pour choisir un fichier</div>
         </div>
       </div>
-      <div class="field" style="margin-bottom:.5rem"><label>URL image</label>
-        <input type="text" id="edit-img-url" value="${imgUrl}" placeholder="https://...">
+
+      <div class="field" style="margin-bottom:.5rem">
+        <label>— ou coller une URL d'image</label>
+        <input type="text" id="edit-img-url" value="${i.img&&!i.img.startsWith('data:')?i.img:''}" placeholder="https://..." oninput="handleEditUrl(this.value)">
       </div>
-      <div class="field"><label>Description client</label>
-        <textarea id="edit-desc" rows="4" style="resize:vertical;font-size:13px;padding:8px 11px;border:1px solid #d8d4ce;border-radius:2px;background:#fff;color:#1a1a1a;outline:none;width:100%">${i.description||''}</textarea>
+
+      <div class="field">
+        <label>Description client</label>
+        <textarea id="edit-desc" rows="3" style="resize:vertical;font-size:13px;padding:8px 11px;border:1px solid #d8d4ce;border-radius:2px;background:#fff;color:#1a1a1a;outline:none;width:100%">${i.description||''}</textarea>
       </div>
-      <div style="display:flex;gap:8px;margin-top:.5rem">
-        <button id="btn-regen-edit" class="btn btn-s" style="flex:1">↻ Régénérer</button>
-        <button id="btn-save-edit" class="btn btn-p" style="flex:1">Enregistrer</button>
+
+      <div style="display:flex;gap:8px;margin-top:.25rem">
+        <button class="btn btn-s" style="flex:1" onclick="regenDesc('${id}')">↻ Régénérer</button>
+        <button class="btn btn-p" style="flex:1" onclick="saveEdit('${id}')">Enregistrer</button>
       </div>
-      <button id="btn-cancel-edit" class="btn btn-s" style="width:100%;margin-top:.625rem">Annuler</button>
-    </div>`;
-  // Event listeners sur les boutons (pas d'onclick inline)
-  // Stocker l'id courant pour la délégation
-  window._editId = id;
-  document.getElementById('edit-file').onchange=function(){ handleEditFile(this); };
-  document.getElementById('edit-img-url').oninput=function(){ handleEditUrl(this.value); };
+      <button class="modal-close" style="margin-top:.625rem" onclick="closeEdit()">Annuler</button>
+    </div>
+  </div>`;
+
+  var appEl2=document.getElementById('app'); if(appEl2) appEl2.appendChild(wrap); else document.body.appendChild(wrap);
+  appEl2.scrollIntoView({behavior:'smooth',block:'start'});
+
   // Drag & drop
-  const zone=document.getElementById('drop-zone');
-  zone.addEventListener('dragover',function(e){e.preventDefault();zone.classList.add('drag-over');});
-  zone.addEventListener('dragleave',function(){zone.classList.remove('drag-over');});
-  zone.addEventListener('drop',function(e){e.preventDefault();zone.classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/'))processEditFile(f);});
-  // Scroll en haut
-  window.scrollTo({top:0,behavior:'instant'});
-  window.parent.postMessage({type:'mwa-scroll-top'},'*');
-  setTimeout(function(){const t=document.getElementById('edit-title');if(t)t.focus();},80);
+  const zone = wrap.querySelector('#drop-zone');
+  zone.addEventListener('dragover', e=>{ e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', ()=>zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e=>{
+    e.preventDefault(); zone.classList.remove('drag-over');
+    const file=e.dataTransfer.files[0];
+    if(file&&file.type.startsWith('image/')) processEditFile(file);
+  });
+
+  setTimeout(()=>{ const t=document.getElementById('edit-title'); if(t) t.focus(); },80);
 }
-
-
-function closeEdit(){
-  renderAdmin();
-  window.scrollTo({top:0,behavior:'instant'});
-  window.parent.postMessage({type:'mwa-scroll-top'},'*');
-}
-
-async function regenDesc(id){
-  const i=items.find(x=>x.id===id); if(!i) return;
-  const btn=document.querySelector('.btn-s');
-  if(btn){btn.textContent='…';btn.disabled=true;}
-  const result=await generateDesc(i.name,'',i.cat);
-  const ta=document.getElementById('edit-desc');
-  if(ta&&result.desc) ta.value=result.desc;
-  if(btn){btn.textContent='↻ Régénérer';btn.disabled=false;}
-}
-
-async function saveEdit(id){
-  const name=(document.getElementById('edit-title')||{}).value?.trim()||'';
-  const cat=(document.getElementById('edit-cat')||{}).value||'';
-  const urlVal=(document.getElementById('edit-img-url')||{}).value?.trim()||'';
-  const fileData=(document.getElementById('edit-img-data')||{}).value||'';
-  const img=fileData||urlVal||items.find(x=>x.id===id)?.img||'';
-  const description=(document.getElementById('edit-desc')||{}).value?.trim()||'';
-  items=items.map(i=>i.id===id?{...i,name:name||i.name,img,description,cat:cat||i.cat}:i);
-  if(isConfigured()) await SB.update(id,{name:name||undefined,img,description,cat:cat||undefined});
-  closeEdit();
-}
-
 
 function handleEditFile(input){
   if(input.files[0]) processEditFile(input.files[0]);
@@ -1635,50 +1466,14 @@ function exportDevis(){
   closeDevis();
 }
 
-// Délégation globale pour tous les boutons de l'app
+// Délégation pour boutons suppression doublons
 document.addEventListener('click', function(e){
-  var t = e.target;
-  // Doublons
-  var dupBtn = t.closest('.dup-del-btn');
-  if(dupBtn){ var id=dupBtn.getAttribute('data-delid'); var fn=dupBtn.getAttribute('data-delfn'); if(fn==='delItem'&&id) delItem(id); return; }
-  // Sélections
-  var selDevis = t.closest('[data-action="devis"]');
-  if(selDevis){ openDevis(selDevis.getAttribute('data-id')); return; }
-  var selDel = t.closest('[data-action="del"]');
-  if(selDel){ deleteSel(selDel.getAttribute('data-id')); return; }
-  // Clic sur ligne doublon → ouvrir édition
-  var dupRow = t.closest('.dup-row[data-editid]');
-  if(dupRow && !t.closest('.dup-del-btn')){ openEdit(dupRow.getAttribute('data-editid')); return; }
-  // Édition pièce
-  if(t.id==='btn-back-edit'||t.id==='btn-cancel-edit'){ closeEdit(); return; }
-  if(t.id==='btn-save-edit'){ if(window._editId) saveEdit(window._editId); return; }
-  if(t.id==='btn-regen-edit'){ if(window._editId) regenDesc(window._editId); return; }
+  var btn = e.target.closest('.dup-del-btn');
+  if(!btn) return;
+  var id = btn.getAttribute('data-delid');
+  var fn = btn.getAttribute('data-delfn');
+  if(fn === 'delItem' && id) delItem(id);
 });
-
-// Normaliser les catégories au chargement (Boitier → Boîtier etc)
-async function normalizeCats(){
-  const map={'Boitier':'Boîtier','boitier':'Boîtier','boîtier':'Boîtier',
-             'Lunette':'Lunette','lunette':'Lunette',
-             'Cadran':'Cadran','cadran':'Cadran',
-             'Aiguille':'Aiguilles','aiguilles':'Aiguilles',
-             'Bracelet':'Bracelet','bracelet':'Bracelet'};
-  var changed=[];
-  for(var i=0;i<items.length;i++){
-    var correct=map[items[i].cat];
-    if(correct && correct!==items[i].cat){
-      changed.push({id:items[i].id, cat:correct});
-      items[i]={...items[i],cat:correct};
-    }
-  }
-  if(!changed.length){ alert('Aucune correction nécessaire.'); return; }
-  if(isConfigured()){
-    for(var c=0;c<changed.length;c++){
-      await SB.update(changed[c].id,{cat:changed[c].cat});
-    }
-  }
-  alert(changed.length+' pièce(s) corrigée(s) !');
-  renderAdmin();
-}
 
 init();
 
