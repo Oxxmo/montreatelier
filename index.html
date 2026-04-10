@@ -850,6 +850,11 @@ function renderScan(){
           <input type="number" id="ship-val" value="9" min="0" step="0.5">
           <span style="font-size:11px;color:#444">€</span>
         </div>
+        <div class="ship-row" style="margin-top:.5rem">
+          <label>Taux de conversion :</label>
+          <input type="number" id="conv-rate" value="1" min="0.0001" step="0.001" style="width:80px">
+          <span style="font-size:11px;color:#888">× prix → € &nbsp;<em style="color:#bbb">(1 = EUR, PHP→EUR ≈ 0.016)</em></span>
+        </div>
       `:scanMode==='screenshot'?`
         <div style="margin-bottom:.875rem">
           <div style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#555;margin-bottom:.5rem">Comment faire :</div>
@@ -914,6 +919,11 @@ function renderScan(){
           <input type="number" id="ship-val" value="9" min="0" step="0.5">
           <span style="font-size:11px;color:#444">€</span>
         </div>
+        <div class="ship-row" style="margin-top:.5rem">
+          <label>Taux de conversion :</label>
+          <input type="number" id="conv-rate" value="1" min="0.0001" step="0.001" style="width:80px">
+          <span style="font-size:11px;color:#888">× prix → € &nbsp;<em style="color:#bbb">(1 = EUR, PHP→EUR ≈ 0.016)</em></span>
+        </div>
       `}
       <div class="status" id="scan-st"></div>
     </div>
@@ -953,27 +963,12 @@ async function doScan(){
       setSt('Connexion à l\'API Shopify...','loading');
       const info=detectUrlType(url);
       if(info.type==='shopify'){
-        // Détecter la devise du shop et le taux de conversion
-        setSt('Détection de la devise...','loading');
-        const currency = await getShopCurrency(info.cleanHost);
-        let eurRate = 1;
-        if(currency !== 'EUR'){
-          setSt('Devise détectée : '+currency+' — récupération du taux de change...','loading');
-          const rate = await getEurRate(currency);
-          if(rate){ eurRate=rate; setSt('1 '+currency+' = '+rate.toFixed(4)+' € — chargement des produits...','loading'); }
-          else { setSt('Impossible de récupérer le taux '+currency+'/EUR — prix non convertis.',''); }
-        }
+        const eurRate = parseFloat(document.getElementById('conv-rate')?.value||'1')||1;
         const prods=await fetchShopify(info);
         if(!prods.length){setSt('Aucun produit trouvé dans cette collection.','err');document.getElementById('bscan').disabled=false;return;}
         rawItems=shopifyToRaw(prods, info.hostname, eurRate);
       } else if(info.type==='shopify_product'){
-        setSt('Détection de la devise...','loading');
-        const currency2 = await getShopCurrency(info.cleanHost);
-        window._eurRate = 1;
-        if(currency2 !== 'EUR'){
-          const rate2 = await getEurRate(currency2);
-          if(rate2){ window._eurRate=rate2; setSt('Devise : '+currency2+' → '+rate2.toFixed(4)+' €','loading'); }
-        }
+        window._eurRate = parseFloat(document.getElementById('conv-rate')?.value||'1')||1;
         setSt('Produit individuel détecté — récupération des variantes...','loading');
         const prods=await fetchShopifyProduct(info);
         if(!prods.length){setSt('Aucune variante trouvée.','err');document.getElementById('bscan').disabled=false;return;}
