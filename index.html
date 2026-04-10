@@ -1059,20 +1059,33 @@ async function doImport(){
   const ship=parseFloat(document.getElementById('ship-val').value)||0;
   const sel=scanRes.filter((_,i)=>scanChecked.has(i));
   if(!sel.length){setSt('Aucun produit sélectionné.','err');return;}
-  setSt('Importation...','loading');
+  setSt('Préparation de l\'importation...','loading');
   const newItems=sel.map(p=>({id:uid(),name:p.name||'Sans nom',cat:p.cat||'Autre',description:p.description||'',img:p.img||'',url:p.url||'',cost:parsePrice(p.price)||0,ship,sell:0,supplier:p.supplier||'',ts:Date.now()}));
   if(isConfigured()){
-    const ok=await SB.insert(newItems);
-    if(ok){
+    // Importer par lots de 50 pour éviter les limites Supabase
+    const BATCH=50;
+    let imported=0;
+    let hasError=false;
+    for(let i=0;i<newItems.length;i+=BATCH){
+      const batch=newItems.slice(i,i+BATCH);
+      setSt('Importation... '+imported+'/'+newItems.length+' pièces','loading');
+      const ok=await SB.insert(batch);
+      if(!ok){ hasError=true; break; }
+      imported+=batch.length;
+    }
+    if(!hasError){
       items=await SB.all();
-      setSt(`${newItems.length} pièce(s) importée(s). Définissez vos prix dans Gestion.`,'');
+      setSt(imported+' pièce(s) importée(s) avec succès.','');
       document.getElementById('scan-res').innerHTML='';
       document.getElementById('scan-url').value='';
       scanRes=[]; scanChecked.clear();
-    } else setSt('Erreur Supabase. Vérifiez votre configuration.','err');
+    } else {
+      setSt('Erreur à la pièce '+imported+'. '+imported+' pièces déjà importées.','err');
+      items=await SB.all();
+    }
   } else {
     items=[...newItems,...items];
-    setSt(`${newItems.length} pièce(s) ajoutée(s) (temporaire, Supabase non configuré).`,'');
+    setSt(newItems.length+' pièce(s) ajoutée(s) (temporaire, Supabase non configuré).','');
     document.getElementById('scan-res').innerHTML='';
     scanRes=[]; scanChecked.clear();
   }
