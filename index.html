@@ -317,14 +317,22 @@ function extractText(data) { return data?.text?.trim() || null; }
 async function generateDesc(name, rawDesc, cat) {
   try {
     const data = await callAI({
-      system: 'Renomme cette piece horlogere en francais. Reponds avec 2 lignes exactement:\nLigne 1: titre francais court et unique, 6-8 mots. Traduis TOUT en francais: couleurs (silver=argent, gold=or, black=noir, blue=bleu, red=rouge, rose gold=or rose, green=vert), styles et types. Garde les details qui different entre variantes (couleur, finition, lume). Supprime: mm, NH35, NH36, ETA, Movement, Automatic, Lume (mais garde BGW9/C3 car ce sont des types).\nLigne 2: description francaise sobre, 15-25 mots, sans prix.\nEx: "SKX Hands Silver C3 Lume" → "Aiguilles SKX argent lume C3"\nEx: "Sunburst Dial gradient red" → "Cadran sunburst rouge gradue"\nEx: "GS Style Hands Gold BGW9" → "Aiguilles style GS or BGW9"',
-      messages: [{ role:'user', content:'Piece: '+name+' | Categorie: '+cat }],
-      max_tokens: 100,
+      system: 'Tu traduis des noms de pieces horlogeres anglais en francais. REGLE ABSOLUE: reponds UNIQUEMENT en francais, jamais en anglais. Format: 2 lignes, rien dautre.\nLigne 1 (TITRE EN FRANCAIS, 5-8 mots): type de piece + style + couleur en francais. Traductions obligatoires: silver→argent, gold→or, black→noir, blue→bleu, red→rouge, white→blanc, rose gold→or rose, green→vert, bezel→lunette, dial→cadran, hands→aiguilles, case→boitier, crown→couronne, crystal→verre, bracelet→bracelet. Supprime: mm, NH35/36, ETA, Movement, Automatic.\nLigne 2 (DESCRIPTION EN FRANCAIS, 15-25 mots): description de la piece sans prix.',
+      messages: [{ role:'user', content:'Traduis en francais - Piece: '+name+' | Categorie: '+cat }],
+      max_tokens: 120,
       model: 'claude-haiku-4-5-20251001',
     });
     const txt = (extractText(data) || '').trim();
     console.log('[generateDesc] reponse:', txt.slice(0,150));
-    const lines = txt.split('\n').map(function(l){ return l.replace(/^LIGNE\d+:?\s*/i,'').trim(); }).filter(function(l){ return l.length>2; });
+    // Parser les 2 lignes en ignorant préfixes et flèches
+    const lines = txt.split('\n')
+      .map(function(l){
+        return l
+          .replace(/^(ligne|line|titre|title|desc|description|\d+)[\s.:)-]+/i,'')
+          .replace(/^[→•\-–—]+\s*/,'')
+          .trim();
+      })
+      .filter(function(l){ return l.length>3; });
     const title = lines[0] || name;
     const desc = lines[1] || '';
     return { title: title, desc: desc };
