@@ -317,7 +317,7 @@ function extractText(data) { return data?.text?.trim() || null; }
 async function generateDesc(name, rawDesc, cat) {
   try {
     const data = await callAI({
-      system: 'Tu es un assistant qui renomme des pieces horlogeres. Reponds avec exactement 2 lignes, rien dautre:\nLIGNE1: titre en francais COMPLET et UNIQUE (8 mots max): type + style/design + couleur + matiere si pertinent. GARDE tous les details distinctifs pour que deux pieces similaires aient des titres differents. Sans mm/NH35/ETA/Movement/Automatic.\nLIGNE2: description sobre en francais (15-25 mots, sans prix)\nExemples:\n"SKX Hands Silver C3 Lume" → Aiguilles SKX argent - Lume C3\n"SKX Hands Gold BGW9 Lume" → Aiguilles SKX or - Lume BGW9\n"Sunburst Dial gradient red NH35" → Cadran sunburst refraction rouge gradue\n"Sunburst Dial gradient blue NH35" → Cadran sunburst refraction bleu gradue',
+      system: 'Renomme cette piece horlogere en francais. Reponds avec 2 lignes exactement:\nLigne 1: titre francais court et unique, 6-8 mots. Traduis TOUT en francais: couleurs (silver=argent, gold=or, black=noir, blue=bleu, red=rouge, rose gold=or rose, green=vert), styles et types. Garde les details qui different entre variantes (couleur, finition, lume). Supprime: mm, NH35, NH36, ETA, Movement, Automatic, Lume (mais garde BGW9/C3 car ce sont des types).\nLigne 2: description francaise sobre, 15-25 mots, sans prix.\nEx: "SKX Hands Silver C3 Lume" → "Aiguilles SKX argent lume C3"\nEx: "Sunburst Dial gradient red" → "Cadran sunburst rouge gradue"\nEx: "GS Style Hands Gold BGW9" → "Aiguilles style GS or BGW9"',
       messages: [{ role:'user', content:'Piece: '+name+' | Categorie: '+cat }],
       max_tokens: 100,
       model: 'claude-haiku-4-5-20251001',
