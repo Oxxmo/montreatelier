@@ -317,7 +317,7 @@ function extractText(data) { return data?.text?.trim() || null; }
 async function generateDesc(name, rawDesc, cat) {
   try {
     const data = await callAI({
-      system: 'Tu es un assistant qui renomme des pieces horlogeres. Reponds avec exactement 2 lignes, rien dautre:\nLIGNE1: le titre en francais (5 mots max, type+style+couleur, sans mm/NH35/ETA/Movement/Lume/Automatic)\nLIGNE2: une description sobre en francais (15-25 mots, sans prix)\nExemple pour "Sunburst Dial Refraction 28.5mm gradient red NH35":\nCadran sunburst refraction - Rouge gradue\nCadran a finition sunburst avec effet refraction, disponible en rouge gradue, compatible mouvements NH35.',
+      system: 'Tu es un assistant qui renomme des pieces horlogeres. Reponds avec exactement 2 lignes, rien dautre:\nLIGNE1: titre en francais COMPLET et UNIQUE (8 mots max): type + style/design + couleur + matiere si pertinent. GARDE tous les details distinctifs pour que deux pieces similaires aient des titres differents. Sans mm/NH35/ETA/Movement/Automatic.\nLIGNE2: description sobre en francais (15-25 mots, sans prix)\nExemples:\n"SKX Hands Silver C3 Lume" → Aiguilles SKX argent - Lume C3\n"SKX Hands Gold BGW9 Lume" → Aiguilles SKX or - Lume BGW9\n"Sunburst Dial gradient red NH35" → Cadran sunburst refraction rouge gradue\n"Sunburst Dial gradient blue NH35" → Cadran sunburst refraction bleu gradue',
       messages: [{ role:'user', content:'Piece: '+name+' | Categorie: '+cat }],
       max_tokens: 100,
       model: 'claude-haiku-4-5-20251001',
@@ -1018,11 +1018,8 @@ function renderScanResults(){
   // Doublons avec catalogue existant
   const existDupIds=new Set();
   scanRes.forEach(function(p,i){
-    // Doublon avec catalogue : comparer par URL d'abord, puis titre exact
-    var pUrl=(p.url||'').trim().toLowerCase();
     var pName=(p.name||'').trim().toLowerCase();
     var isDup=items.some(function(ex){
-      if(pUrl && ex.url && pUrl===ex.url.trim().toLowerCase()) return true;
       return pName && ex.name && pName===ex.name.trim().toLowerCase();
     });
     if(isDup) existDupIds.add(String(i));
@@ -1106,16 +1103,15 @@ let adminSearch = '';
 
 /* ══ DOUBLONS ══ */
 function findDuplicates(list){
+  // Normalisation légère : juste minuscules + espaces multiples
+  // On garde les couleurs, matières, variantes pour éviter les faux positifs
+  function normLight(s){
+    return (s||'').toLowerCase()
+      .replace(/\s+/g,' ').trim();
+  }
   const groups={};
   list.forEach(function(item){
-    // Priorité 1 : même URL source → vrai doublon certain
-    var key = (item.url||'').trim().toLowerCase();
-    // Priorité 2 : si pas d'URL, comparer titre long (min 5 mots communs)
-    if(!key){
-      key = (item.name||'').toLowerCase()
-        .replace(/[^a-z0-9à-ÿ]/g,' ')
-        .replace(/\s+/g,' ').trim();
-    }
+    var key=normLight(item.name);
     if(!key) return;
     if(!groups[key]) groups[key]=[];
     groups[key].push(item);
