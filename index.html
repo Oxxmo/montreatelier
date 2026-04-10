@@ -1018,8 +1018,14 @@ function renderScanResults(){
   // Doublons avec catalogue existant
   const existDupIds=new Set();
   scanRes.forEach(function(p,i){
-    function norm(s){return (s||'').toLowerCase().replace(/[^a-z0-9]/g,' ').replace(/\s+/g,' ').trim();}
-    if(items.some(function(ex){return norm(ex.name)===norm(p.name);})) existDupIds.add(String(i));
+    // Doublon avec catalogue : comparer par URL d'abord, puis titre exact
+    var pUrl=(p.url||'').trim().toLowerCase();
+    var pName=(p.name||'').trim().toLowerCase();
+    var isDup=items.some(function(ex){
+      if(pUrl && ex.url && pUrl===ex.url.trim().toLowerCase()) return true;
+      return pName && ex.name && pName===ex.name.trim().toLowerCase();
+    });
+    if(isDup) existDupIds.add(String(i));
   });
   document.getElementById('scan-res').innerHTML=`
     <div class="section">
@@ -1100,16 +1106,20 @@ let adminSearch = '';
 
 /* ══ DOUBLONS ══ */
 function findDuplicates(list){
-  // Normaliser le titre : minuscules, sans ponctuation ni espaces multiples
-  function norm(s){ return (s||'').toLowerCase().replace(/[^a-z0-9à-ÿ]/g,' ').replace(/\s+/g,' ').trim(); }
   const groups={};
   list.forEach(function(item){
-    const key=norm(item.name);
+    // Priorité 1 : même URL source → vrai doublon certain
+    var key = (item.url||'').trim().toLowerCase();
+    // Priorité 2 : si pas d'URL, comparer titre long (min 5 mots communs)
+    if(!key){
+      key = (item.name||'').toLowerCase()
+        .replace(/[^a-z0-9à-ÿ]/g,' ')
+        .replace(/\s+/g,' ').trim();
+    }
     if(!key) return;
     if(!groups[key]) groups[key]=[];
     groups[key].push(item);
   });
-  // Ne garder que les groupes avec 2+ items
   return Object.values(groups).filter(function(g){return g.length>1;});
 }
 
