@@ -789,6 +789,7 @@ function openModal(id){
     item:{
       id:i.id, name:i.name, cat:i.cat||'',
       description:i.description||'', img:i.img||'',
+      url:i.url||'',
       ref:String(i.id).slice(-4).toUpperCase(),
       inBasket:basket.has(i.id)
     }
