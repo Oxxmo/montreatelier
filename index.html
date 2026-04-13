@@ -576,6 +576,13 @@ async function init(){
   isAdmin = sessionStorage.getItem('mwa_admin')==='1';
   if(isConfigured()) items = await SB.all();
   render();
+  // Détecter ?piece=ID dans l'URL pour ouvrir directement une pièce
+  var urlParams = new URLSearchParams(window.location.search);
+  var pieceId = urlParams.get('piece');
+  if(pieceId){
+    var found = items.find(function(i){ return i.id === pieceId; });
+    if(found) setTimeout(function(){ openModal(pieceId); }, 300);
+  }
 }
 
 /* ══ RENDER ══ */
