@@ -12,7 +12,6 @@ export default async function handler(req, res) {
   try {
     const { system, messages, max_tokens, useSearch, image, model } = req.body;
 
-    // Construire le contenu du dernier message user
     const lastMsg = messages?.[messages.length - 1]?.content || '';
     let userContent;
     if (image) {
@@ -24,24 +23,10 @@ export default async function handler(req, res) {
       userContent = lastMsg;
     }
 
-    // Construire les messages : passer tous les messages fournis (support prefill)
-    let apiMessages;
-    if (messages && messages.length > 1) {
-      // Multi-tours : passer les messages tels quels sauf le dernier si image
-      apiMessages = messages.map((m, i) => {
-        if (i === messages.length - 1 && image) {
-          return { role: m.role, content: userContent };
-        }
-        return { role: m.role, content: m.content };
-      });
-    } else {
-      apiMessages = [{ role: 'user', content: userContent }];
-    }
-
     const body = {
       model: model || 'claude-opus-4-5',
       max_tokens: max_tokens || 1000,
-      messages: apiMessages,
+      messages: [{ role: 'user', content: userContent }],
     };
     if (system) body.system = system;
     if (useSearch) body.tools = [{ type: 'web_search_20250305', name: 'web_search' }];
