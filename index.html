@@ -576,14 +576,19 @@ async function init(){
   isAdmin = sessionStorage.getItem('mwa_admin')==='1';
   if(isConfigured()) items = await SB.all();
   render();
-  // Détecter ?piece=ID dans l'URL pour ouvrir directement une pièce
-  var urlParams = new URLSearchParams(window.location.search);
-  var pieceId = urlParams.get('piece');
-  if(pieceId){
-    var found = items.find(function(i){ return i.id === pieceId; });
-    if(found) setTimeout(function(){ openModal(pieceId); }, 300);
-  }
+  // Signaler au parent que l'iframe est prête (avec les pièces chargées)
+  window.parent.postMessage({type:'mwa-ready'},'*');
 }
+
+// Écouter la demande d'ouverture d'une pièce depuis WordPress
+window.addEventListener('message', function(e){
+  if(!e.data) return;
+  if(e.data.type==='mwa-open-piece'){
+    var id = e.data.id;
+    var found = items.find(function(i){ return i.id===id; });
+    if(found) setTimeout(function(){ openModal(id); }, 100);
+  }
+});
 
 /* ══ RENDER ══ */
 function render(){
