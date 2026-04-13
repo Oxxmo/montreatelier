@@ -472,7 +472,7 @@ function shopifyToRaw(products, supplier) {
     rawDesc: (p.body_html||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim(),
     img: p.images?.[0]?.src || '',
     url: `https://${supplier.replace('www.','')}${p.handle?'/products/'+p.handle:''}`,
-    price: Math.round(parsePrice(p.variants?.[0]?.price||0) * eurRate * 100) / 100,
+    price: parsePrice(p.variants?.[0]?.price||0),
     supplier,
   }));
 }
