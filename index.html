@@ -316,14 +316,27 @@ function extractText(data) { return data?.text?.trim() || null; }
 async function generateDesc(name, rawDesc, cat) {
   try {
     const data = await callAI({
-      system: 'Tu es un assistant qui renomme des pieces horlogeres. Reponds avec exactement 2 lignes, rien dautre:\nLIGNE1: le titre en francais (5 mots max, type+style+couleur, sans mm/NH35/ETA/Movement/Lume/Automatic)\nLIGNE2: une description sobre en francais (15-25 mots, sans prix)\nExemple pour "Sunburst Dial Refraction 28.5mm gradient red NH35":\nCadran sunburst refraction - Rouge gradue\nCadran a finition sunburst avec effet refraction, disponible en rouge gradue, compatible mouvements NH35.',
-      messages: [{ role:'user', content:'Piece: '+name+' | Categorie: '+cat }],
-      max_tokens: 100,
+      system: 'You are a French translator. Output ONLY 2 lines, no introduction, no explanation, no markdown.\nLine 1: French title (4-6 words: part type + color/style). Translate: silver=argent, gold=or, black=noir, blue=bleu, red=rouge, white=blanc, green=vert, bezel=lunette, dial=cadran, hands=aiguilles, case=boitier, crown=couronne, crystal=verre. Remove: mm, NH35, NH36, ETA, Movement, Automatic.\nLine 2: French description (15-20 words, no price).\nExample input: SKX007 Silver Turbine Bezel\nExample output:\nLunette turbine argent SKX007\nLunette rotative style turbine en acier argente, compatible SKX007 et SRPD.',
+      messages: [{ role:'user', content:'Translate to French - Name: '+name+' - Category: '+cat }],
+      max_tokens: 80,
       model: 'claude-haiku-4-5-20251001',
     });
-    const txt = (extractText(data) || '').trim();
-    console.log('[generateDesc] reponse:', txt.slice(0,150));
-    const lines = txt.split('\n').map(function(l){ return l.replace(/^LIGNE\d+:?\s*/i,'').trim(); }).filter(function(l){ return l.length>2; });
+    const raw = (extractText(data) || '').trim();
+    console.log('[generateDesc] raw:', raw.slice(0,150));
+    const lines = raw.split('\n')
+      .map(function(l){
+        return l
+          .replace(/^[#*\-–—>]+\s*/g, '')   // enlever #, *, -, etc.
+          .replace(/\*\*/g, '')               // enlever **bold**
+          .replace(/^(ligne|line|\d+)[\s.:)]+/i, '') // enlever préfixes
+          .trim();
+      })
+      .filter(function(l){
+        // Rejeter les réponses conversationnelles
+        if(l.length < 3) return false;
+        if(/je suis|veuillez|pouvez|merci|bonjour|provide|please|give me/i.test(l)) return false;
+        return true;
+      });
     const title = lines[0] || name;
     const desc = lines[1] || '';
     return { title: title, desc: desc };
@@ -332,6 +345,7 @@ async function generateDesc(name, rawDesc, cat) {
     return { title: name, desc: '' };
   }
 }
+
 
 /* ══ DETECT SITE TYPE ══ */
 function detectUrlType(url) {
