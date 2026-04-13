@@ -315,31 +315,61 @@ function extractText(data) { return data?.text?.trim() || null; }
 /* ══ DESCRIPTION + TITRE IA ══ */
 async function generateDesc(name, rawDesc, cat) {
   try {
-    const data = await callAI({
-      system: 'You are a French translator. Output ONLY 2 lines, no introduction, no explanation, no markdown.\nLine 1: French title (4-6 words: part type + color/style). Translate: silver=argent, gold=or, black=noir, blue=bleu, red=rouge, white=blanc, green=vert, bezel=lunette, dial=cadran, hands=aiguilles, case=boitier, crown=couronne, crystal=verre. Remove: mm, NH35, NH36, ETA, Movement, Automatic.\nLine 2: French description (15-20 words, no price).\nExample input: SKX007 Silver Turbine Bezel\nExample output:\nLunette turbine argent SKX007\nLunette rotative style turbine en acier argente, compatible SKX007 et SRPD.',
-      messages: [{ role:'user', content:'Translate to French - Name: '+name+' - Category: '+cat }],
-      max_tokens: 80,
+    // Approche few-shot : exemples input→output dans le message
+    // Le modèle complète le pattern, sans ambiguïté
+    var fewShot = [
+      'Rename watch parts from English to French. Respond with exactly 2 lines.',
+      '',
+      'Input: SKX007 Silver Turbine Bezel',
+      'Output:',
+      'Lunette turbine argent SKX007',
+      'Lunette rotative style turbine en acier argente, compatible SKX007 et SRPD.',
+      '',
+      'Input: Sunburst Blue Dial NH35',
+      'Output:',
+      'Cadran sunburst bleu',
+      'Cadran a finition soleil en bleu profond, compatible mouvement NH35.',
+      '',
+      'Input: GS Style Hands Gold BGW9',
+      'Output:',
+      'Aiguilles style GS or BGW9',
+      'Jeu d\'aiguilles style Grand Seiko dorees avec luminova BGW9 haute visibilite.',
+      '',
+      'Input: SKX007 Black Turtle Dive Case',
+      'Output:',
+      'Boitier plongee tortue noir SKX',
+      'Boitier style tortue en acier noir, finition satinee, compatible SKX007.',
+      '',
+      'Input: ' + name,
+      'Output:',
+    ].join('\n');
+
+    var data = await callAI({
+      messages: [{ role:'user', content: fewShot }],
+      max_tokens: 60,
       model: 'claude-haiku-4-5-20251001',
     });
-    const raw = (extractText(data) || '').trim();
-    console.log('[generateDesc] raw:', raw.slice(0,150));
-    const lines = raw.split('\n')
+    var raw = (extractText(data) || '').trim();
+    console.log('[generateDesc] raw:', raw.slice(0,120));
+
+    var lines = raw.split('\n')
       .map(function(l){
         return l
-          .replace(/^[#*\-–—>]+\s*/g, '')   // enlever #, *, -, etc.
-          .replace(/\*\*/g, '')               // enlever **bold**
-          .replace(/^(ligne|line|\d+)[\s.:)]+/i, '') // enlever préfixes
+          .replace(/^[#*\-–—>|]+\s*/g, '')
+          .replace(/\*\*/g, '')
+          .replace(/^(input|output|ligne|line|\d+)[\s.:)]+/i, '')
           .trim();
       })
       .filter(function(l){
-        // Rejeter les réponses conversationnelles
         if(l.length < 3) return false;
-        if(/je suis|veuillez|pouvez|merci|bonjour|provide|please|give me/i.test(l)) return false;
+        if(/^(je suis|bonjour|voici|bien sur|veuillez|here|i am|i will|i can|sure|of course)/i.test(l)) return false;
         return true;
       });
-    const title = lines[0] || name;
-    const desc = lines[1] || '';
+
+    var title = lines[0] || name;
+    var desc  = lines[1] || '';
     return { title: title, desc: desc };
+
   } catch(err) {
     console.error('[generateDesc] erreur:', err.message);
     return { title: name, desc: '' };
