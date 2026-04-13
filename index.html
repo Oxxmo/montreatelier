@@ -316,21 +316,14 @@ function extractText(data) { return data?.text?.trim() || null; }
 async function generateDesc(name, rawDesc, cat) {
   try {
     const data = await callAI({
-      system: 'Tu renommes des pieces horlogeres en francais. Format strict: 2 lignes seulement.\nLigne 1: titre francais (4-6 mots, type+couleur+style)\nLigne 2: description francaise (15-20 mots)',
-      messages: [
-        { role: 'user', content: 'Renomme en francais: '+name+' (categorie: '+cat+')' },
-        { role: 'assistant', content: 'Ligne 1:' }
-      ],
-      max_tokens: 80,
+      system: 'Tu es un assistant qui renomme des pieces horlogeres. Reponds avec exactement 2 lignes, rien dautre:\nLIGNE1: le titre en francais (5 mots max, type+style+couleur, sans mm/NH35/ETA/Movement/Lume/Automatic)\nLIGNE2: une description sobre en francais (15-25 mots, sans prix)\nExemple pour "Sunburst Dial Refraction 28.5mm gradient red NH35":\nCadran sunburst refraction - Rouge gradue\nCadran a finition sunburst avec effet refraction, disponible en rouge gradue, compatible mouvements NH35.',
+      messages: [{ role:'user', content:'Piece: '+name+' | Categorie: '+cat }],
+      max_tokens: 100,
       model: 'claude-haiku-4-5-20251001',
     });
-    const txt = ('Ligne 1:' + (extractText(data) || '')).trim();
-    console.log('[generateDesc] raw:', txt.slice(0,120));
-    const lines = txt.split('\n')
-      .map(function(l){
-        return l.replace(/^ligne\s*\d*\s*[:.-]?\s*/i,'').trim();
-      })
-      .filter(function(l){ return l.length>3; });
+    const txt = (extractText(data) || '').trim();
+    console.log('[generateDesc] reponse:', txt.slice(0,150));
+    const lines = txt.split('\n').map(function(l){ return l.replace(/^LIGNE\d+:?\s*/i,'').trim(); }).filter(function(l){ return l.length>2; });
     const title = lines[0] || name;
     const desc = lines[1] || '';
     return { title: title, desc: desc };
@@ -339,7 +332,6 @@ async function generateDesc(name, rawDesc, cat) {
     return { title: name, desc: '' };
   }
 }
-
 
 /* ══ DETECT SITE TYPE ══ */
 function detectUrlType(url) {
@@ -783,7 +775,7 @@ function renderScan(){
         <div class="ship-row" style="margin-top:.5rem">
           <label>Taux de conversion :</label>
           <input type="number" id="conv-rate" value="1" min="0.0001" step="0.001" style="width:80px">
-          <span style="font-size:11px;color:#888">× prix → € <em style="color:#bbb">(1=EUR, PHP≈0.016, USD≈0.92)</em></span>
+          <span style="font-size:11px;color:#888">× prix → € <em style="color:#bbb">(1=EUR, PHP≈0.016)</em></span>
         </div>
       `:scanMode==='screenshot'?`
         <div style="margin-bottom:.875rem">
@@ -852,7 +844,7 @@ function renderScan(){
         <div class="ship-row" style="margin-top:.5rem">
           <label>Taux de conversion :</label>
           <input type="number" id="conv-rate" value="1" min="0.0001" step="0.001" style="width:80px">
-          <span style="font-size:11px;color:#888">× prix → € <em style="color:#bbb">(1=EUR, PHP≈0.016, USD≈0.92)</em></span>
+          <span style="font-size:11px;color:#888">× prix → € <em style="color:#bbb">(1=EUR, PHP≈0.016)</em></span>
         </div>
       `}
       <div class="status" id="scan-st"></div>
