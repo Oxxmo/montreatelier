@@ -465,8 +465,7 @@ function parsePrice(val){
   return Math.round(n*100)/100;
 }
 
-function shopifyToRaw(products, supplier, eurRate) {
-  eurRate = eurRate || 1;
+function shopifyToRaw(products, supplier) {
   return products.map(p => ({
     name: p.title,
     cat: detectCat(p.title),
@@ -863,11 +862,7 @@ function renderScan(){
           <input type="number" id="ship-val" value="9" min="0" step="0.5">
           <span style="font-size:11px;color:#444">€</span>
         </div>
-        <div class="ship-row" style="margin-top:.5rem">
-          <label>Taux de conversion :</label>
-          <input type="number" id="conv-rate" value="1" min="0.0001" step="0.001" style="width:80px">
-          <span style="font-size:11px;color:#888">× prix → € &nbsp;<em style="color:#bbb">(1 = EUR, PHP→EUR ≈ 0.016)</em></span>
-        </div>
+        
       `:scanMode==='screenshot'?`
         <div style="margin-bottom:.875rem">
           <div style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#555;margin-bottom:.5rem">Comment faire :</div>
@@ -932,11 +927,7 @@ function renderScan(){
           <input type="number" id="ship-val" value="9" min="0" step="0.5">
           <span style="font-size:11px;color:#444">€</span>
         </div>
-        <div class="ship-row" style="margin-top:.5rem">
-          <label>Taux de conversion :</label>
-          <input type="number" id="conv-rate" value="1" min="0.0001" step="0.001" style="width:80px">
-          <span style="font-size:11px;color:#888">× prix → € &nbsp;<em style="color:#bbb">(1 = EUR, PHP→EUR ≈ 0.016)</em></span>
-        </div>
+        
       `}
       <div class="status" id="scan-st"></div>
     </div>
@@ -976,12 +967,10 @@ async function doScan(){
       setSt('Connexion à l\'API Shopify...','loading');
       const info=detectUrlType(url);
       if(info.type==='shopify'){
-        const eurRate = parseFloat(document.getElementById('conv-rate')?.value||'1')||1;
         const prods=await fetchShopify(info);
         if(!prods.length){setSt('Aucun produit trouvé dans cette collection.','err');document.getElementById('bscan').disabled=false;return;}
-        rawItems=shopifyToRaw(prods, info.hostname, eurRate);
+        rawItems=shopifyToRaw(prods, info.hostname);
       } else if(info.type==='shopify_product'){
-        window._eurRate = parseFloat(document.getElementById('conv-rate')?.value||'1')||1;
         setSt('Produit individuel détecté — récupération des variantes...','loading');
         const prods=await fetchShopifyProduct(info);
         if(!prods.length){setSt('Aucune variante trouvée.','err');document.getElementById('bscan').disabled=false;return;}
@@ -1248,6 +1237,14 @@ function admCard(i){
         <span class="badge b-cost">Achat ${Number(i.cost||0).toLocaleString('fr-FR')} €</span>
         <span class="badge b-ship">Port ${Number(i.ship||0).toLocaleString('fr-FR')} €</span>
         ${tc>0?`<span class="badge b-total">Coût ${tc.toLocaleString('fr-FR')} €</span>`:''}
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:6px">
+        <label style="font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#aaa;white-space:nowrap">Prix achat :</label>
+        <input type="number" value="${Number(i.cost||0)}" min="0" step="0.5" data-priceid="${i.id}" class="price-inp" style="width:70px;padding:4px 7px;border:1px solid #d4cfc8;border-radius:2px;font-size:12px;font-family:inherit;outline:none" title="Modifier le prix d achat">
+        <span style="font-size:11px;color:#aaa">€</span>
+        <label style="font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#aaa;white-space:nowrap;margin-left:4px">Port :</label>
+        <input type="number" value="${Number(i.ship||0)}" min="0" step="0.5" data-shipid="${i.id}" class="ship-inp" style="width:55px;padding:4px 7px;border:1px solid #d4cfc8;border-radius:2px;font-size:12px;font-family:inherit;outline:none" title="Modifier les frais de port">
+        <span style="font-size:11px;color:#aaa">€</span>
       </div>
     </div>
     <div class="adm-acts">
@@ -1620,6 +1617,46 @@ function exportDevis(){
   if(w){w.document.write(html);w.document.close();}
   closeDevis();
 }
+
+// Sauvegarder le prix achat inline
+document.addEventListener('change', function(e){
+  var t = e.target;
+  if(t.classList.contains('price-inp')){
+    var id = t.getAttribute('data-priceid');
+    var val = parseFloat(t.value)||0;
+    items = items.map(function(i){ return i.id===id ? Object.assign({},i,{cost:val}) : i; });
+    if(isConfigured()) SB.update(id, {cost:val});
+    // Recalculer l'affichage du badge coût
+    var card = document.getElementById('adm-'+id);
+    if(card){
+      var shipInp = card.querySelector('.ship-inp');
+      var ship = shipInp ? parseFloat(shipInp.value)||0 : 0;
+      var tc = val + ship;
+      var badge = card.querySelector('.b-cost');
+      if(badge) badge.textContent = 'Achat '+val.toLocaleString('fr-FR')+' €';
+      var total = card.querySelector('.b-total');
+      if(total) total.textContent = 'Coût '+tc.toLocaleString('fr-FR')+' €';
+    }
+    return;
+  }
+  if(t.classList.contains('ship-inp')){
+    var id2 = t.getAttribute('data-shipid');
+    var val2 = parseFloat(t.value)||0;
+    items = items.map(function(i){ return i.id===id2 ? Object.assign({},i,{ship:val2}) : i; });
+    if(isConfigured()) SB.update(id2, {ship:val2});
+    var card2 = document.getElementById('adm-'+id2);
+    if(card2){
+      var priceInp = card2.querySelector('.price-inp');
+      var cost = priceInp ? parseFloat(priceInp.value)||0 : 0;
+      var tc2 = cost + val2;
+      var badge2 = card2.querySelector('.b-ship');
+      if(badge2) badge2.textContent = 'Port '+val2.toLocaleString('fr-FR')+' €';
+      var total2 = card2.querySelector('.b-total');
+      if(total2) total2.textContent = 'Coût '+tc2.toLocaleString('fr-FR')+' €';
+    }
+    return;
+  }
+});
 
 // Délégation globale pour tous les boutons de l'app
 document.addEventListener('click', function(e){
