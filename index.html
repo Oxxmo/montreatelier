@@ -1460,17 +1460,9 @@ async function renderSelections(){
         +'</div></div>'
         +'<div class="sel-card-grid">'
         +snap.map(function(p){
-          var itemUrl = p.url||'';
-          var itemWrap = itemUrl ? '<a href="'+itemUrl+'" target="_blank" rel="noopener" title="Voir chez le fournisseur" style="text-decoration:none;color:inherit;display:block">' : '<div>';
-          var itemClose = itemUrl ? '</a>' : '</div>';
-          return itemWrap
-            +'<div class="sel-card-item"'+(itemUrl?' style="cursor:pointer;transition:.15s" onmouseover="this.style.opacity=\'0.75\'" onmouseout="this.style.opacity=\'1\'"':'')+'>'
-            +'<div class="sel-card-img">'+(p.img?'<img src="'+p.img+'" alt="">':'')+'</div>'
-            +'<div class="sel-card-pname">'+p.name+'</div>'
-            +'<div class="sel-card-pcat">'+p.cat+'</div>'
-            +(Number(p.cost||0)+Number(p.ship||0)>0?'<div style="font-size:9px;color:#bbb;margin-top:2px">'+(Number(p.cost||0)+Number(p.ship||0)).toFixed(2)+' €</div>':'')
-            +(itemUrl?'<div style="font-size:9px;color:#c9a96e;margin-top:3px;letter-spacing:.04em">Voir ↗</div>':'')
-            +'</div>'+itemClose;
+          var pUrl = p.url||'';
+          var pCost = Number(p.cost||0)+Number(p.ship||0);
+          return '<div class="sel-card-item"'+(pUrl?' data-href="'+pUrl+'" style="cursor:pointer"':'')+'>'            +'<div class="sel-card-img">'+(p.img?'<img src="'+p.img+'" alt="">':'')+'</div>'            +'<div class="sel-card-pname">'+p.name+'</div>'            +'<div class="sel-card-pcat">'+p.cat+'</div>'            +(pCost>0?'<div style="font-size:9px;color:#bbb;margin-top:2px">'+pCost.toFixed(2)+' €</div>':'')            +(pUrl?'<div style="font-size:9px;color:#c9a96e;margin-top:3px;letter-spacing:.04em">voir ↗</div>':'')            +'</div>';
         }).join('')
         +'</div></div>';
     }).join('')
@@ -1663,25 +1655,31 @@ document.addEventListener('change', function(e){
   }
 });
 
-// Délégation globale pour tous les boutons de l'app
+// // Délégation globale click (doublons, sélections)
 document.addEventListener('click', function(e){
   var t = e.target;
-  // Doublons
   var dupBtn = t.closest('.dup-del-btn');
   if(dupBtn){ var id=dupBtn.getAttribute('data-delid'); var fn=dupBtn.getAttribute('data-delfn'); if(fn==='delItem'&&id) delItem(id); return; }
-  // Sélections
   var selDevis = t.closest('[data-action="devis"]');
   if(selDevis){ openDevis(selDevis.getAttribute('data-id')); return; }
   var selDel = t.closest('[data-action="del"]');
   if(selDel){ deleteSel(selDel.getAttribute('data-id')); return; }
-  // Clic sur ligne doublon → ouvrir édition
   var dupRow = t.closest('.dup-row[data-editid]');
   if(dupRow && !t.closest('.dup-del-btn')){ openEdit(dupRow.getAttribute('data-editid')); return; }
-  // Édition pièce
-  if(t.id==='btn-back-edit'||t.id==='btn-cancel-edit'){ closeEdit(); return; }
   if(t.id==='btn-save-edit'){ if(window._editId) saveEdit(window._editId); return; }
   if(t.id==='btn-regen-edit'){ if(window._editId) regenDesc(window._editId); return; }
 });
+
+// mousedown en phase capture pour Annuler/Retour
+// Brooklyn intercepte click mais pas mousedown en capture
+document.addEventListener('mousedown', function(e){
+  var t = e.target;
+  if(t.id==='btn-back-edit' || t.id==='btn-cancel-edit'){
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    closeEdit();
+  }
+}, true);
 
 // Normaliser les catégories au chargement (Boitier → Boîtier etc)
 async function normalizeCats(){
