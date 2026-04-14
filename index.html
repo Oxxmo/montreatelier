@@ -1318,15 +1318,6 @@ function closeEdit(){
   window.parent.postMessage({type:'mwa-scroll-top'},'*');
 }
 
-async function regenDesc(id){
-  const i=items.find(x=>x.id===id); if(!i) return;
-  const btn=document.querySelector('.btn-s');
-  if(btn){btn.textContent='…';btn.disabled=true;}
-  const result=await generateDesc(i.name,'',i.cat);
-  const ta=document.getElementById('edit-desc');
-  if(ta&&result.desc) ta.value=result.desc;
-  if(btn){btn.textContent='↻ Régénérer';btn.disabled=false;}
-}
 
 async function saveEdit(id){
   const name=(document.getElementById('edit-title')||{}).value?.trim()||'';
@@ -1388,12 +1379,26 @@ function closeEdit(){ const w=document.getElementById('edit-modal'); if(w) w.rem
 
 async function regenDesc(id){
   const i=items.find(x=>x.id===id); if(!i) return;
-  const btn=document.querySelector('#edit-modal .btn-s');
-  if(btn){btn.textContent='…';btn.disabled=true;}
-  const result=await generateDesc(i.name,'',i.cat);
-  const ta=document.getElementById('edit-desc');
-  if(ta&&result.desc) ta.value=result.desc;
-  if(btn){btn.textContent='↻ Régénérer';btn.disabled=false;}
+  const btn=document.getElementById('btn-regen-edit');
+  if(!btn) return;
+  btn.disabled=true;
+  btn.style.color='#c9a96e';
+  btn.style.borderColor='#c9a96e';
+  var dots=0;
+  var timer=setInterval(function(){ dots=(dots+1)%4; btn.textContent='Génération'+'.'.repeat(dots); },400);
+  try {
+    const result=await generateDesc(i.name,'',i.cat);
+    clearInterval(timer);
+    const ta=document.getElementById('edit-desc');
+    if(ta&&result.desc) ta.value=result.desc;
+    btn.textContent='✓ Généré !';
+    btn.style.color='#166534'; btn.style.borderColor='#86efac';
+    setTimeout(function(){ btn.textContent='↻ Reg'; btn.style.color=''; btn.style.borderColor=''; btn.disabled=false; },2000);
+  } catch(err) {
+    clearInterval(timer);
+    btn.textContent='Erreur'; btn.style.color='#c0392b';
+    setTimeout(function(){ btn.textContent='↻ Reg'; btn.style.color=''; btn.style.borderColor=''; btn.disabled=false; },2000);
+  }
 }
 
 async function saveEdit(id){
@@ -1675,6 +1680,15 @@ document.addEventListener('click', function(e){
   var selItem = t.closest('[data-href]');
   if(selItem){ var href=selItem.getAttribute('data-href'); if(href) window.open(href,'_blank','noopener'); return; }
 });
+
+// Capture phase pour Annuler/Retour (s'exécute avant tout handler Brooklyn)
+document.addEventListener('click', function(e){
+  var t = e.target;
+  if(t.closest('#btn-back-edit') || t.closest('#btn-cancel-edit')){
+    e.stopPropagation();
+    closeEdit();
+  }
+}, true);
 
 // Normaliser les catégories au chargement (Boitier → Boîtier etc)
 async function normalizeCats(){
