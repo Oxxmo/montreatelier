@@ -778,7 +778,7 @@ async function saveClientSel(){
     id:uid(),
     client_name:name,
     item_ids:JSON.stringify([...basket]),
-    items_snapshot:JSON.stringify(sel.map(i=>({id:i.id,name:i.name,cat:i.cat,img:i.img,description:i.description,cost:Number(i.cost||0),ship:Number(i.ship||0)}))),
+    items_snapshot:JSON.stringify(sel.map(i=>({id:i.id,name:i.name,cat:i.cat,img:i.img,description:i.description,cost:Number(i.cost||0),ship:Number(i.ship||0),url:i.url||''}))),  
     created_at:new Date().toISOString(),
   };
   let ok=false;
@@ -1460,12 +1460,17 @@ async function renderSelections(){
         +'</div></div>'
         +'<div class="sel-card-grid">'
         +snap.map(function(p){
-          return '<div class="sel-card-item">'
+          var itemUrl = p.url||'';
+          var itemWrap = itemUrl ? '<a href="'+itemUrl+'" target="_blank" rel="noopener" title="Voir chez le fournisseur" style="text-decoration:none;color:inherit;display:block">' : '<div>';
+          var itemClose = itemUrl ? '</a>' : '</div>';
+          return itemWrap
+            +'<div class="sel-card-item"'+(itemUrl?' style="cursor:pointer;transition:.15s" onmouseover="this.style.opacity=\'0.75\'" onmouseout="this.style.opacity=\'1\'"':'')+'>'
             +'<div class="sel-card-img">'+(p.img?'<img src="'+p.img+'" alt="">':'')+'</div>'
             +'<div class="sel-card-pname">'+p.name+'</div>'
             +'<div class="sel-card-pcat">'+p.cat+'</div>'
             +(Number(p.cost||0)+Number(p.ship||0)>0?'<div style="font-size:9px;color:#bbb;margin-top:2px">'+(Number(p.cost||0)+Number(p.ship||0)).toFixed(2)+' €</div>':'')
-            +'</div>';
+            +(itemUrl?'<div style="font-size:9px;color:#c9a96e;margin-top:3px;letter-spacing:.04em">Voir ↗</div>':'')
+            +'</div>'+itemClose;
         }).join('')
         +'</div></div>';
     }).join('')
