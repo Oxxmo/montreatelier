@@ -1520,6 +1520,7 @@ async function renderSelections(){
   _selCache={};
   sels.forEach(function(s){
     var snap=JSON.parse(s.items_snapshot||'[]');
+    console.log('[renderSelections] sel', s.client_name, 'snap:', snap);
     _selCache[s.id]={clientName:s.client_name, items:snap};
   });
   document.getElementById('view').innerHTML=
