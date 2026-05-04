@@ -752,6 +752,9 @@ function toggleB(id){
   document.getElementById('bn').textContent=basket.size+(basket.size>1?'s':'');
   const crd=document.getElementById('crd-'+id);
   if(crd){ crd.className='card'+(basket.has(id)?' sel':''); const b=crd.querySelector('.add-btn'); if(b){b.className='add-btn'+(basket.has(id)?' on':'');b.textContent=basket.has(id)?'✓':'+';} }
+  // Si le panel sélection est ouvert, le rafraîchir
+  const panel=document.getElementById('sel-panel');
+  if(panel && panel.innerHTML.trim()) showSel();
 }
 
 function clearBasket(){ basket.clear(); currentSelectionId=null; document.getElementById('bn').textContent='0'; document.getElementById('sel-panel').innerHTML=''; refreshCards(); }
@@ -774,7 +777,8 @@ function showSel(){
       <button class="btn-xs" onclick="document.getElementById('sel-panel').innerHTML=''">Masquer</button>
     </div>
     <div class="sel-grid" style="margin-bottom:1.25rem">
-      ${sel.map(i=>`<div class="sel-item">
+      ${sel.map(i=>`<div class="sel-item" style="position:relative">
+        <button onclick="toggleB('${i.id}')" title="Retirer de la sélection" style="position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.95);border:1px solid #d8d4ce;cursor:pointer;font-size:14px;line-height:1;color:#888;display:flex;align-items:center;justify-content:center;z-index:2;padding:0">&times;</button>
         <div class="sel-img">${i.img?`<img src="${i.img}" alt="">`:''}</div>
         <div class="sel-name">${i.name}</div>
         <div class="sel-cat">${i.cat}</div>
@@ -1341,6 +1345,7 @@ function admCard(i){
       </div>
     </div>
     <div class="adm-acts">
+      ${i.url?`<a href="${i.url}" target="_blank" rel="noopener" class="btn-xs" style="text-decoration:none;display:inline-block">Voir ↗</a>`:''}
       <button class="btn-xs" onclick="openEdit('${i.id}')">Modifier</button>
     </div>
   </div>`;
