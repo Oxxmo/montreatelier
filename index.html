@@ -1538,11 +1538,14 @@ async function renderSelections(){
         +'</div></div>'
         +'<div class="sel-card-grid">'
         +snap.map(function(p){
-          return '<div class="sel-card-item">'
+          var pUrl=p.url||'';
+          var pCost=Number(p.cost||0)+Number(p.ship||0);
+          return '<div class="sel-card-item"'+(pUrl?' data-href="'+pUrl+'" style="cursor:pointer;transition:.15s" title="Voir chez le fournisseur"':'')+'>'
             +'<div class="sel-card-img">'+(p.img?'<img src="'+p.img+'" alt="">':'')+'</div>'
             +'<div class="sel-card-pname">'+p.name+'</div>'
             +'<div class="sel-card-pcat">'+p.cat+'</div>'
-            +(Number(p.cost||0)+Number(p.ship||0)>0?'<div style="font-size:9px;color:#bbb;margin-top:2px">'+(Number(p.cost||0)+Number(p.ship||0)).toFixed(2)+' €</div>':'')
+            +(pCost>0?'<div style="font-size:9px;color:#bbb;margin-top:2px">'+pCost.toFixed(2)+' €</div>':'')
+            +(pUrl?'<div style="font-size:9px;color:#c9a96e;margin-top:3px;letter-spacing:.04em">voir ↗</div>':'')
             +'</div>';
         }).join('')
         +'</div></div>';
