@@ -294,6 +294,7 @@ const SB = {
   async selAll() { try { const r = await fetch(SB.u('selections?order=created_at.desc'), {headers:SB.h()}); return r.ok ? r.json() : []; } catch { return []; } },
   async selInsert(s) { try { const r = await fetch(SB.u('selections'), {method:'POST',headers:SB.h(),body:JSON.stringify(s)}); return r.ok; } catch { return false; } },
   async selRemove(id) { try { const r = await fetch(SB.u(`selections?id=eq.${id}`), {method:'DELETE',headers:SB.h()}); return r.ok; } catch { return false; } },
+  async selUpdate(id, data) { try { const r = await fetch(SB.u(`selections?id=eq.${id}`), {method:'PATCH',headers:SB.h(),body:JSON.stringify(data)}); return r.ok; } catch { return false; } },
 };
 
 /* ══ AI PROXY — Gemini ══ */
@@ -465,14 +466,15 @@ function parsePrice(val){
   return Math.round(n*100)/100;
 }
 
-function shopifyToRaw(products, supplier) {
+function shopifyToRaw(products, supplier, eurRate) {
+  eurRate = eurRate || 1;
   return products.map(p => ({
     name: p.title,
     cat: detectCat(p.title),
     rawDesc: (p.body_html||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim(),
     img: p.images?.[0]?.src || '',
     url: `https://${supplier.replace('www.','')}${p.handle?'/products/'+p.handle:''}`,
-    price: parsePrice(p.variants?.[0]?.price||0),
+    price: Math.round(parsePrice(p.variants?.[0]?.price||0) * eurRate * 100) / 100,
     supplier,
   }));
 }
@@ -567,6 +569,7 @@ Max 20 produits. Commence directement par [.`,
 /* ══ STATE ══ */
 let items=[], basket=new Set(), scanRes=[], scanChecked=new Set();
 let filterCat='Tout', activeTab='client', isAdmin=false, scanMode='shopify';
+let searchQuery='', codeInput='', currentSelectionId=null;
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
 function isConfigured(){ return CONFIG.supabase_url!=='VOTRE_SUPABASE_URL'; }
 
@@ -575,19 +578,7 @@ async function init(){
   isAdmin = sessionStorage.getItem('mwa_admin')==='1';
   if(isConfigured()) items = await SB.all();
   render();
-  // Signaler au parent que l'iframe est prête (avec les pièces chargées)
-  window.parent.postMessage({type:'mwa-ready'},'*');
 }
-
-// Écouter la demande d'ouverture d'une pièce depuis WordPress
-window.addEventListener('message', function(e){
-  if(!e.data) return;
-  if(e.data.type==='mwa-open-piece'){
-    var id = e.data.id;
-    var found = items.find(function(i){ return i.id===id; });
-    if(found) setTimeout(function(){ openModal(id); }, 100);
-  }
-});
 
 /* ══ RENDER ══ */
 function render(){
@@ -666,13 +657,39 @@ function renderClient(){
     </div>
     <div id="sel-panel"></div>
     ${buildStatsBar()}
-    <div style="margin-bottom:.75rem">
-      <input class="s-in" style="width:100%" id="search" placeholder="Rechercher..." oninput="refreshCards()">
+    <div style="margin-bottom:.75rem;display:flex;gap:6px;flex-wrap:wrap">
+      <input class="s-in" style="flex:1;min-width:180px" id="search" placeholder="Rechercher une pièce..." value="${searchQuery||''}">
+      <input class="s-in" style="flex:1;min-width:180px" id="code-input" placeholder="J'ai un code BANG-XXXX..." value="${codeInput||''}" maxlength="9">
+      <button class="btn btn-s" onclick="loadByCode()">Charger</button>
     </div>
+    <div id="code-status" style="font-size:11px;margin-bottom:.75rem;min-height:18px;letter-spacing:.02em"></div>
     <div class="filter-bar" id="chips-bar">
       ${cats().map(c=>`<span class="chip${filterCat===c?' active':''}" onclick="setCat('${c}')">${c}</span>`).join('')}
     </div>
     <div id="g-client">${buildCards()}</div>`;
+  // Attacher l'event listener APRÈS le render pour ne pas perdre le focus
+  const searchEl=document.getElementById('search');
+  if(searchEl){
+    searchEl.oninput=function(){
+      searchQuery=this.value;
+      refreshCards();
+    };
+    // Restaurer focus + position curseur si on était en train de taper
+    if(window._searchFocus){
+      searchEl.focus();
+      const pos=searchEl.value.length;
+      searchEl.setSelectionRange(pos,pos);
+      window._searchFocus=false;
+    }
+  }
+  const codeEl=document.getElementById('code-input');
+  if(codeEl){
+    codeEl.oninput=function(){
+      codeInput=this.value.toUpperCase();
+      this.value=codeInput;
+    };
+    codeEl.onkeydown=function(e){ if(e.key==='Enter') loadByCode(); };
+  }
 }
 
 function shuffleByCategory(arr){
@@ -695,7 +712,7 @@ function shuffleByCategory(arr){
 }
 
 function buildCards(){
-  var q=(document.getElementById('search')||{}).value||'';
+  var q=searchQuery||'';
   var list=items.filter(function(i){
     return (filterCat==='Tout'||i.cat===filterCat)&&
       (!q||i.name.toLowerCase().includes(q.toLowerCase())||(i.description||'').toLowerCase().includes(q.toLowerCase()));
@@ -737,7 +754,15 @@ function toggleB(id){
   if(crd){ crd.className='card'+(basket.has(id)?' sel':''); const b=crd.querySelector('.add-btn'); if(b){b.className='add-btn'+(basket.has(id)?' on':'');b.textContent=basket.has(id)?'✓':'+';} }
 }
 
-function clearBasket(){ basket.clear(); document.getElementById('bn').textContent='0'; document.getElementById('sel-panel').innerHTML=''; refreshCards(); }
+function clearBasket(){ basket.clear(); currentSelectionId=null; document.getElementById('bn').textContent='0'; document.getElementById('sel-panel').innerHTML=''; refreshCards(); }
+
+function resetSelection(){
+  basket.clear();
+  currentSelectionId=null;
+  document.getElementById('bn').textContent='0';
+  document.getElementById('sel-panel').innerHTML='';
+  refreshCards();
+}
 
 function showSel(){
   const panel=document.getElementById('sel-panel');
@@ -756,40 +781,107 @@ function showSel(){
       </div>`).join('')}
     </div>
     <div style="border-top:1px solid #e8e5e0;padding-top:1rem">
-      <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#999;margin-bottom:.625rem">Enregistrer cette sélection</div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
-        <input type="text" id="client-name" placeholder="Votre prénom…" style="flex:1;min-width:150px;font-size:13px;padding:8px 12px;border:1px solid #d8d4ce;border-radius:2px;background:#fff;color:#1a1a1a;outline:none" onkeydown="if(event.key==='Enter')saveClientSel()">
-        <button class="btn btn-p" onclick="saveClientSel()" id="btn-save-sel">Enregistrer</button>
-      </div>
+      ${currentSelectionId ? `
+        <div style="background:#eef4fd;border:1px solid #ccddf0;border-radius:3px;padding:.625rem .875rem;margin-bottom:.75rem;font-size:12px;color:#2a5a8a">
+          <strong>Mode modification</strong> — vous modifiez une sélection existante. Cliquez sur "Enregistrer" pour sauvegarder vos changements.
+        </div>
+        <button class="btn btn-p" onclick="saveClientSel()" id="btn-save-sel" style="width:100%">Enregistrer les modifications</button>
+        <button class="btn btn-s" onclick="resetSelection()" style="width:100%;margin-top:.5rem">Annuler et créer une nouvelle sélection</button>
+      ` : `
+        <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#999;margin-bottom:.625rem">Enregistrer cette sélection</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+          <input type="text" id="client-name" placeholder="Votre prénom…" style="flex:1;min-width:150px;font-size:13px;padding:8px 12px;border:1px solid #d8d4ce;border-radius:2px;background:#fff;color:#1a1a1a;outline:none" onkeydown="if(event.key==='Enter')saveClientSel()">
+          <button class="btn btn-p" onclick="saveClientSel()" id="btn-save-sel">Enregistrer</button>
+        </div>
+      `}
       <div id="sel-save-st" style="font-size:11px;color:#999;min-height:18px;margin-top:.5rem"></div>
     </div>
   </div>`;
   panel.scrollIntoView({behavior:'smooth'});
 }
 
+function generateClientCode(){
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code='BANG-';
+  for(let i=0;i<4;i++) code+=chars.charAt(Math.floor(Math.random()*chars.length));
+  return code;
+}
+
 async function saveClientSel(){
   const name=(document.getElementById('client-name')||{}).value?.trim();
-  if(!name){ document.getElementById('sel-save-st').textContent='Saisissez votre prénom.'; return; }
+  if(!name && !currentSelectionId){ document.getElementById('sel-save-st').textContent='Saisissez votre prénom.'; return; }
   const btn=document.getElementById('btn-save-sel');
   if(btn){btn.disabled=true;btn.textContent='...';}
   document.getElementById('sel-save-st').textContent='';
   const sel=items.filter(i=>basket.has(i.id));
+  const snap=JSON.stringify(sel.map(i=>({id:i.id,name:i.name,cat:i.cat,img:i.img,description:i.description,cost:Number(i.cost||0),ship:Number(i.ship||0),url:i.url||''})));
+
+  if(currentSelectionId){
+    let ok=false;
+    if(isConfigured()) ok=await SB.selUpdate(currentSelectionId,{item_ids:JSON.stringify([...basket]),items_snapshot:snap});
+    else ok=true;
+    if(ok){
+      document.getElementById('sel-save-st').innerHTML='<div style="background:#eefbee;border:1px solid #cceacc;border-radius:3px;padding:.875rem;margin-top:.5rem"><div style="color:#2a6a2a;font-size:13px">✓ Sélection mise à jour avec succès !</div></div>';
+      if(btn){btn.textContent='Mis à jour ✓';btn.style.opacity='.5';}
+    } else {
+      document.getElementById('sel-save-st').textContent='Erreur lors de la mise à jour.';
+      if(btn){btn.disabled=false;btn.textContent='Enregistrer';}
+    }
+    return;
+  }
+
+  const code=generateClientCode();
   const record={
     id:uid(),
+    client_code:code,
     client_name:name,
     item_ids:JSON.stringify([...basket]),
-    items_snapshot:JSON.stringify(sel.map(i=>({id:i.id,name:i.name,cat:i.cat,img:i.img,description:i.description,cost:Number(i.cost||0),ship:Number(i.ship||0),url:i.url||''}))),  
+    items_snapshot:snap,
     created_at:new Date().toISOString(),
   };
   let ok=false;
   if(isConfigured()) ok=await SB.selInsert(record);
-  else ok=true; // mode local
+  else ok=true;
   if(ok){
-    document.getElementById('sel-save-st').innerHTML='<span style="color:#6a9a6a">✓ Sélection enregistrée — votre horloger la retrouvera.</span>';
+    currentSelectionId=record.id;
+    document.getElementById('sel-save-st').innerHTML=
+      '<div style="background:#f8f7f4;border:1px solid #e8e5e0;border-radius:3px;padding:1.25rem;margin-top:.75rem">'
+      +'<div style="color:#6a9a6a;margin-bottom:.875rem;font-size:13px">✓ Sélection enregistrée !</div>'
+      +'<div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#999;margin-bottom:8px">Votre code de sélection</div>'
+      +'<div style="font-size:24px;font-weight:500;color:#1a1a1a;letter-spacing:.1em;font-family:monospace;margin-bottom:.875rem;padding:.625rem 1rem;background:#fff;border:1px solid #e0ddd8;border-radius:2px;text-align:center">'+code+'</div>'
+      +'<div style="font-size:11px;color:#777;line-height:1.65">Notez ce code précieusement. Il vous permettra de retrouver et modifier votre sélection à tout moment depuis le catalogue.</div>'
+      +'</div>';
     if(btn){btn.textContent='Enregistré ✓';btn.style.opacity='.5';}
   } else {
     document.getElementById('sel-save-st').textContent='Erreur lors de l\'enregistrement.';
     if(btn){btn.disabled=false;btn.textContent='Enregistrer';}
+  }
+}
+
+async function loadByCode(){
+  const code=(codeInput||'').trim().toUpperCase();
+  const status=document.getElementById('code-status');
+  if(!code){ if(status) status.innerHTML='<span style="color:#c06060">Entrez un code BANG-XXXX</span>'; return; }
+  if(!code.startsWith('BANG-')||code.length!==9){ if(status) status.innerHTML='<span style="color:#c06060">Code invalide. Format attendu : BANG-XXXX</span>'; return; }
+  if(status) status.innerHTML='<span style="color:#999">Recherche en cours...</span>';
+  if(!isConfigured()){ if(status) status.innerHTML='<span style="color:#c06060">Supabase non configuré.</span>'; return; }
+  try {
+    const r=await fetch(SB.u('selections?client_code=eq.'+encodeURIComponent(code)),{headers:SB.h()});
+    if(!r.ok) throw new Error('Erreur réseau');
+    const data=await r.json();
+    if(!data.length){ if(status) status.innerHTML='<span style="color:#c06060">Code introuvable. Vérifiez votre saisie.</span>'; return; }
+    const sel=data[0];
+    const itemIds=JSON.parse(sel.item_ids||'[]');
+    basket=new Set(itemIds);
+    currentSelectionId=sel.id;
+    codeInput='';
+    if(status) status.innerHTML='<span style="color:#6a9a6a">✓ Sélection de <strong>'+sel.client_name+'</strong> chargée — '+itemIds.length+' pièce'+(itemIds.length>1?'s':'')+'. Modifiez puis enregistrez.</span>';
+    refreshCards();
+    const bn=document.getElementById('bn'); if(bn) bn.textContent=basket.size;
+    const ci=document.getElementById('code-input'); if(ci) ci.value='';
+    setTimeout(showSel,500);
+  } catch(err) {
+    if(status) status.innerHTML='<span style="color:#c06060">Erreur : '+err.message+'</span>';
   }
 }
 
@@ -800,7 +892,6 @@ function openModal(id){
     item:{
       id:i.id, name:i.name, cat:i.cat||'',
       description:i.description||'', img:i.img||'',
-      url:i.url||'',
       ref:String(i.id).slice(-4).toUpperCase(),
       inBasket:basket.has(i.id)
     }
@@ -862,7 +953,11 @@ function renderScan(){
           <input type="number" id="ship-val" value="9" min="0" step="0.5">
           <span style="font-size:11px;color:#444">€</span>
         </div>
-        
+        <div class="ship-row" style="margin-top:.5rem">
+          <label>Taux de conversion :</label>
+          <input type="number" id="conv-rate" value="1" min="0.0001" step="0.001" style="width:80px">
+          <span style="font-size:11px;color:#888">× prix → € &nbsp;<em style="color:#bbb">(1 = EUR, PHP→EUR ≈ 0.016)</em></span>
+        </div>
       `:scanMode==='screenshot'?`
         <div style="margin-bottom:.875rem">
           <div style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#555;margin-bottom:.5rem">Comment faire :</div>
@@ -927,7 +1022,11 @@ function renderScan(){
           <input type="number" id="ship-val" value="9" min="0" step="0.5">
           <span style="font-size:11px;color:#444">€</span>
         </div>
-        
+        <div class="ship-row" style="margin-top:.5rem">
+          <label>Taux de conversion :</label>
+          <input type="number" id="conv-rate" value="1" min="0.0001" step="0.001" style="width:80px">
+          <span style="font-size:11px;color:#888">× prix → € &nbsp;<em style="color:#bbb">(1 = EUR, PHP→EUR ≈ 0.016)</em></span>
+        </div>
       `}
       <div class="status" id="scan-st"></div>
     </div>
@@ -967,10 +1066,12 @@ async function doScan(){
       setSt('Connexion à l\'API Shopify...','loading');
       const info=detectUrlType(url);
       if(info.type==='shopify'){
+        const eurRate = parseFloat(document.getElementById('conv-rate')?.value||'1')||1;
         const prods=await fetchShopify(info);
         if(!prods.length){setSt('Aucun produit trouvé dans cette collection.','err');document.getElementById('bscan').disabled=false;return;}
-        rawItems=shopifyToRaw(prods, info.hostname);
+        rawItems=shopifyToRaw(prods, info.hostname, eurRate);
       } else if(info.type==='shopify_product'){
+        window._eurRate = parseFloat(document.getElementById('conv-rate')?.value||'1')||1;
         setSt('Produit individuel détecté — récupération des variantes...','loading');
         const prods=await fetchShopifyProduct(info);
         if(!prods.length){setSt('Aucune variante trouvée.','err');document.getElementById('bscan').disabled=false;return;}
@@ -1238,14 +1339,6 @@ function admCard(i){
         <span class="badge b-ship">Port ${Number(i.ship||0).toLocaleString('fr-FR')} €</span>
         ${tc>0?`<span class="badge b-total">Coût ${tc.toLocaleString('fr-FR')} €</span>`:''}
       </div>
-      <div style="display:flex;align-items:center;gap:6px;margin-top:6px">
-        <label style="font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#aaa;white-space:nowrap">Prix achat :</label>
-        <input type="number" value="${Number(i.cost||0)}" min="0" step="0.5" data-priceid="${i.id}" class="price-inp" style="width:70px;padding:4px 7px;border:1px solid #d4cfc8;border-radius:2px;font-size:12px;font-family:inherit;outline:none" title="Modifier le prix d achat">
-        <span style="font-size:11px;color:#aaa">€</span>
-        <label style="font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#aaa;white-space:nowrap;margin-left:4px">Port :</label>
-        <input type="number" value="${Number(i.ship||0)}" min="0" step="0.5" data-shipid="${i.id}" class="ship-inp" style="width:55px;padding:4px 7px;border:1px solid #d4cfc8;border-radius:2px;font-size:12px;font-family:inherit;outline:none" title="Modifier les frais de port">
-        <span style="font-size:11px;color:#aaa">€</span>
-      </div>
     </div>
     <div class="adm-acts">
       <button class="btn-xs" onclick="openEdit('${i.id}')">Modifier</button>
@@ -1290,10 +1383,10 @@ function openEdit(id){
         <textarea id="edit-desc" rows="4" style="resize:vertical;font-size:13px;padding:8px 11px;border:1px solid #d8d4ce;border-radius:2px;background:#fff;color:#1a1a1a;outline:none;width:100%">${i.description||''}</textarea>
       </div>
       <div style="display:flex;gap:8px;margin-top:.5rem">
-        <button id="btn-regen-edit" style="flex:1;padding:10px;background:transparent;color:#666;border:1px solid #d4cfc8;border-radius:2px;cursor:pointer;font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-family:inherit">&#x21BB; Reg</button>
+        <button id="btn-regen-edit" class="btn btn-s" style="flex:1">↻ Régénérer</button>
         <button id="btn-save-edit" class="btn btn-p" style="flex:1">Enregistrer</button>
       </div>
-      <button id="btn-cancel-edit" style="width:100%;margin-top:.625rem;padding:11px;background:transparent;color:#666;border:1px solid #d4cfc8;border-radius:2px;cursor:pointer;font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-family:inherit">Annuler</button>
+      <button id="btn-cancel-edit" class="btn btn-s" style="width:100%;margin-top:.625rem">Annuler</button>
     </div>`;
   // Event listeners sur les boutons (pas d'onclick inline)
   // Stocker l'id courant pour la délégation
@@ -1318,6 +1411,15 @@ function closeEdit(){
   window.parent.postMessage({type:'mwa-scroll-top'},'*');
 }
 
+async function regenDesc(id){
+  const i=items.find(x=>x.id===id); if(!i) return;
+  const btn=document.querySelector('.btn-s');
+  if(btn){btn.textContent='…';btn.disabled=true;}
+  const result=await generateDesc(i.name,'',i.cat);
+  const ta=document.getElementById('edit-desc');
+  if(ta&&result.desc) ta.value=result.desc;
+  if(btn){btn.textContent='↻ Régénérer';btn.disabled=false;}
+}
 
 async function saveEdit(id){
   const name=(document.getElementById('edit-title')||{}).value?.trim()||'';
@@ -1375,44 +1477,9 @@ function handleEditUrl(url){
   const hidden=document.getElementById('edit-img-data'); if(hidden) hidden.value='';
 }
 
-function closeEdit(){ const w=document.getElementById('edit-modal'); if(w) w.remove(); }
 
-async function regenDesc(id){
-  const i=items.find(x=>x.id===id); if(!i) return;
-  const btn=document.getElementById('btn-regen-edit');
-  if(!btn) return;
-  btn.disabled=true;
-  btn.style.color='#c9a96e';
-  btn.style.borderColor='#c9a96e';
-  var dots=0;
-  var timer=setInterval(function(){ dots=(dots+1)%4; btn.textContent='Génération'+'.'.repeat(dots); },400);
-  try {
-    const result=await generateDesc(i.name,'',i.cat);
-    clearInterval(timer);
-    const ta=document.getElementById('edit-desc');
-    if(ta&&result.desc) ta.value=result.desc;
-    btn.textContent='✓ Généré !';
-    btn.style.color='#166534'; btn.style.borderColor='#86efac';
-    setTimeout(function(){ btn.textContent='↻ Reg'; btn.style.color=''; btn.style.borderColor=''; btn.disabled=false; },2000);
-  } catch(err) {
-    clearInterval(timer);
-    btn.textContent='Erreur'; btn.style.color='#c0392b';
-    setTimeout(function(){ btn.textContent='↻ Reg'; btn.style.color=''; btn.style.borderColor=''; btn.disabled=false; },2000);
-  }
-}
 
-async function saveEdit(id){
-  const name=(document.getElementById('edit-title')||{}).value?.trim()||'';
-  const urlVal=(document.getElementById('edit-img-url')||{}).value?.trim()||'';
-  const fileData=(document.getElementById('edit-img-data')||{}).value||'';
-  const img = fileData || urlVal || items.find(x=>x.id===id)?.img || '';
-  const description=(document.getElementById('edit-desc')||{}).value?.trim()||'';
-  const cat=(document.getElementById('edit-cat')||{}).value||'';
-  items=items.map(i=>i.id===id?{...i,name:name||i.name,img,description,cat:cat||i.cat}:i);
-  if(isConfigured()) await SB.update(id,{name:name||undefined,img,description,cat:cat||undefined});
-  closeEdit();
-  renderAdmin();
-}
+
 
 async function setSell(id,v){
   const val=parseFloat(v)||0;
@@ -1458,16 +1525,20 @@ async function renderSelections(){
       return '<div class="sel-card" id="selcard-'+s.id+'">'
         +'<div class="sel-card-head">'
         +'<div><div class="sel-card-name">'+s.client_name+'</div>'
-        +'<div class="sel-card-date">'+date+' · '+snap.length+' pièce'+(snap.length>1?'s':'')+(totalCost>0?' · Coût pièces : '+totalCost.toLocaleString('fr-FR')+' €':'')+'</div></div>'
-        +'<div style="display:flex;gap:6px;align-items:center">'
+        +'<div class="sel-card-date">'+date+' · '+snap.length+' pièce'+(snap.length>1?'s':'')+(totalCost>0?' · Coût pièces : '+totalCost.toLocaleString('fr-FR')+' €':'')+(s.client_code?' · <strong style="color:#c9a96e;font-family:monospace;letter-spacing:.05em">'+s.client_code+'</strong>':'')+'</div></div>'
+        +'<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'
+        +"<button class=\"btn-xs\" data-id='"+s.id+"' data-action='edit-sel'>Modifier</button>"
         +"<button class=\"btn-xs\" data-id='"+s.id+"' data-action='devis'>Créer le devis</button>"
         +"<button class=\"btn-xs del\" data-id='"+s.id+"' data-action='del'>Suppr.</button>"
         +'</div></div>'
         +'<div class="sel-card-grid">'
         +snap.map(function(p){
-          var pUrl = p.url||'';
-          var pCost = Number(p.cost||0)+Number(p.ship||0);
-          return '<div class="sel-card-item"'+(pUrl?' data-href="'+pUrl+'" style="cursor:pointer"':'')+'>'            +'<div class="sel-card-img">'+(p.img?'<img src="'+p.img+'" alt="">':'')+'</div>'            +'<div class="sel-card-pname">'+p.name+'</div>'            +'<div class="sel-card-pcat">'+p.cat+'</div>'            +(pCost>0?'<div style="font-size:9px;color:#bbb;margin-top:2px">'+pCost.toFixed(2)+' €</div>':'')            +(pUrl?'<div style="font-size:9px;color:#c9a96e;margin-top:3px;letter-spacing:.04em">voir ↗</div>':'')            +'</div>';
+          return '<div class="sel-card-item">'
+            +'<div class="sel-card-img">'+(p.img?'<img src="'+p.img+'" alt="">':'')+'</div>'
+            +'<div class="sel-card-pname">'+p.name+'</div>'
+            +'<div class="sel-card-pcat">'+p.cat+'</div>'
+            +(Number(p.cost||0)+Number(p.ship||0)>0?'<div style="font-size:9px;color:#bbb;margin-top:2px">'+(Number(p.cost||0)+Number(p.ship||0)).toFixed(2)+' €</div>':'')
+            +'</div>';
         }).join('')
         +'</div></div>';
     }).join('')
@@ -1491,6 +1562,28 @@ function bindSelButtons(){
   document.querySelectorAll('[data-action="del"]').forEach(function(btn){
     btn.onclick=function(){ deleteSel(this.getAttribute('data-id')); };
   });
+  document.querySelectorAll('[data-action="edit-sel"]').forEach(function(btn){
+    btn.onclick=function(){ editSelectionAdmin(this.getAttribute('data-id')); };
+  });
+}
+
+async function editSelectionAdmin(id){
+  // Charger la sélection comme panier modifiable, puis basculer vers Catalogue
+  if(!isConfigured()) return;
+  const r=await fetch(SB.u('selections?id=eq.'+encodeURIComponent(id)),{headers:SB.h()});
+  if(!r.ok) return alert('Erreur de chargement');
+  const data=await r.json();
+  if(!data.length) return alert('Sélection introuvable');
+  const sel=data[0];
+  const itemIds=JSON.parse(sel.item_ids||'[]');
+  basket=new Set(itemIds);
+  currentSelectionId=sel.id;
+  go('client');
+  setTimeout(function(){
+    showSel();
+    const status=document.getElementById('code-status');
+    if(status) status.innerHTML='<span style="color:#c9a96e">Édition de la sélection de <strong>'+sel.client_name+'</strong> ('+(sel.client_code||'')+') — '+itemIds.length+' pièce'+(itemIds.length>1?'s':'')+'. Modifiez puis enregistrez.</span>';
+  },300);
 }
 
 function closeDevis(){ var m=document.getElementById("devis-modal"); if(m) m.remove(); }
@@ -1620,75 +1713,25 @@ function exportDevis(){
   closeDevis();
 }
 
-// Sauvegarder le prix achat inline
-document.addEventListener('change', function(e){
-  var t = e.target;
-  if(t.classList.contains('price-inp')){
-    var id = t.getAttribute('data-priceid');
-    var val = parseFloat(t.value)||0;
-    items = items.map(function(i){ return i.id===id ? Object.assign({},i,{cost:val}) : i; });
-    if(isConfigured()) SB.update(id, {cost:val});
-    // Recalculer l'affichage du badge coût
-    var card = document.getElementById('adm-'+id);
-    if(card){
-      var shipInp = card.querySelector('.ship-inp');
-      var ship = shipInp ? parseFloat(shipInp.value)||0 : 0;
-      var tc = val + ship;
-      var badge = card.querySelector('.b-cost');
-      if(badge) badge.textContent = 'Achat '+val.toLocaleString('fr-FR')+' €';
-      var total = card.querySelector('.b-total');
-      if(total) total.textContent = 'Coût '+tc.toLocaleString('fr-FR')+' €';
-    }
-    return;
-  }
-  if(t.classList.contains('ship-inp')){
-    var id2 = t.getAttribute('data-shipid');
-    var val2 = parseFloat(t.value)||0;
-    items = items.map(function(i){ return i.id===id2 ? Object.assign({},i,{ship:val2}) : i; });
-    if(isConfigured()) SB.update(id2, {ship:val2});
-    var card2 = document.getElementById('adm-'+id2);
-    if(card2){
-      var priceInp = card2.querySelector('.price-inp');
-      var cost = priceInp ? parseFloat(priceInp.value)||0 : 0;
-      var tc2 = cost + val2;
-      var badge2 = card2.querySelector('.b-ship');
-      if(badge2) badge2.textContent = 'Port '+val2.toLocaleString('fr-FR')+' €';
-      var total2 = card2.querySelector('.b-total');
-      if(total2) total2.textContent = 'Coût '+tc2.toLocaleString('fr-FR')+' €';
-    }
-    return;
-  }
-});
-
-// // Délégation globale click (doublons, sélections)
+// Délégation globale pour tous les boutons de l'app
 document.addEventListener('click', function(e){
   var t = e.target;
+  // Doublons
   var dupBtn = t.closest('.dup-del-btn');
   if(dupBtn){ var id=dupBtn.getAttribute('data-delid'); var fn=dupBtn.getAttribute('data-delfn'); if(fn==='delItem'&&id) delItem(id); return; }
+  // Sélections
   var selDevis = t.closest('[data-action="devis"]');
   if(selDevis){ openDevis(selDevis.getAttribute('data-id')); return; }
   var selDel = t.closest('[data-action="del"]');
   if(selDel){ deleteSel(selDel.getAttribute('data-id')); return; }
+  // Clic sur ligne doublon → ouvrir édition
   var dupRow = t.closest('.dup-row[data-editid]');
   if(dupRow && !t.closest('.dup-del-btn')){ openEdit(dupRow.getAttribute('data-editid')); return; }
-  // Utiliser closest() pour gérer les clics sur enfants (span, icônes)
-  if(t.closest('#btn-back-edit')){ closeEdit(); return; }
-  if(t.closest('#btn-cancel-edit')){ closeEdit(); return; }
-  if(t.closest('#btn-save-edit')){ if(window._editId) saveEdit(window._editId); return; }
-  if(t.closest('#btn-regen-edit')){ if(window._editId) regenDesc(window._editId); return; }
-  // Lien fournisseur dans les sélections (data-href sur sel-card-item)
-  var selItem = t.closest('[data-href]');
-  if(selItem){ var href=selItem.getAttribute('data-href'); if(href) window.open(href,'_blank','noopener'); return; }
+  // Édition pièce
+  if(t.id==='btn-back-edit'||t.id==='btn-cancel-edit'){ closeEdit(); return; }
+  if(t.id==='btn-save-edit'){ if(window._editId) saveEdit(window._editId); return; }
+  if(t.id==='btn-regen-edit'){ if(window._editId) regenDesc(window._editId); return; }
 });
-
-// Capture phase pour Annuler/Retour (s'exécute avant tout handler Brooklyn)
-document.addEventListener('click', function(e){
-  var t = e.target;
-  if(t.closest('#btn-back-edit') || t.closest('#btn-cancel-edit')){
-    e.stopPropagation();
-    closeEdit();
-  }
-}, true);
 
 // Normaliser les catégories au chargement (Boitier → Boîtier etc)
 async function normalizeCats(){
