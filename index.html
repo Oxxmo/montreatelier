@@ -818,7 +818,9 @@ async function saveClientSel(){
   if(btn){btn.disabled=true;btn.textContent='...';}
   document.getElementById('sel-save-st').textContent='';
   const sel=items.filter(i=>basket.has(i.id));
-  const snap=JSON.stringify(sel.map(i=>({id:i.id,name:i.name,cat:i.cat,img:i.img,description:i.description,cost:Number(i.cost||0),ship:Number(i.ship||0),url:i.url||''})));
+  const snapData=sel.map(i=>({id:i.id,name:i.name,cat:i.cat,img:i.img,description:i.description,cost:Number(i.cost||0),ship:Number(i.ship||0),url:i.url||''}));
+  console.log('[saveClientSel] snapshot:', snapData);
+  const snap=JSON.stringify(snapData);
 
   if(currentSelectionId){
     let ok=false;
