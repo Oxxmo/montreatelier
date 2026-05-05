@@ -819,7 +819,6 @@ async function saveClientSel(){
   document.getElementById('sel-save-st').textContent='';
   const sel=items.filter(i=>basket.has(i.id));
   const snapData=sel.map(i=>({id:i.id,name:i.name,cat:i.cat,img:i.img,description:i.description,cost:Number(i.cost||0),ship:Number(i.ship||0),url:i.url||''}));
-  console.log('[saveClientSel] snapshot:', snapData);
   const snap=JSON.stringify(snapData);
 
   if(currentSelectionId){
@@ -1520,7 +1519,6 @@ async function renderSelections(){
   _selCache={};
   sels.forEach(function(s){
     var snap=JSON.parse(s.items_snapshot||'[]');
-    console.log('[renderSelections] sel', s.client_name, 'snap:', snap);
     _selCache[s.id]={clientName:s.client_name, items:snap};
   });
   document.getElementById('view').innerHTML=
@@ -1541,14 +1539,15 @@ async function renderSelections(){
         +'</div></div>'
         +'<div class="sel-card-grid">'
         +snap.map(function(p){
-          var pUrl=p.url||'';
+          var pUrl=(p.url||'').replace(/"/g,'&quot;');
           var pCost=Number(p.cost||0)+Number(p.ship||0);
-          return '<div class="sel-card-item"'+(pUrl?' data-href="'+pUrl+'" style="cursor:pointer;transition:.15s" title="Voir chez le fournisseur"':'')+'>'
+          var clickAttr=pUrl?' onclick="window.open(\''+pUrl+'\',\'_blank\',\'noopener\')" style="cursor:pointer" title="Voir chez le fournisseur"':'';
+          return '<div class="sel-card-item"'+clickAttr+'>'
             +'<div class="sel-card-img">'+(p.img?'<img src="'+p.img+'" alt="">':'')+'</div>'
             +'<div class="sel-card-pname">'+p.name+'</div>'
             +'<div class="sel-card-pcat">'+p.cat+'</div>'
             +(pCost>0?'<div style="font-size:9px;color:#bbb;margin-top:2px">'+pCost.toFixed(2)+' €</div>':'')
-            +(pUrl?'<div style="font-size:9px;color:#c9a96e;margin-top:3px;letter-spacing:.04em">voir ↗</div>':'')
+            +(pUrl?'<div style="font-size:9px;color:#c9a96e;margin-top:3px;letter-spacing:.04em;pointer-events:none">voir ↗</div>':'')
             +'</div>';
         }).join('')
         +'</div></div>';
