@@ -1110,8 +1110,12 @@ async function doScan(){
         const prods=await fetchShopifyProduct(info);
         if(!prods.length){setSt('Aucune variante trouvée.','err');document.getElementById('bscan').disabled=false;return;}
         rawItems=shopifyToRaw(prods, info.hostname);
+      } else if(info.type==='shopify_search'){
+        const prods=await fetchShopifySearch(info);
+        if(!prods.length){setSt('Aucun produit ne correspond à cette recherche.','err');document.getElementById('bscan').disabled=false;return;}
+        rawItems=shopifyToRaw(prods, info.hostname);
       } else {
-        setSt('URL non reconnue. Pour une collection : /collections/bezels — Pour un produit : /products/nom-produit','err');
+        setSt('URL non reconnue. Collection : /collections/X — Produit : /products/X — Recherche : /search?q=X','err');
         document.getElementById('bscan').disabled=false;return;
       }
     } else if(scanMode==='screenshot'){
