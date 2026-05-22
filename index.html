@@ -258,9 +258,13 @@ a{color:inherit;text-decoration:none}
 .new-label{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#1a1a1a;font-weight:600;margin-bottom:.875rem;display:flex;align-items:center;gap:8px}
 .new-label::after{content:'';flex:1;height:1px;background:#e8e5e0}
 .badge-new{position:absolute;top:8px;left:8px;background:#1a1a1a;color:#fff;font-size:9px;letter-spacing:.06em;text-transform:uppercase;padding:3px 7px;font-family:inherit;font-weight:500;z-index:1}
+.badge-custom{position:absolute;top:8px;right:8px;background:#c9a96e;color:#fff;font-size:9px;letter-spacing:.06em;text-transform:uppercase;padding:3px 7px;font-family:inherit;font-weight:500;z-index:1}
 .adm-new-btn{width:24px;height:24px;border-radius:50%;border:1px solid #ddd;background:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;transition:.2s;cursor:pointer;line-height:1;color:#ddd}
 .adm-new-btn.on{border-color:#1a1a1a;background:#1a1a1a;color:#fff}
 .adm-new-btn:hover:not(.on){border-color:#888;color:#888}
+.adm-custom-btn{width:24px;height:24px;border-radius:50%;border:1px solid #ddd;background:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;transition:.2s;cursor:pointer;line-height:1;color:#ddd;font-family:inherit}
+.adm-custom-btn.on{border-color:#c9a96e;background:#c9a96e;color:#fff}
+.adm-custom-btn:hover:not(.on){border-color:#c9a96e;color:#c9a96e}
 </style>
 </head>
 <body>
@@ -753,9 +757,10 @@ function buildCards(){
     var sel=basket.has(i.id);
     var imgH=i.img?('<img src="'+i.img+'" alt="" onerror="this.style.display=\'none\'">'):('<span class="c-img-ph">Aucune photo</span>');
     var nb=i.is_new?'<span class="badge-new">&#9733; Nouveau</span>':'';
+    var pc=i.is_custom?'<span class="badge-custom">P Personnalisable</span>':'';
     var btn='<button class="add-btn'+(sel?' on':'')+'" onclick="toggleB(\''+i.id+'\')">'+( sel?'&#10003;':'+')+'</button>';
     return '<div class="card'+(sel?' sel':'')+'" id="crd-'+i.id+'" style="position:relative">'
-      +nb+'<div class="c-img" onclick="openModal(\''+i.id+'\')">'+imgH+'</div>'
+      +nb+pc+'<div class="c-img" onclick="openModal(\''+i.id+'\')">'+imgH+'</div>'
       +'<div class="c-body"><div class="c-cat">'+(i.cat||'')+'</div>'
       +'<div class="c-name" onclick="openModal(\''+i.id+'\')">'+i.name+'</div>'
       +'<div class="c-desc">'+(i.description||'')+'</div>'
@@ -1366,10 +1371,11 @@ function admCard(i){
     <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
       <div class="adm-cb${sel?' on':''}" onclick="admToggle('${i.id}')" title="Sélectionner">${sel?'✓':''}</div>
       <div class="adm-thumb" onclick="openEdit('${i.id}')" title="Modifier">${i.img?`<img src="${i.img}" onerror="this.parentNode.innerHTML=''" alt="">`:''}</div>
-      <button class="adm-new-btn${i.is_new?' on':''}" onclick="toggleNew('${i.id}')" title="Nouveauté">&#9733;</button>
+      <button class="adm-new-btn${i.is_new?' on':''}" onclick="toggleNew('${i.id}')" title="Marquer comme Nouveauté">&#9733;</button>
+      <button class="adm-custom-btn${i.is_custom?' on':''}" onclick="toggleCustom('${i.id}')" title="Marquer comme Personnalisable">P</button>
     </div>
     <div>
-      <div class="adm-name">${i.name}${i.is_new?' <span style="font-size:9px;background:#1a1a1a;color:#fff;padding:1px 6px;border-radius:1px;letter-spacing:.06em">NOUVEAU</span>':''}</div>
+      <div class="adm-name">${i.name}${i.is_new?' <span style="font-size:9px;background:#1a1a1a;color:#fff;padding:1px 6px;border-radius:1px;letter-spacing:.06em">NOUVEAU</span>':''}${i.is_custom?' <span style="font-size:9px;background:#c9a96e;color:#fff;padding:1px 6px;border-radius:1px;letter-spacing:.06em">PERSONNALISABLE</span>':''}</div>
       <div class="adm-meta">${i.cat} · ${i.supplier||'—'}${i.url?` · <a href="${i.url}" class="link-pill" target="_blank">voir ↗</a>`:''}</div>
       <div style="font-size:11px;color:#888;margin-bottom:6px;line-height:1.5;font-style:italic">${i.description||'Aucune description'}</div>
       <div class="badges">
@@ -1532,6 +1538,14 @@ async function toggleNew(id){
   var val=!item.is_new;
   items=items.map(function(i){return i.id===id?Object.assign({},i,{is_new:val}):i;});
   if(isConfigured()) await SB.update(id,{is_new:val});
+  renderAdmin();
+}
+async function toggleCustom(id){
+  var item=items.find(function(i){return i.id===id;});
+  if(!item) return;
+  var val=!item.is_custom;
+  items=items.map(function(i){return i.id===id?Object.assign({},i,{is_custom:val}):i;});
+  if(isConfigured()) await SB.update(id,{is_custom:val});
   renderAdmin();
 }
 async function delItem(id){
