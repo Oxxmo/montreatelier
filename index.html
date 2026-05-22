@@ -290,12 +290,47 @@ const CONFIG = {
 const SB = {
   h: () => ({ 'Content-Type':'application/json', 'apikey':CONFIG.supabase_key, 'Authorization':`Bearer ${CONFIG.supabase_key}`, 'Prefer':'return=representation' }),
   u: p => `${CONFIG.supabase_url}/rest/v1/${p}`,
-  async all() { try { const r = await fetch(SB.u('pieces?order=ts.desc'), {headers:SB.h()}); return r.ok ? r.json() : []; } catch { return []; } },
+  async all() {
+    try {
+      // Pagination par tranches de 1000 (limite Supabase) pour récupérer absolument tout
+      let allItems = [];
+      let from = 0;
+      const pageSize = 1000;
+      while (true) {
+        const headers = Object.assign({}, SB.h(), { 'Range-Unit':'items', 'Range': from+'-'+(from+pageSize-1) });
+        const r = await fetch(SB.u('pieces?order=ts.desc'), { headers });
+        if (!r.ok) break;
+        const batch = await r.json();
+        allItems = allItems.concat(batch);
+        if (batch.length < pageSize) break;
+        from += pageSize;
+        if (from > 50000) break; // sécurité
+      }
+      return allItems;
+    } catch { return []; }
+  },
   async insert(items) { try { const r = await fetch(SB.u('pieces'), {method:'POST',headers:SB.h(),body:JSON.stringify(items)}); return r.ok; } catch { return false; } },
   async update(id, data) { try { const r = await fetch(SB.u(`pieces?id=eq.${id}`), {method:'PATCH',headers:SB.h(),body:JSON.stringify(data)}); return r.ok; } catch { return false; } },
   async remove(id) { try { const r = await fetch(SB.u(`pieces?id=eq.${id}`), {method:'DELETE',headers:SB.h()}); return r.ok; } catch { return false; } },
   // ── Sélections clients ──
-  async selAll() { try { const r = await fetch(SB.u('selections?order=created_at.desc'), {headers:SB.h()}); return r.ok ? r.json() : []; } catch { return []; } },
+  async selAll() {
+    try {
+      let allSels = [];
+      let from = 0;
+      const pageSize = 1000;
+      while (true) {
+        const headers = Object.assign({}, SB.h(), { 'Range-Unit':'items', 'Range': from+'-'+(from+pageSize-1) });
+        const r = await fetch(SB.u('selections?order=created_at.desc'), { headers });
+        if (!r.ok) break;
+        const batch = await r.json();
+        allSels = allSels.concat(batch);
+        if (batch.length < pageSize) break;
+        from += pageSize;
+        if (from > 50000) break;
+      }
+      return allSels;
+    } catch { return []; }
+  },
   async selInsert(s) { try { const r = await fetch(SB.u('selections'), {method:'POST',headers:SB.h(),body:JSON.stringify(s)}); return r.ok; } catch { return false; } },
   async selRemove(id) { try { const r = await fetch(SB.u(`selections?id=eq.${id}`), {method:'DELETE',headers:SB.h()}); return r.ok; } catch { return false; } },
   async selUpdate(id, data) { try { const r = await fetch(SB.u(`selections?id=eq.${id}`), {method:'PATCH',headers:SB.h(),body:JSON.stringify(data)}); return r.ok; } catch { return false; } },
