@@ -344,6 +344,10 @@ function detectUrlType(url) {
     // Produit Shopify individuel : /products/nom ou /fr/products/nom
     const prodMatch = u.pathname.match(/\/products\/([^\/\?]+)/);
     if (prodMatch) return { type:'shopify_product', hostname:h, cleanHost:`https://${u.hostname}`, handle:prodMatch[1] };
+    // Recherche Shopify : /search?q=... ou /fr/search?q=...
+    if (u.pathname.includes('/search') && u.searchParams.get('q')) {
+      return { type:'shopify_search', hostname:h, cleanHost:`https://${u.hostname}`, query:u.searchParams.get('q') };
+    }
     if (h.includes('aliexpress')) {
       const m = url.match(/\/item\/(\d+)/);
       if (m) return { type:'aliexpress', itemId:m[1] };
@@ -388,6 +392,31 @@ async function fetchShopify(info) {
     if(prods.length < 250) break; // dernière page
     page++;
     if(page > 20) break; // sécurité max 5000 produits
+  }
+  return all;
+}
+
+async function fetchShopifySearch(info) {
+  let all = [];
+  let page = 1;
+  const queryRaw = (info.query||'').replace(/\+/g,' ').toLowerCase();
+  const words = queryRaw.split(/\s+/).filter(w => w.length > 1);
+  if (!words.length) throw new Error('Requête de recherche vide');
+  setSt('Recherche "'+queryRaw+'" sur le site...','loading');
+  while (true) {
+    const r = await fetch(info.cleanHost+'/products.json?limit=250&page='+page);
+    if (!r.ok) throw new Error('API Shopify inaccessible (recherche)');
+    const d = await r.json();
+    const prods = d.products || [];
+    const matched = prods.filter(p => {
+      const text = (p.title+' '+(p.body_html||'')+' '+(p.tags||[]).join(' ')+' '+(p.product_type||'')+' '+(p.vendor||'')).toLowerCase();
+      return words.every(w => text.includes(w));
+    });
+    all = all.concat(matched);
+    setSt('Recherche... '+all.length+' correspondance'+(all.length>1?'s':'')+' (page '+page+' scannée)','loading');
+    if (prods.length < 250) break;
+    page++;
+    if (page > 20) break;
   }
   return all;
 }
