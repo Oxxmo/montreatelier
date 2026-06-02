@@ -599,7 +599,7 @@ Prends le prix unitaire le plus bas visible. Commence directement par {`,
 async function quickManualImport() {
   const name = (document.getElementById('qm-name')||{}).value?.trim();
   const price = parseFloat((document.getElementById('qm-price')||{}).value)||0;
-  const imgData = (document.getElementById('qm-img-data')||{}).value||'';
+  const imgData = window._pendingQuickImg||'';
   const imgUrl = (document.getElementById('qm-img')||{}).value?.trim()||'';
   const img = imgData || imgUrl;
   const url = (document.getElementById('qm-url')||{}).value?.trim()||'';
@@ -617,7 +617,8 @@ async function quickManualImport() {
     else { items = [item,...items]; }
   } else { items = [item,...items]; }
   setSt(`"${name}" ajouté au catalogue.`,'');
-  ['qm-name','qm-price','qm-img','qm-url','qm-supplier','qm-img-data'].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=''; });
+  window._pendingQuickImg=null;
+  ['qm-name','qm-price','qm-img','qm-url','qm-supplier'].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=''; });
   const qdc=document.getElementById('qm-drop-content'); if(qdc) qdc.innerHTML='<div class="drop-zone-icon">↑</div><div class="drop-zone-text">Glisser une image ou cliquer</div><div class="drop-zone-hint">JPG, PNG — ou collez une URL ci-dessous</div>';
   document.getElementById('qm-btn').disabled = false;
 }
@@ -1120,7 +1121,7 @@ function renderScan(){
               <div class="drop-zone-hint">JPG, PNG — ou collez une URL ci-dessous</div>
             </div>
           </div>
-          <input type="text" id="qm-img" placeholder="...ou collez une URL d'image : https://...">
+          <input type="text" id="qm-img" placeholder="...ou collez une URL d'image : https://..." oninput="if(this.value)window._pendingQuickImg=null">
         </div>
         <div class="ship-row">
           <label>Frais de port :</label>
@@ -1154,14 +1155,17 @@ function setScanMode(m){ scanMode=m; renderScan(); }
 function processQuickFile(file){
   var reader=new FileReader();
   reader.onload=async function(e){
-    var base64=await compressImage(e.target.result, 800);
-    var dc=document.getElementById('qm-drop-content');
-    if(dc) dc.innerHTML='<img src="'+base64+'" class="drop-preview" alt=""><div class="drop-zone-text">Image chargée ✓</div>';
-    // Stocker en base64 dans le champ caché et vider l'URL
-    var hidden=document.getElementById('qm-img-data');
-    if(!hidden){ hidden=document.createElement('input'); hidden.type='hidden'; hidden.id='qm-img-data'; document.getElementById('qm-drop-zone').parentNode.appendChild(hidden); }
-    hidden.value=base64;
-    var urlInp=document.getElementById('qm-img'); if(urlInp) urlInp.value='';
+    try {
+      var base64=await compressImage(e.target.result, 800);
+      window._pendingQuickImg = base64;
+      var dc=document.getElementById('qm-drop-content');
+      if(dc) dc.innerHTML='<img src="'+base64+'" class="drop-preview" alt=""><div class="drop-zone-text">Image chargée ✓</div>';
+      var urlInp=document.getElementById('qm-img'); if(urlInp) urlInp.value='';
+    } catch(err) {
+      console.error('Erreur image:', err);
+      var dc2=document.getElementById('qm-drop-content');
+      if(dc2) dc2.innerHTML='<div class="drop-zone-text" style="color:#c06060">Erreur de chargement</div>';
+    }
   };
   reader.readAsDataURL(file);
 }
@@ -1529,6 +1533,7 @@ function openEdit(id){
   // Event listeners sur les boutons (pas d'onclick inline)
   // Stocker l'id courant pour la délégation
   window._editId = id;
+  window._pendingEditImg = null;  // réinitialiser l'image en attente
   document.getElementById('edit-file').onchange=function(){ handleEditFile(this); };
   document.getElementById('edit-img-url').oninput=function(){ handleEditUrl(this.value); };
   // Drag & drop
@@ -1563,7 +1568,7 @@ async function saveEdit(id){
   const name=(document.getElementById('edit-title')||{}).value?.trim()||'';
   const cat=(document.getElementById('edit-cat')||{}).value||'';
   const urlVal=(document.getElementById('edit-img-url')||{}).value?.trim()||'';
-  const fileData=(document.getElementById('edit-img-data')||{}).value||'';
+  const fileData=window._pendingEditImg||'';
   const img=fileData||urlVal||items.find(x=>x.id===id)?.img||'';
   const description=(document.getElementById('edit-desc')||{}).value?.trim()||'';
   items=items.map(i=>i.id===id?{...i,name:name||i.name,img,description,cat:cat||i.cat}:i);
@@ -1579,17 +1584,18 @@ function handleEditFile(input){
 function processEditFile(file){
   const reader=new FileReader();
   reader.onload=async e=>{
-    // Compresser avant stockage
-    const base64 = await compressImage(e.target.result, 800);
-    // Afficher preview
-    const dc=document.getElementById('drop-content');
-    if(dc) dc.innerHTML=`<img src="${base64}" class="drop-preview" alt=""><div class="drop-zone-text">Image chargée</div>`;
-    // Stocker dans un champ caché
-    let hidden=document.getElementById('edit-img-data');
-    if(!hidden){ hidden=document.createElement('input'); hidden.type='hidden'; hidden.id='edit-img-data'; document.getElementById('edit-modal').appendChild(hidden); }
-    hidden.value=base64;
-    // Vider le champ URL
-    const urlIn=document.getElementById('edit-img-url'); if(urlIn) urlIn.value='';
+    try {
+      const base64 = await compressImage(e.target.result, 800);
+      // Stocker dans une variable globale (fiable, pas de dépendance DOM)
+      window._pendingEditImg = base64;
+      const dc=document.getElementById('drop-content');
+      if(dc) dc.innerHTML='<img src="'+base64+'" class="drop-preview" alt=""><div class="drop-zone-text">Image chargée ✓</div>';
+      const urlIn=document.getElementById('edit-img-url'); if(urlIn) urlIn.value='';
+    } catch(err) {
+      console.error('Erreur image:', err);
+      const dc=document.getElementById('drop-content');
+      if(dc) dc.innerHTML='<div class="drop-zone-text" style="color:#c06060">Erreur de chargement de l\'image</div>';
+    }
   };
   reader.readAsDataURL(file);
 }
@@ -1612,7 +1618,7 @@ function handleEditUrl(url){
   if(!url) return;
   const dc=document.getElementById('drop-content');
   if(dc) dc.innerHTML=`<img src="${url}" class="drop-preview" onerror="this.style.display='none'" alt=""><div class="drop-zone-text">Aperçu URL</div>`;
-  const hidden=document.getElementById('edit-img-data'); if(hidden) hidden.value='';
+  window._pendingEditImg = null; // une URL annule l'image fichier
 }
 
 
