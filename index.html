@@ -599,7 +599,9 @@ Prends le prix unitaire le plus bas visible. Commence directement par {`,
 async function quickManualImport() {
   const name = (document.getElementById('qm-name')||{}).value?.trim();
   const price = parseFloat((document.getElementById('qm-price')||{}).value)||0;
-  const img = (document.getElementById('qm-img')||{}).value?.trim()||'';
+  const imgData = (document.getElementById('qm-img-data')||{}).value||'';
+  const imgUrl = (document.getElementById('qm-img')||{}).value?.trim()||'';
+  const img = imgData || imgUrl;
   const url = (document.getElementById('qm-url')||{}).value?.trim()||'';
   const supplier = (document.getElementById('qm-supplier')||{}).value?.trim()||'';
   const ship = parseFloat(document.getElementById('ship-val').value)||0;
@@ -615,7 +617,8 @@ async function quickManualImport() {
     else { items = [item,...items]; }
   } else { items = [item,...items]; }
   setSt(`"${name}" ajouté au catalogue.`,'');
-  ['qm-name','qm-price','qm-img','qm-url','qm-supplier'].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=''; });
+  ['qm-name','qm-price','qm-img','qm-url','qm-supplier','qm-img-data'].forEach(id=>{ const e=document.getElementById(id); if(e) e.value=''; });
+  const qdc=document.getElementById('qm-drop-content'); if(qdc) qdc.innerHTML='<div class="drop-zone-icon">↑</div><div class="drop-zone-text">Glisser une image ou cliquer</div><div class="drop-zone-hint">JPG, PNG — ou collez une URL ci-dessous</div>';
   document.getElementById('qm-btn').disabled = false;
 }
 
@@ -819,7 +822,23 @@ function buildCards(){
   return html;
 }
 
-function refreshCards(){ const e=document.getElementById('g-client'); if(e) e.innerHTML=buildCards(); }
+function refreshCards(){
+  const searchEl=document.getElementById('search');
+  const hadFocus = document.activeElement===searchEl;
+  const curPos = searchEl ? searchEl.selectionStart : null;
+  const e=document.getElementById('g-client');
+  if(e) e.innerHTML=buildCards();
+  // Restaurer le focus immédiatement + après le resize asynchrone de l'iframe
+  if(hadFocus && searchEl){
+    const restore=function(){
+      searchEl.focus();
+      if(curPos!==null){ try{ searchEl.setSelectionRange(curPos,curPos); }catch(_){} }
+    };
+    restore();
+    setTimeout(restore,60);
+    setTimeout(restore,250);
+  }
+}
 function setCat(c){ filterCat=c; renderClient(); }
 
 function toggleB(id){
@@ -1083,8 +1102,16 @@ function renderScan(){
           </div>
         </div>
         <div class="field">
-          <label>URL image (optionnel — clic droit → Copier l'adresse de l'image)</label>
-          <input type="text" id="qm-img" placeholder="https://ae01.alicdn.com/...">
+          <label>Image de la pièce (optionnel)</label>
+          <div class="drop-zone" id="qm-drop-zone" style="margin-bottom:.5rem">
+            <input type="file" id="qm-file" accept="image/*">
+            <div id="qm-drop-content">
+              <div class="drop-zone-icon">↑</div>
+              <div class="drop-zone-text">Glisser une image ou cliquer</div>
+              <div class="drop-zone-hint">JPG, PNG — ou collez une URL ci-dessous</div>
+            </div>
+          </div>
+          <input type="text" id="qm-img" placeholder="...ou collez une URL d'image : https://...">
         </div>
         <div class="ship-row">
           <label>Frais de port :</label>
@@ -1111,9 +1138,35 @@ function renderScan(){
       <div class="status" id="scan-st"></div>
     </div>
     <div id="scan-res"></div>`;
+  setTimeout(bindQuickUpload,0);
 }
 
-function setScanMode(m){ scanMode=m; renderScan(); }
+function setScanMode(m){ scanMode=m; renderScan(); bindQuickUpload(); }
+
+function bindQuickUpload(){
+  var zone=document.getElementById('qm-drop-zone');
+  var fileInp=document.getElementById('qm-file');
+  if(!zone||!fileInp) return;
+  fileInp.onchange=function(){ if(this.files[0]) processQuickFile(this.files[0]); };
+  zone.addEventListener('dragover',function(e){e.preventDefault();zone.classList.add('drag-over');});
+  zone.addEventListener('dragleave',function(){zone.classList.remove('drag-over');});
+  zone.addEventListener('drop',function(e){e.preventDefault();zone.classList.remove('drag-over');var f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/'))processQuickFile(f);});
+}
+
+function processQuickFile(file){
+  var reader=new FileReader();
+  reader.onload=async function(e){
+    var base64=await compressImage(e.target.result, 800);
+    var dc=document.getElementById('qm-drop-content');
+    if(dc) dc.innerHTML='<img src="'+base64+'" class="drop-preview" alt=""><div class="drop-zone-text">Image chargée ✓</div>';
+    // Stocker en base64 dans le champ caché et vider l'URL
+    var hidden=document.getElementById('qm-img-data');
+    if(!hidden){ hidden=document.createElement('input'); hidden.type='hidden'; hidden.id='qm-img-data'; document.getElementById('qm-drop-zone').parentNode.appendChild(hidden); }
+    hidden.value=base64;
+    var urlInp=document.getElementById('qm-img'); if(urlInp) urlInp.value='';
+  };
+  reader.readAsDataURL(file);
+}
 
 function setSt(msg,st=''){
   const el=document.getElementById('scan-st'); if(!el) return;
