@@ -748,13 +748,8 @@ function renderClient(){
   if(searchEl){
     searchEl.oninput=function(){
       searchQuery=this.value;
-      // Bloquer la ResizeObserver pendant la frappe (évite la perte de focus iframe)
-      window._typing=true;
-      clearTimeout(window._typingTimer);
-      window._typingTimer=setTimeout(function(){ window._typing=false; notifyHeight(); },600);
-      // Debounce le rafraîchissement de la grille
-      clearTimeout(window._searchDebounce);
-      window._searchDebounce=setTimeout(refreshCards,120);
+      // Filtrage CSS pur — aucune reconstruction DOM, le focus reste intact
+      applySearchFilter();
     };
   }
   const codeEl=document.getElementById('code-input');
@@ -765,6 +760,8 @@ function renderClient(){
     };
     codeEl.onkeydown=function(e){ if(e.key==='Enter') loadByCode(); };
   }
+  // Réappliquer le filtre de recherche si une recherche était active
+  if(searchQuery) applySearchFilter();
 }
 
 function shuffleByCategory(arr){
@@ -787,14 +784,12 @@ function shuffleByCategory(arr){
 }
 
 function buildCards(){
-  var q=searchQuery||'';
+  // NB: ne filtre PAS par texte. Le filtrage recherche se fait en CSS (applySearchFilter)
   var list=items.filter(function(i){
     if(i.hidden && !isAdmin) return false; // masquées : invisibles client, visibles admin
-    return (filterCat==='Tout'||i.cat===filterCat)&&
-      (!q||i.name.toLowerCase().includes(q.toLowerCase())||(i.description||'').toLowerCase().includes(q.toLowerCase()));
+    return (filterCat==='Tout'||i.cat===filterCat);
   });
-  // Mélanger par catégorie seulement si on affiche tout sans recherche
-  if(filterCat==='Tout'&&!q) list=shuffleByCategory(list);
+  if(filterCat==='Tout') list=shuffleByCategory(list);
   if(!list.length) return '<div class="empty">Aucune pièce</div>';
   function oneCard(i){
     var sel=basket.has(i.id);
@@ -803,7 +798,8 @@ function buildCards(){
     var pc=i.is_custom?'<span class="badge-custom">P Personnalisable</span>':'';
     var hd=(i.hidden&&isAdmin)?'<span class="badge-hidden-card">&#128065; Masqué</span>':'';
     var btn='<button class="add-btn'+(sel?' on':'')+'" onclick="toggleB(\''+i.id+'\')">'+( sel?'&#10003;':'+')+'</button>';
-    return '<div class="card'+(sel?' sel':'')+'" id="crd-'+i.id+'" style="position:relative">'
+    var searchData=((i.name||'')+' '+(i.description||'')+' '+(i.cat||'')).toLowerCase().replace(/"/g,'');
+    return '<div class="card'+(sel?' sel':'')+'" id="crd-'+i.id+'" data-search="'+searchData+'" style="position:relative">'
       +nb+pc+hd+'<div class="c-img" onclick="openModal(\''+i.id+'\')">'+imgH+'</div>'
       +'<div class="c-body"><div class="c-cat">'+(i.cat||'')+'</div>'
       +'<div class="c-name" onclick="openModal(\''+i.id+'\')">'+i.name+'</div>'
@@ -815,29 +811,42 @@ function buildCards(){
   var rest=list.filter(function(i){return !i.is_new;});
   var html='';
   if(news.length){
-    html+='<div class="new-section"><div class="new-label">Nouveautés</div><div class="grid" style="margin-bottom:0">'+news.map(oneCard).join('')+'</div></div>';
-    if(rest.length) html+='<div class="new-label" style="margin-bottom:.875rem">Catalogue</div>';
+    html+='<div class="new-section" id="sec-news"><div class="new-label">Nouveautés</div><div class="grid" style="margin-bottom:0">'+news.map(oneCard).join('')+'</div></div>';
+    if(rest.length) html+='<div class="new-label" id="sec-cat-label" style="margin-bottom:.875rem">Catalogue</div>';
   }
   html+='<div class="grid">'+rest.map(oneCard).join('')+'</div>';
+  html+='<div class="empty" id="search-empty" style="display:none">Aucune pièce ne correspond à votre recherche</div>';
   return html;
 }
 
+// Filtrage de recherche en CSS pur (sans reconstruire le DOM = pas de perte de focus)
+function applySearchFilter(){
+  var q=(searchQuery||'').toLowerCase().trim();
+  var cards=document.querySelectorAll('#g-client .card[data-search]');
+  var visibleCount=0;
+  cards.forEach(function(card){
+    var match = !q || card.getAttribute('data-search').includes(q);
+    card.style.display = match ? '' : 'none';
+    if(match) visibleCount++;
+  });
+  // Masquer les sections Nouveautés/Catalogue pendant une recherche active
+  var secNews=document.getElementById('sec-news');
+  var secLabel=document.getElementById('sec-cat-label');
+  if(q){
+    if(secNews){ var nv=secNews.querySelectorAll('.card[data-search]'); var anyNews=false; nv.forEach(function(c){if(c.style.display!=='none')anyNews=true;}); secNews.querySelector('.new-label').style.display=anyNews?'':'none'; }
+    if(secLabel) secLabel.style.display='none';
+  } else {
+    if(secNews){ var nl=secNews.querySelector('.new-label'); if(nl) nl.style.display=''; }
+    if(secLabel) secLabel.style.display='';
+  }
+  // Message "aucun résultat"
+  var emptyEl=document.getElementById('search-empty');
+  if(emptyEl) emptyEl.style.display = (visibleCount===0 && q) ? '' : 'none';
+}
+
 function refreshCards(){
-  const searchEl=document.getElementById('search');
-  const hadFocus = document.activeElement===searchEl;
-  const curPos = searchEl ? searchEl.selectionStart : null;
   const e=document.getElementById('g-client');
   if(e) e.innerHTML=buildCards();
-  // Restaurer le focus immédiatement + après le resize asynchrone de l'iframe
-  if(hadFocus && searchEl){
-    const restore=function(){
-      searchEl.focus();
-      if(curPos!==null){ try{ searchEl.setSelectionRange(curPos,curPos); }catch(_){} }
-    };
-    restore();
-    setTimeout(restore,60);
-    setTimeout(restore,250);
-  }
 }
 function setCat(c){ filterCat=c; renderClient(); }
 
@@ -1103,8 +1112,8 @@ function renderScan(){
         </div>
         <div class="field">
           <label>Image de la pièce (optionnel)</label>
-          <div class="drop-zone" id="qm-drop-zone" style="margin-bottom:.5rem">
-            <input type="file" id="qm-file" accept="image/*">
+          <div class="drop-zone" id="qm-drop-zone" style="margin-bottom:.5rem" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="event.preventDefault();this.classList.remove('drag-over');if(event.dataTransfer.files[0])processQuickFile(event.dataTransfer.files[0])">
+            <input type="file" id="qm-file" accept="image/*" onchange="if(this.files[0])processQuickFile(this.files[0])">
             <div id="qm-drop-content">
               <div class="drop-zone-icon">↑</div>
               <div class="drop-zone-text">Glisser une image ou cliquer</div>
@@ -1138,20 +1147,9 @@ function renderScan(){
       <div class="status" id="scan-st"></div>
     </div>
     <div id="scan-res"></div>`;
-  setTimeout(bindQuickUpload,0);
 }
 
-function setScanMode(m){ scanMode=m; renderScan(); bindQuickUpload(); }
-
-function bindQuickUpload(){
-  var zone=document.getElementById('qm-drop-zone');
-  var fileInp=document.getElementById('qm-file');
-  if(!zone||!fileInp) return;
-  fileInp.onchange=function(){ if(this.files[0]) processQuickFile(this.files[0]); };
-  zone.addEventListener('dragover',function(e){e.preventDefault();zone.classList.add('drag-over');});
-  zone.addEventListener('dragleave',function(){zone.classList.remove('drag-over');});
-  zone.addEventListener('drop',function(e){e.preventDefault();zone.classList.remove('drag-over');var f=e.dataTransfer.files[0];if(f&&f.type.startsWith('image/'))processQuickFile(f);});
-}
+function setScanMode(m){ scanMode=m; renderScan(); }
 
 function processQuickFile(file){
   var reader=new FileReader();
