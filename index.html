@@ -807,106 +807,110 @@
   }
   .client-actions button:hover { background: #d8b87a; }
 
-  /* ==================== MOBILE (≤ 640px) ==================== */
-  @media (max-width: 640px) {
-    body { font-size: 14px; }
+  /* ==================== NARROW LAYOUT (JS-driven, robust for embeds) ====================
+     Activé par la classe body.is-narrow, posée en JS selon la largeur réelle de l'outil
+     (pas du viewport) — fonctionne même intégré en iframe/bloc WordPress. */
+  body.is-narrow { font-size: 14px; }
 
-    /* Topbar: compact, brand on its own line, buttons wrap below */
-    .topbar { flex-direction: column; align-items: stretch; gap: 12px; padding: 12px 16px; }
-    .brand { font-size: 20px; }
-    .brand-sub { font-size: 11px; }
-    .top-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-    .top-actions button { padding: 10px 8px; font-size: 11px; text-align: center; }
-    .top-actions button.primary { grid-column: 1 / -1; }
+  /* Topbar */
+  body.is-narrow .topbar { flex-direction: column; align-items: stretch; gap: 12px; padding: 12px 16px; }
+  body.is-narrow .brand { font-size: 20px; }
+  body.is-narrow .brand-sub { font-size: 11px; }
+  body.is-narrow .top-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  body.is-narrow .top-actions button { padding: 10px 8px; font-size: 11px; text-align: center; }
+  body.is-narrow .top-actions button.primary { grid-column: 1 / -1; }
 
-    .container { padding: 16px 12px 48px; }
+  body.is-narrow .container { padding: 16px 12px 48px; }
 
-    /* Project form: single column */
-    .project-card { padding: 18px 16px; }
-    .project-form { grid-template-columns: 1fr; gap: 12px; }
+  /* Project form: single column */
+  body.is-narrow .project-card { padding: 18px 16px; }
+  body.is-narrow .project-form { grid-template-columns: 1fr; gap: 12px; }
 
-    /* Section header: stack title and mode toggle */
-    .section-header { padding: 14px 16px; }
-    .mode-toggle { width: 100%; }
-    .mode-toggle button { flex: 1; }
+  /* Section header */
+  body.is-narrow .section-header { padding: 14px 16px; flex-direction: column; align-items: stretch; }
+  body.is-narrow .mode-toggle { width: 100%; }
+  body.is-narrow .mode-toggle button { flex: 1; }
 
-    /* === PARTS TABLE → CARDS === */
-    .parts-table thead { display: none; }
-    .parts-table, .parts-table tbody, .parts-table tr, .parts-table td { display: block; width: 100%; }
-    .parts-table tr {
-      border: 1px solid var(--line);
-      border-radius: 2px;
-      margin: 0 12px 12px;
-      padding: 6px 12px 12px;
-      background: var(--bg-card);
-    }
-    .parts-table tr:hover { background: var(--bg-card); }
-    .parts-table td {
-      padding: 7px 0;
-      border-bottom: 1px solid var(--line-soft);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .parts-table td:last-child { border-bottom: none; }
-    /* Field label from data-label */
-    .parts-table td::before {
-      content: attr(data-label);
-      flex: 0 0 96px;
-      font-size: 10px;
-      text-transform: uppercase;
-      letter-spacing: .1em;
-      color: var(--ink-mute);
-      font-weight: 600;
-    }
-    .parts-table td input, .parts-table td select { flex: 1; padding: 10px 10px; border: 1px solid var(--line); background: var(--bg); }
-    .parts-table td.num input { text-align: left; }
-    .parts-table td.computed { justify-content: flex-start; font-size: 15px; padding-top: 10px; }
-    .parts-table td.computed::before { content: attr(data-label); }
-    .parts-table td.col-action { justify-content: flex-end; padding-top: 10px; }
-    .parts-table td.col-action::before { display: none; }
-    .row-delete {
-      width: auto; height: auto; border-radius: 2px;
-      padding: 8px 14px; font-size: 12px;
-      border: 1px solid var(--line); color: var(--ink-mute);
-      letter-spacing: .05em;
-    }
-    .row-delete:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
-    /* When in global-margin mode the per-part margin row hides via existing rule */
-
-    .add-row { padding: 16px; font-size: 12px; }
-    .global-margin-row { flex-wrap: wrap; padding: 14px 16px; }
-
-    /* Sidebar panels full width */
-    aside.sidebar { gap: 16px; }
-    .config-row input { width: 100px; }
-    .final-price-panel input { font-size: 24px; }
-
-    /* Modals: near full-screen */
-    .modal-backdrop { padding: 0; align-items: stretch; }
-    .modal, .modal.modal-wide { max-width: 100%; max-height: 100%; height: 100%; border-left: none; border-right: none; }
-    .catalog-toolbar { flex-direction: column; }
-    .catalog-toolbar input, .catalog-toolbar select { width: 100%; }
-    .catalog-item { grid-template-columns: 48px 1fr auto; gap: 10px; padding: 10px 16px; }
-    .catalog-item .prices { display: none; }
-    .catalog-item .img { width: 48px; height: 48px; }
-    .modal-header, .catalog-status { padding-left: 16px; padding-right: 16px; }
-    .modal-body { padding: 16px; }
-    .modal-actions { flex-wrap: wrap; }
-    .modal-actions .btn { flex: 1; }
-
-    /* Devis / client view */
-    .client-doc { margin: 16px 10px; padding: 24px 18px; }
-    .client-actions { padding: 0 10px; margin-top: 14px; flex-wrap: wrap; }
-    .client-actions button { flex: 1; }
-    .devis-top { flex-direction: column; gap: 16px; }
-    .devis-ref { text-align: left; }
-    .devis-parties { grid-template-columns: 1fr; gap: 18px; }
-    .devis-dates { flex-wrap: wrap; gap: 16px 28px; }
-    .devis-total-line span:last-child { font-size: 22px; }
-    .devis-accord { justify-content: stretch; }
-    .accord-block { width: 100%; }
+  /* === PARTS TABLE → CARDS === */
+  body.is-narrow .parts-table thead { display: none; }
+  body.is-narrow .parts-table,
+  body.is-narrow .parts-table tbody,
+  body.is-narrow .parts-table tr,
+  body.is-narrow .parts-table td { display: block; width: 100%; }
+  body.is-narrow .parts-table tr {
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    margin: 0 12px 12px;
+    padding: 6px 12px 12px;
+    background: var(--bg-card);
   }
+  body.is-narrow .parts-table tr:hover { background: var(--bg-card); }
+  body.is-narrow .parts-table td {
+    padding: 7px 0;
+    border-bottom: 1px solid var(--line-soft);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  body.is-narrow .parts-table td:last-child { border-bottom: none; }
+  body.is-narrow .parts-table td::before {
+    content: attr(data-label);
+    flex: 0 0 92px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: var(--ink-mute);
+    font-weight: 600;
+  }
+  body.is-narrow .parts-table td input,
+  body.is-narrow .parts-table td select { flex: 1; padding: 11px 10px; border: 1px solid var(--line); background: var(--bg); }
+  body.is-narrow .parts-table td.num input { text-align: left; }
+  body.is-narrow .parts-table td.computed { justify-content: flex-start; font-size: 16px; padding-top: 10px; }
+  body.is-narrow .parts-table td.col-action { justify-content: flex-end; padding-top: 10px; }
+  body.is-narrow .parts-table td.col-action::before { display: none; }
+  body.is-narrow .row-delete {
+    width: auto; height: auto; border-radius: 2px;
+    padding: 9px 16px; font-size: 12px;
+    border: 1px solid var(--line); color: var(--ink-mute);
+    letter-spacing: .05em;
+  }
+  body.is-narrow .row-delete:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+
+  body.is-narrow .add-row { padding: 16px; font-size: 12px; }
+  body.is-narrow .global-margin-row { flex-wrap: wrap; padding: 14px 16px; }
+
+  /* Sidebar */
+  body.is-narrow aside.sidebar { gap: 16px; }
+  body.is-narrow .config-row input { width: 100px; }
+  body.is-narrow .final-price-panel input { font-size: 24px; }
+
+  /* Modals near full-screen */
+  body.is-narrow .modal-backdrop { padding: 0; align-items: stretch; }
+  body.is-narrow .modal,
+  body.is-narrow .modal.modal-wide { max-width: 100%; max-height: 100%; height: 100%; border-left: none; border-right: none; }
+  body.is-narrow .catalog-toolbar { flex-direction: column; }
+  body.is-narrow .catalog-toolbar input,
+  body.is-narrow .catalog-toolbar select { width: 100%; }
+  body.is-narrow .catalog-item { grid-template-columns: 48px 1fr auto; gap: 10px; padding: 10px 16px; }
+  body.is-narrow .catalog-item .prices { display: none; }
+  body.is-narrow .catalog-item .img { width: 48px; height: 48px; }
+  body.is-narrow .modal-header,
+  body.is-narrow .catalog-status { padding-left: 16px; padding-right: 16px; }
+  body.is-narrow .modal-body { padding: 16px; }
+  body.is-narrow .modal-actions { flex-wrap: wrap; }
+  body.is-narrow .modal-actions .btn { flex: 1; }
+
+  /* Devis / client view */
+  body.is-narrow .client-doc { margin: 16px 10px; padding: 24px 18px; }
+  body.is-narrow .client-actions { padding: 0 10px; margin-top: 14px; flex-wrap: wrap; }
+  body.is-narrow .client-actions button { flex: 1; }
+  body.is-narrow .devis-top { flex-direction: column; gap: 16px; }
+  body.is-narrow .devis-ref { text-align: left; }
+  body.is-narrow .devis-parties { grid-template-columns: 1fr; gap: 18px; }
+  body.is-narrow .devis-dates { flex-wrap: wrap; gap: 16px 28px; }
+  body.is-narrow .devis-total-line span:last-child { font-size: 22px; }
+  body.is-narrow .devis-accord { justify-content: stretch; }
+  body.is-narrow .accord-block { width: 100%; }
 
   /* ==================== PRINT (A4 devis) ==================== */
   @media print {
@@ -941,7 +945,7 @@
   <header class="topbar">
     <div>
       <span class="brand">bang<span class="dot">.</span></span>
-      <span class="brand-sub">Chiffrage</span>
+      <span class="brand-sub">Chiffrage · v6</span>
     </div>
     <div class="top-actions">
       <button onclick="resetProject()" title="Nouveau projet">Nouveau</button>
@@ -1348,6 +1352,10 @@ const fmtEURint = (n) => Math.round(Number(n) || 0).toLocaleString('fr-FR') + ' 
    INITIALIZATION
    ========================================================= */
 function init() {
+  console.log('bang. chiffrage — v6 chargé');
+  // Responsive: drive layout by the tool's real rendered width (robust in WP/iframe embeds)
+  setupNarrowDetection();
+
   // Set default date
   document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
 
@@ -1367,6 +1375,34 @@ function init() {
   STATE.parts = JSON.parse(JSON.stringify(DEFAULT_PARTS));
   renderRows();
   recalc();
+}
+
+/* Narrow-layout detection — measures actual rendered width, not the viewport,
+   so it works even embedded in a WordPress block / iframe where the viewport
+   meta is unreliable. */
+const NARROW_BREAKPOINT = 640;
+function updateNarrow() {
+  // Prefer the tool's own container width; fall back to client-doc, then window.
+  const cont = document.querySelector('.container')
+            || document.getElementById('client-doc')
+            || document.body;
+  const w = (cont && cont.clientWidth) ? cont.clientWidth : window.innerWidth;
+  // Guard: if clientWidth reads 0 (not laid out yet), use window width.
+  const effective = w > 0 ? w : window.innerWidth;
+  document.body.classList.toggle('is-narrow', effective <= NARROW_BREAKPOINT);
+}
+function setupNarrowDetection() {
+  updateNarrow();
+  window.addEventListener('resize', updateNarrow);
+  window.addEventListener('orientationchange', () => setTimeout(updateNarrow, 100));
+  if (window.ResizeObserver) {
+    const ro = new ResizeObserver(() => updateNarrow());
+    const target = document.querySelector('.container') || document.body;
+    if (target) ro.observe(target);
+  }
+  // A couple of delayed re-checks: embeds sometimes resize after first paint.
+  setTimeout(updateNarrow, 200);
+  setTimeout(updateNarrow, 800);
 }
 
 /* =========================================================
