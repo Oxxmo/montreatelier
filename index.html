@@ -430,6 +430,45 @@ body{background:radial-gradient(1200px 620px at 50% -12%,#fbfaf8,#f0ede7) fixed}
 .sc-cat-sel{font-family:inherit;font-size:10px;padding:3px 7px;border:1px solid #d8d4ce;border-radius:6px;background:#fff;color:#555;outline:none;cursor:pointer}
 .sc-cat-sel:hover{border-color:#1a1a1a}
 
+/* ── OPTIMISEUR D'ACHATS ── */
+.sels-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:.4rem}
+.sels-top-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#purchase-btn:disabled{opacity:.4;cursor:not-allowed}
+.sel-pick{width:22px;height:22px;border:1px solid #d8d4ce;border-radius:6px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:.15s;background:#fff}
+.sel-pick:hover{border-color:#1a1a1a}
+.sel-pick.on{background:#1a1a1a;border-color:#1a1a1a}
+.sel-pick.on::after{content:'✓';color:#fff;font-size:12px;font-weight:600}
+.sel-card-picked{border-color:#1a1a1a !important;box-shadow:0 0 0 2px rgba(26,26,26,.12)}
+.purchase-head{background:linear-gradient(135deg,#211e1b,#2d2825);border-radius:14px;padding:1.5rem;color:#fff;margin-bottom:1.5rem}
+.purchase-title{font-size:21px;font-weight:300;margin-bottom:.35rem}
+.purchase-sub{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:#bbb;margin-bottom:1rem}
+.purchase-totals{display:flex;gap:18px;flex-wrap:wrap;font-size:12px;color:#ddd}
+.purchase-totals strong{color:#fff;font-size:14px}
+.purchase-section-title{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#1a1a1a;font-weight:600;margin:1.5rem 0 .85rem}
+.supplier-block{background:#fff;border:1px solid #e7e2da;border-radius:12px;padding:1rem 1.1rem;margin-bottom:1rem}
+.supplier-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding-bottom:.7rem;margin-bottom:.4rem;border-bottom:1px solid #f0ede8}
+.supplier-name{font-size:14px;font-weight:600;color:#1a1a1a}
+.supplier-count{font-size:10px;font-weight:400;color:#aaa;letter-spacing:.04em;margin-left:6px}
+.buy-row{display:flex;align-items:center;gap:12px;padding:9px 4px;border-bottom:1px solid #f4f2ee}
+.buy-row:last-child{border-bottom:none}
+.buy-row.bought{opacity:.5}
+.buy-row.bought .buy-name{text-decoration:line-through}
+.buy-check{width:22px;height:22px;border:1px solid #d8d4ce;border-radius:6px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;transition:.15s;background:#fff}
+.buy-check.on{background:#2a6a2a;border-color:#2a6a2a}
+.buy-check:hover{border-color:#1a1a1a}
+.buy-thumb{width:46px;height:46px;border-radius:8px;background:#f6f4f0;border:1px solid #eee;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.buy-thumb img{width:100%;height:100%;object-fit:contain;padding:3px}
+.buy-info{flex:1;min-width:0}
+.buy-name{font-size:12.5px;font-weight:500;color:#1a1a1a}
+.buy-qty{background:#1a1a1a;color:#fff;font-size:9px;padding:1px 6px;border-radius:10px;margin-left:4px;vertical-align:middle}
+.buy-meta{font-size:10px;color:#a8a298;margin-top:2px}
+.buy-price{font-size:12px;font-weight:600;color:#1a1a1a;text-align:right;white-space:nowrap}
+.buy-price .buy-unit{display:block;font-size:9px;font-weight:400;color:#bbb}
+.buy-link{text-decoration:none;white-space:nowrap}
+.supplier-foot{display:flex;gap:16px;flex-wrap:wrap;justify-content:flex-end;align-items:center;padding-top:.7rem;margin-top:.3rem;border-top:1px solid #f0ede8;font-size:11px;color:#888}
+.supplier-total{font-weight:600;color:#1a1a1a;font-size:12.5px}
+@media(max-width:600px){.buy-thumb{display:none}.purchase-totals{gap:10px}}
+
 /* ── RESPONSIVE REDESIGN ── */
 @media(max-width:760px){
   .detail{grid-template-columns:1fr;gap:1.25rem}
@@ -2100,6 +2139,149 @@ async function delItem(id){
 }
 
 /* ══ SÉLECTIONS CLIENTS ══ */
+/* ══ OPTIMISEUR D'ACHATS FOURNISSEURS ══ */
+let purchaseChecked = new Set();   // ids de sélections cochées
+let boughtParts = new Set();       // pièces marquées comme achetées (todo)
+let _allSelIds = [];
+let _supUrls = {};                 // liens par fournisseur pour "tout ouvrir"
+
+function updatePurchaseBar(){
+  var btn=document.getElementById('purchase-btn');
+  if(btn){ btn.disabled=purchaseChecked.size===0; btn.innerHTML='&#128722; Optimiser mes achats ('+purchaseChecked.size+')'; }
+}
+function togglePurchaseSel(id, el){
+  if(purchaseChecked.has(id)) purchaseChecked.delete(id); else purchaseChecked.add(id);
+  if(el) el.classList.toggle('on', purchaseChecked.has(id));
+  var card=document.getElementById('selcard-'+id); if(card) card.classList.toggle('sel-card-picked', purchaseChecked.has(id));
+  updatePurchaseBar();
+}
+function togglePurchaseAll(){
+  var all=_allSelIds||[];
+  var allOn=all.length>0 && all.every(function(id){return purchaseChecked.has(id);});
+  all.forEach(function(id){
+    if(allOn) purchaseChecked.delete(id); else purchaseChecked.add(id);
+    var el=document.querySelector('.sel-pick[data-pid="'+id+'"]'); if(el) el.classList.toggle('on', purchaseChecked.has(id));
+    var card=document.getElementById('selcard-'+id); if(card) card.classList.toggle('sel-card-picked', purchaseChecked.has(id));
+  });
+  updatePurchaseBar();
+}
+function openPurchasePlan(){ if(purchaseChecked.size) renderPurchasePlan([...purchaseChecked]); }
+
+function supplierFromUrl(url){ try{ return new URL(url).hostname.replace('www.',''); }catch(e){ return ''; } }
+
+// Agrège les pièces de plusieurs sélections, fusionne les fournisseurs, compte les quantités
+function buildPurchasePlan(selIds){
+  var partMap={};
+  selIds.forEach(function(sid){
+    var c=_selCache[sid]; if(!c) return;
+    (c.items||[]).forEach(function(p){
+      var live=items.find(function(x){return x.id===p.id;})||{};
+      var url=p.url||live.url||'';
+      var supplier=((live.supplier||p.supplier||'')+'').trim() || supplierFromUrl(url);
+      var key=p.id||(p.name+'|'+url);
+      if(!partMap[key]) partMap[key]={id:String(key),name:p.name||'Pièce',cat:p.cat||live.cat||'',img:p.img||live.img||'',cost:Number(p.cost||live.cost||0),ship:Number(p.ship||live.ship||0),url:url,supplier:supplier,qty:0,clients:{}};
+      partMap[key].qty++;
+      var cn=c.clientName||'Client';
+      partMap[key].clients[cn]=(partMap[key].clients[cn]||0)+1;
+    });
+  });
+  var parts=Object.keys(partMap).map(function(k){return partMap[k];});
+  var online=parts.filter(function(p){return p.url;});
+  var manual=parts.filter(function(p){return !p.url;});
+  function groupBySupplier(arr){ var g={}; arr.forEach(function(p){ var s=p.supplier||'Autres'; (g[s]=g[s]||[]).push(p); }); return g; }
+  return { onlineGroups:groupBySupplier(online), manual:manual };
+}
+
+function purchaseRow(p){
+  var bought=boughtParts.has(p.id);
+  var clientsTxt=Object.keys(p.clients).map(function(c){ var n=p.clients[c]; return c+(n>1?' ×'+n:''); }).join(', ');
+  var imgAttr=(p.img||'').replace(/"/g,'&quot;');
+  var urlAttr=(p.url||'').replace(/"/g,'&quot;');
+  return '<div class="buy-row'+(bought?' bought':'')+'" id="buy-'+p.id+'">'
+    +'<div class="buy-check'+(bought?' on':'')+'" onclick="togglePart(\''+p.id+'\')" title="Marquer comme achetée">'+(bought?'✓':'')+'</div>'
+    +'<div class="buy-thumb">'+(p.img?'<img src="'+imgAttr+'" alt="" onerror="this.style.display=\'none\'">':'')+'</div>'
+    +'<div class="buy-info">'
+      +'<div class="buy-name">'+p.name+(p.qty>1?' <span class="buy-qty">×'+p.qty+'</span>':'')+'</div>'
+      +'<div class="buy-meta">'+(p.cat||'')+' · pour '+clientsTxt+'</div>'
+    +'</div>'
+    +'<div class="buy-price">'+(p.cost>0?(p.cost*p.qty).toFixed(2)+' €':'—')+(p.qty>1&&p.cost>0?'<span class="buy-unit">'+p.cost.toFixed(2)+' € × '+p.qty+'</span>':'')+'</div>'
+    +(p.url?'<a class="btn-xs buy-link" href="'+urlAttr+'" target="_blank" rel="noopener">Acheter ↗</a>':'<span class="btn-xs" style="opacity:.5;cursor:default">Sur-mesure</span>')
+    +'</div>';
+}
+
+function togglePart(id){
+  if(boughtParts.has(id)) boughtParts.delete(id); else boughtParts.add(id);
+  var row=document.getElementById('buy-'+id);
+  if(row){ var on=boughtParts.has(id); row.classList.toggle('bought',on); var c=row.querySelector('.buy-check'); if(c){ c.classList.toggle('on',on); c.textContent=on?'✓':''; } }
+}
+
+function openSupplierLinks(si){
+  var urls=_supUrls[si]||[];
+  urls.forEach(function(u,idx){ if(u) setTimeout(function(){ window.open(u,'_blank','noopener'); }, idx*250); });
+}
+
+function renderPurchasePlan(selIds){
+  var plan=buildPurchasePlan(selIds);
+  var clientsSet={}; selIds.forEach(function(sid){ if(_selCache[sid]) clientsSet[_selCache[sid].clientName]=1; });
+  var nClients=Object.keys(clientsSet).length;
+  var supplierNames=Object.keys(plan.onlineGroups).sort(function(a,b){return a.localeCompare(b,'fr');});
+  _supUrls={};
+
+  var grandParts=0, grandShip=0, totalUnits=0;
+  supplierNames.forEach(function(s){
+    var arr=plan.onlineGroups[s];
+    grandParts+=arr.reduce(function(a,p){return a+p.cost*p.qty;},0);
+    grandShip+=arr.reduce(function(m,p){return Math.max(m,p.ship);},0);
+    arr.forEach(function(p){ totalUnits+=p.qty; });
+  });
+  plan.manual.forEach(function(p){ grandParts+=p.cost*p.qty; totalUnits+=p.qty; });
+
+  var html='<button class="btn-back-nav" onclick="renderSelections()">&#8592; Retour aux sélections</button>';
+  html+='<div class="purchase-head">'
+    +'<div class="purchase-title">Liste d\'achats optimisée</div>'
+    +'<div class="purchase-sub">'+selIds.length+' sélection'+(selIds.length>1?'s':'')+' · '+nClients+' client'+(nClients>1?'s':'')+' · '+totalUnits+' pièce'+(totalUnits>1?'s':'')+' à acheter · '+supplierNames.length+' fournisseur'+(supplierNames.length>1?'s':'')+'</div>'
+    +'<div class="purchase-totals">'
+      +'<span>Pièces : <strong>'+grandParts.toFixed(2)+' €</strong></span>'
+      +'<span>Port mutualisé : <strong>'+grandShip.toFixed(2)+' €</strong></span>'
+      +'<span>Total estimé : <strong>'+(grandParts+grandShip).toFixed(2)+' €</strong></span>'
+    +'</div></div>';
+
+  if(supplierNames.length){
+    html+='<div class="purchase-section-title">Commandes en ligne — groupées par fournisseur</div>';
+    supplierNames.forEach(function(s,si){
+      var arr=plan.onlineGroups[s];
+      var partsSum=arr.reduce(function(a,p){return a+p.cost*p.qty;},0);
+      var ship=arr.reduce(function(m,p){return Math.max(m,p.ship);},0);
+      var shipVaries=arr.some(function(p){return Number(p.ship)!==Number(arr[0].ship);});
+      _supUrls[si]=arr.map(function(p){return p.url;}).filter(Boolean);
+      html+='<div class="supplier-block">'
+        +'<div class="supplier-head">'
+          +'<div class="supplier-name">'+s+' <span class="supplier-count">'+arr.length+' référence'+(arr.length>1?'s':'')+'</span></div>'
+          +'<button class="btn-xs" onclick="openSupplierLinks('+si+')">Ouvrir tous les liens ↗</button>'
+        +'</div>';
+      arr.forEach(function(p){ html+=purchaseRow(p); });
+      html+='<div class="supplier-foot">'
+        +'<span>Sous-total pièces : '+partsSum.toFixed(2)+' €</span>'
+        +'<span>Frais de port : <strong>'+ship.toFixed(2)+' €</strong>'+(shipVaries?' <em style="color:#c9a050">(port variable / express — max retenu)</em>':' (1 seule commande)')+'</span>'
+        +'<span class="supplier-total">Total : '+(partsSum+ship).toFixed(2)+' €</span>'
+      +'</div></div>';
+    });
+  }
+  if(plan.manual.length){
+    html+='<div class="purchase-section-title">À commander manuellement / sur-mesure <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#aaa">— pas de lien, contact fournisseur</span></div>';
+    html+='<div class="supplier-block">';
+    plan.manual.forEach(function(p){ html+=purchaseRow(p); });
+    html+='</div>';
+  }
+  if(!supplierNames.length && !plan.manual.length){
+    html+='<div class="alert alert-info">Aucune pièce à acheter dans ces sélections.</div>';
+  }
+  document.getElementById('view').innerHTML=html;
+  window.scrollTo({top:0,behavior:'instant'});
+  window.parent.postMessage({type:'mwa-scroll-top'},'*');
+  notifyHeight();
+}
+
 async function renderSelections(){
   document.getElementById('view').innerHTML='<div style="text-align:center;padding:2rem;color:#bbb;font-size:12px;letter-spacing:.06em">Chargement…</div>';
   const sels = isConfigured() ? await SB.selAll() : [];
@@ -2107,14 +2289,23 @@ async function renderSelections(){
     document.getElementById('view').innerHTML='<div class="alert alert-info">Aucune sélection enregistrée pour l instant.</div>';
     return;
   }
-  // Remplir le cache pour openDevis
+  // Remplir le cache pour openDevis / optimiseur d'achats
   _selCache={};
   sels.forEach(function(s){
     var snap=JSON.parse(s.items_snapshot||'[]');
     _selCache[s.id]={clientName:s.client_name, items:snap};
   });
+  _allSelIds=sels.map(function(s){return s.id;});
+  purchaseChecked=new Set();
   document.getElementById('view').innerHTML=
-    '<div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#999;margin-bottom:1.25rem">'+sels.length+' sélection'+(sels.length>1?'s':'')+' enregistrée'+(sels.length>1?'s':'')+'</div>'
+    '<div class="sels-top">'
+      +'<div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#999">'+sels.length+' sélection'+(sels.length>1?'s':'')+' enregistrée'+(sels.length>1?'s':'')+'</div>'
+      +'<div class="sels-top-actions">'
+        +'<button class="btn-xs" onclick="togglePurchaseAll()">Tout cocher</button>'
+        +'<button class="btn btn-p" id="purchase-btn" disabled onclick="openPurchasePlan()">&#128722; Optimiser mes achats (0)</button>'
+      +'</div>'
+    +'</div>'
+    +'<div style="font-size:10px;color:#bbb;margin-bottom:1.1rem;letter-spacing:.02em">Cochez une ou plusieurs sélections validées pour générer une liste d\'achats groupée par fournisseur.</div>'
     +'<div id="sels-list">'
     +sels.map(function(s){
       const snap=JSON.parse(s.items_snapshot||'[]');
@@ -2122,8 +2313,11 @@ async function renderSelections(){
       const date=new Date(s.created_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
       return '<div class="sel-card" id="selcard-'+s.id+'">'
         +'<div class="sel-card-head">'
+        +'<div style="display:flex;align-items:center;gap:11px">'
+        +'<div class="sel-pick" data-pid="'+s.id+'" onclick="togglePurchaseSel(\''+s.id+'\',this)" title="Cocher pour grouper les achats"></div>'
         +'<div><div class="sel-card-name">'+s.client_name+'</div>'
         +'<div class="sel-card-date">'+date+' · '+snap.length+' pièce'+(snap.length>1?'s':'')+(totalCost>0?' · Coût pièces : '+totalCost.toLocaleString('fr-FR')+' €':'')+(s.client_code?' · <strong style="color:#c9a96e;font-family:monospace;letter-spacing:.05em">'+s.client_code+'</strong>':'')+'</div></div>'
+        +'</div>'
         +'<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'
         +"<button class=\"btn-xs\" data-id='"+s.id+"' data-action='edit-sel'>Modifier</button>"
         +"<button class=\"btn-xs\" data-id='"+s.id+"' data-action='devis'>Créer le devis</button>"
