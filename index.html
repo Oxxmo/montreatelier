@@ -19,15 +19,19 @@ a{color:inherit;text-decoration:none}
 .app{max-width:1080px;margin:0 auto;padding:1.5rem 1rem;position:relative;min-height:auto}
 
 /* ── TOPBAR ── */
-.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:2rem;padding-bottom:1.25rem;border-bottom:1px solid #e0ddd8;flex-wrap:wrap;gap:.75rem;background:#1a1a1a;margin:-1.5rem -1rem 2rem;padding:1rem 1.5rem;border-bottom:none;border-radius:0}
-.logo{font-size:18px;font-weight:300;letter-spacing:.06em;color:#fff;text-transform:lowercase}
-.logo span{color:#b8b0a0;font-style:italic;font-weight:300}
-.nav{display:flex;gap:4px;flex-wrap:wrap}
-.nb{padding:6px 14px;border:1px solid #3a3a3a;border-radius:2px;font-size:11px;letter-spacing:.07em;text-transform:uppercase;cursor:pointer;background:transparent;color:#888;transition:.15s}
-.nb.active{background:#fff;color:#1a1a1a;border-color:#fff;font-weight:500}
-.nb:hover:not(.active){border-color:#666;color:#ccc}
-.nb.danger{border-color:#5a2a2a;color:#c06060}
-.nb.danger:hover{border-color:#c06060;color:#e08080}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:.75rem;flex-wrap:wrap;background:#1f1d1b;margin:-1.5rem -1rem 0;padding:.85rem 1.5rem;position:relative;z-index:5}
+.logo{font-size:19px;font-weight:300;letter-spacing:.04em;color:#fff;text-transform:lowercase;cursor:pointer;display:flex;align-items:baseline;gap:8px;line-height:1}
+.logo b{font-weight:600;letter-spacing:.02em}
+.logo span{color:#b3a98f;font-style:normal;font-weight:300;font-size:11px;letter-spacing:.04em;text-transform:none}
+.nav{display:flex;gap:3px;flex-wrap:wrap;align-items:center}
+.nb{padding:8px 14px;border:1px solid transparent;border-radius:9px;font-size:11px;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;background:transparent;color:#9b948a;transition:.18s;white-space:nowrap}
+.nb.active{background:#fff;color:#1a1a1a;border-color:#fff;font-weight:600}
+.nb:hover:not(.active){background:rgba(255,255,255,.08);color:#fff}
+.nb.danger{color:#c08a8a}
+.nb.danger:hover{background:rgba(192,96,96,.16);color:#e8a8a8}
+/* Zone sous le bandeau : collée au hero sur le catalogue, espacée ailleurs */
+.below-pad{padding-top:1.5rem}
+.below-pad .alert:first-child{margin-top:0}
 
 /* ── FILTER ── */
 .filter-bar{display:flex;gap:6px;margin-bottom:1.25rem;align-items:center;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;padding-bottom:4px;scrollbar-width:none}
@@ -236,9 +240,12 @@ a{color:inherit;text-decoration:none}
 /* ── RESPONSIVE ── */
 @media(max-width:600px){
   .app{padding:0 0 1rem}
-  .topbar{margin:0 0 1.25rem;border-radius:0;padding:.875rem 1rem}
-  .logo{font-size:16px}
-  .nb{padding:5px 10px;font-size:10px}
+  .topbar{margin:0;border-radius:0;padding:.7rem .9rem;flex-wrap:wrap}
+  .logo{font-size:17px;flex:1;min-width:0}
+  .logo span{display:none}
+  .nav{width:100%;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;gap:2px;padding-bottom:2px}
+  .nav::-webkit-scrollbar{display:none}
+  .nb{padding:7px 12px;font-size:10px;flex-shrink:0}
   .grid{grid-template-columns:repeat(2,1fr);gap:.75rem;padding:0 .75rem}
   .filter-bar{padding:0 .75rem}
   .bbar{margin:0 .75rem 1rem;border-radius:2px}
@@ -925,7 +932,7 @@ function renderLoading(){
 function render(){
   document.getElementById('app').innerHTML = `
     <div class="topbar">
-      <div class="logo">${CONFIG.shop_name} <span>${CONFIG.shop_tagline}</span></div>
+      <div class="logo" onclick="go('client')" title="Retour au catalogue"><b>${CONFIG.shop_name}</b> <span>${CONFIG.shop_tagline}</span></div>
       <div class="nav">
         <button class="nb ${activeTab==='client'?'active':''}" onclick="go('client')">Catalogue</button>
         ${isAdmin ? `
@@ -936,8 +943,10 @@ function render(){
         ` : `<button class="nb" onclick="go('login')">Espace pro</button>`}
       </div>
     </div>
-    ${!isConfigured()&&isAdmin ? '<div class="alert alert-warn">⚠ Supabase non configuré — données non sauvegardées.</div>' : ''}
-    <div id="view"></div>`;
+    <div class="below-top${activeTab==='client'?'':' below-pad'}">
+      ${!isConfigured()&&isAdmin ? '<div class="alert alert-warn">⚠ Supabase non configuré — données non sauvegardées.</div>' : ''}
+      <div id="view"></div>
+    </div>`;
   if(activeTab==='client') renderClient();
   else if(activeTab==='scan') renderScan();
   else if(activeTab==='admin') renderAdmin();
