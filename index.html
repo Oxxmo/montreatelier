@@ -427,8 +427,11 @@ body{background:radial-gradient(1200px 620px at 50% -12%,#fbfaf8,#f0ede7) fixed}
 .tg-new.on{border-color:#1a1a1a;background:#1a1a1a;color:#fff}
 .tg-custom.on{border-color:#c9a96e;background:#c9a96e;color:#fff}
 .tg-hidden.on{border-color:#7a7a7a;background:#7a7a7a;color:#fff}
-.sc-cat-sel{font-family:inherit;font-size:10px;padding:3px 7px;border:1px solid #d8d4ce;border-radius:6px;background:#fff;color:#555;outline:none;cursor:pointer}
+.sc-cat-sel{font-family:inherit;font-size:10px;padding:3px 7px;border:1px solid #d8d4ce;border-radius:6px;background:#fff;color:#555;outline:none;cursor:pointer;max-width:160px}
 .sc-cat-sel:hover{border-color:#1a1a1a}
+.sc-price-edit{font-size:10px;color:#888;display:inline-flex;align-items:center;gap:4px}
+.sc-price-inp{width:64px;font-family:inherit;font-size:11px;padding:3px 6px;border:1px solid #d8d4ce;border-radius:6px;background:#fff;color:#1a1a1a;outline:none}
+.sc-price-inp:focus{border-color:#1a1a1a}
 
 /* ── OPTIMISEUR D'ACHATS ── */
 .sels-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:.4rem}
@@ -557,19 +560,23 @@ const SB = {
   async selInsert(s) { try { const r = await fetch(SB.u('selections'), {method:'POST',headers:SB.h(),body:JSON.stringify(s)}); return r.ok; } catch { return false; } },
   async selRemove(id) { try { const r = await fetch(SB.u(`selections?id=eq.${id}`), {method:'DELETE',headers:SB.h()}); return r.ok; } catch { return false; } },
   async selUpdate(id, data) { try { const r = await fetch(SB.u(`selections?id=eq.${id}`), {method:'PATCH',headers:SB.h(),body:JSON.stringify(data)}); return r.ok; } catch { return false; } },
+  // ── Pièces achetées (todo persistant) ──
+  async boughtAll() { try { const r = await fetch(SB.u('bought_parts?select=part_id'), { headers: SB.h() }); if(!r.ok) return []; const d = await r.json(); return d.map(function(x){return x.part_id;}); } catch { return []; } },
+  async boughtMark(partId) { try { const r = await fetch(SB.u('bought_parts'), {method:'POST',headers:Object.assign({},SB.h(),{'Prefer':'resolution=merge-duplicates,return=minimal'}),body:JSON.stringify([{part_id:partId}])}); return r.ok; } catch { return false; } },
+  async boughtUnmark(partId) { try { const r = await fetch(SB.u('bought_parts?part_id=eq.'+encodeURIComponent(partId)), {method:'DELETE',headers:SB.h()}); return r.ok; } catch { return false; } },
 };
 
-/* ══ AI PROXY — Gemini ══ */
-async function callAI({ system, messages, max_tokens, useSearch, image }) {
+/* ══ AI PROXY ══ */
+async function callAI({ system, messages, max_tokens, useSearch, image, model }) {
   const r = await fetch('/api/ai-proxy', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ system, messages, max_tokens, useSearch, image }),
+    body: JSON.stringify({ system, messages, max_tokens, useSearch, image, model }),
   });
   const data = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(data.error || `Erreur proxy HTTP ${r.status}`);
   if (data.error) throw new Error(data.error);
-  console.log('[Gemini] réponse :', data.text?.slice(0, 120));
+  console.log('[IA] réponse :', data.text?.slice(0, 120));
   return data;
 }
 
@@ -578,23 +585,39 @@ function extractText(data) { return data?.text?.trim() || null; }
 
 /* ══ DESCRIPTION + TITRE IA ══ */
 async function generateDesc(name, rawDesc, cat) {
-  try {
-    const data = await callAI({
-      system: 'Tu es un assistant qui renomme des pieces horlogeres. Reponds avec exactement 2 lignes, rien dautre:\nLIGNE1: le titre en francais (5 mots max, type+style+couleur, sans mm/NH35/ETA/Movement/Lume/Automatic)\nLIGNE2: une description sobre en francais (15-25 mots, sans prix)\nExemple pour "Sunburst Dial Refraction 28.5mm gradient red NH35":\nCadran sunburst refraction - Rouge gradue\nCadran a finition sunburst avec effet refraction, disponible en rouge gradue, compatible mouvements NH35.',
-      messages: [{ role:'user', content:'Piece: '+name+' | Categorie: '+cat }],
-      max_tokens: 100,
-      model: 'claude-haiku-4-5-20251001',
-    });
-    const txt = (extractText(data) || '').trim();
-    console.log('[generateDesc] reponse:', txt.slice(0,150));
-    const lines = txt.split('\n').map(function(l){ return l.replace(/^LIGNE\d+:?\s*/i,'').trim(); }).filter(function(l){ return l.length>2; });
-    const title = lines[0] || name;
-    const desc = lines[1] || '';
-    return { title: title, desc: desc };
-  } catch(err) {
-    console.error('[generateDesc] erreur:', err.message);
-    return { title: name, desc: '' };
+  const system = 'Tu es un expert horloger qui renomme et décrit des pièces de montres custom (mods Seiko) pour un catalogue en français.\n'
+    +'Réponds UNIQUEMENT par un objet JSON valide, sans markdown, exactement au format : {"titre":"...","description":"..."}\n'
+    +'- titre : 5 mots maximum en français (type + style + couleur), SANS dimensions (mm), SANS NH35/NH36/ETA, SANS les mots Movement/Lume/Automatic.\n'
+    +'- description : UNE phrase sobre en français (15 à 25 mots), sans prix.\n'
+    +'Exemple pour "Sunburst Dial Refraction 28.5mm gradient red NH35" → {"titre":"Cadran sunburst rouge gradué","description":"Cadran à finition soleillée avec effet de réfraction, dégradé rouge, compatible avec les mouvements NH35."}';
+  const userMsg = 'Pièce : '+name+(rawDesc?(' | Détails : '+String(rawDesc).slice(0,400)):'')+' | Catégorie : '+cat;
+  function parseOut(txt){
+    if(!txt) return null;
+    // 1) JSON prioritaire
+    var m = txt.replace(/```json|```/g,'').match(/\{[\s\S]*\}/);
+    if(m){ try{ var o=JSON.parse(m[0]); var t=(o.titre||o.title||'').trim(); var d=(o.description||o.desc||'').trim(); if(t||d) return {title:t||name, desc:d}; }catch(e){} }
+    // 2) Repli : 2 lignes
+    var lines = txt.split('\n').map(function(l){ return l.replace(/^(LIGNE\d+|titre|description|title|desc)\s*[:\-]?\s*/i,'').trim(); }).filter(function(l){ return l.length>2; });
+    if(lines.length){ return { title: lines[0]||name, desc: lines.slice(1).join(' ') }; }
+    return null;
   }
+  for(var attempt=0; attempt<2; attempt++){
+    try{
+      const data = await callAI({
+        system: system,
+        messages: [{ role:'user', content: userMsg }],
+        max_tokens: 300,
+        model: 'claude-haiku-4-5-20251001',
+      });
+      const txt = (extractText(data) || '').trim();
+      const out = parseOut(txt);
+      if(out && (out.title || out.desc)) return out;
+    }catch(err){
+      console.error('[generateDesc] tentative '+(attempt+1)+' échouée:', err.message);
+      if(attempt===0) await new Promise(function(r){setTimeout(r,800);}); // petite pause puis 1 retry
+    }
+  }
+  return { title: name, desc: '' };
 }
 
 /* ══ DETECT SITE TYPE ══ */
@@ -809,6 +832,7 @@ Prends le prix unitaire le plus bas visible. Commence directement par {`,
     messages: [{ role:'user', content:'Analyse cette capture produit et retourne les données JSON.' }],
     max_tokens: 600,
     image: { mimeType: 'image/jpeg', data: base64 },
+    model: 'claude-sonnet-4-6',
   });
   const txt = extractText(data);
   if (!txt) throw new Error('Pas de réponse — vérifiez la clé GEMINI_API_KEY sur Netlify');
@@ -865,6 +889,7 @@ Max 20 produits. Commence directement par [.`,
     messages: [{ role:'user', content:`Catalogue à scanner : ${url}` }],
     max_tokens: 1500,
     useSearch: true,
+    model: 'claude-sonnet-4-6',
   });
   const txt = extractText(data);
   if (!txt) throw new Error('Pas de réponse — vérifiez la clé GEMINI_API_KEY sur Netlify');
@@ -1702,13 +1727,15 @@ function renderScanResults(){
           <div class="sc-thumb">${p.img?`<img src="${p.img}" onerror="this.parentNode.innerHTML=''" alt="">`:''}</div>
           <div class="sc-info">
             <div class="sc-name">${p.name||'—'}${dupScanIds.has(String(i))?'<span class="dup-badge">doublon</span>':''}${existDupIds.has(String(i))?'<span class="dup-badge" style="background:#fde8e8;color:#c0392b;border-color:#e74c3c">déjà dans catalogue</span>':''}</div>
-            <div class="sc-meta" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-              <select class="sc-cat-sel" onclick="event.stopPropagation()" onchange="event.stopPropagation();setScanCat(${i},this.value)" title="Corriger la catégorie">
+            <div class="sc-meta" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:4px">
+              <select class="sc-cat-sel" onclick="event.stopPropagation()" onchange="event.stopPropagation();setScanCat(${i},this.value)" title="Catégorie">
                 ${scStdCats.map(function(c){return '<option value="'+c+'"'+((p.cat||'Autre')===c?' selected':'')+'>'+c+'</option>';}).join('')}
               </select>
-              <span>· ${p.supplier||'—'}</span>
+              <select class="sc-cat-sel" onclick="event.stopPropagation()" onchange="event.stopPropagation();setScanSupplier(${i},this)" title="Fournisseur (expéditeur)">
+                ${supplierOptions(p.supplier||'')}
+              </select>
+              <span class="sc-price-edit">Prix achat : <input type="number" class="sc-price-inp" value="${p.price?Number(p.price):''}" step="0.01" min="0" placeholder="0.00" onclick="event.stopPropagation()" oninput="event.stopPropagation();setScanPrice(${i},this.value)"> €</span>
             </div>
-            <div class="sc-price">${p.price?Number(p.price).toLocaleString('fr-FR')+' €':'—'}</div>
             ${p.description?`<div class="sc-desc-preview">${p.description}</div>`:''}
             ${p.url?`<div class="sc-url">${p.url}</div>`:''}
           </div>
@@ -1717,6 +1744,22 @@ function renderScanResults(){
     </div>`;
 }
 function setScanCat(i,val){ if(scanRes[i]) scanRes[i].cat=val; }
+function setScanPrice(i,val){ if(scanRes[i]) scanRes[i].price=parseFloat(val)||0; }
+function setScanSupplier(i,sel){
+  var v=sel.value;
+  if(v==='__new__'){ var n=(prompt('Nom du nouveau fournisseur :')||'').trim(); if(n && scanRes[i]) scanRes[i].supplier=n; renderScanResults(); return; }
+  if(scanRes[i]) scanRes[i].supplier=v;
+}
+// Liste des fournisseurs existants (depuis le catalogue) + valeur courante + option "Nouveau"
+function allSuppliers(){ return [...new Set(items.map(function(i){return (i.supplier||'').trim();}).filter(Boolean))].sort(function(a,b){return a.localeCompare(b,'fr');}); }
+function supplierOptions(current){
+  var sup=allSuppliers();
+  if(current && sup.indexOf(current)===-1) sup.unshift(current);
+  var opts='<option value="">— Fournisseur —</option>';
+  opts+=sup.map(function(s){return '<option value="'+s.replace(/"/g,'&quot;')+'"'+(current===s?' selected':'')+'>'+s+'</option>';}).join('');
+  opts+='<option value="__new__">➕ Nouveau fournisseur…</option>';
+  return opts;
+}
 
 function togCheck(i){
   scanChecked.has(i)?scanChecked.delete(i):scanChecked.add(i);
@@ -1987,6 +2030,17 @@ function openEdit(id){
       <div class="field"><label>Catégorie</label>
         <select id="edit-cat">${catOpts}</select>
       </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="field"><label>Prix d'achat (€)</label>
+          <input type="number" id="edit-cost" step="0.01" min="0" value="${Number(i.cost||0)}">
+        </div>
+        <div class="field"><label>Frais de port (€)</label>
+          <input type="number" id="edit-ship" step="0.01" min="0" value="${Number(i.ship||0)}">
+        </div>
+      </div>
+      <div class="field"><label>Fournisseur (expéditeur)</label>
+        <select id="edit-supplier" onchange="editSupplierChange(this)">${supplierOptions(i.supplier||'')}</select>
+      </div>
       <div class="field" style="margin-bottom:.5rem"><label>Image</label></div>
       <div class="drop-zone" id="drop-zone">
         <input type="file" id="edit-file" accept="image/*">
@@ -2041,6 +2095,17 @@ async function regenDesc(id){
   if(btn){btn.textContent='↻ Régénérer';btn.disabled=false;}
 }
 
+function editSupplierChange(sel){
+  if(sel.value==='__new__'){
+    var n=(prompt('Nom du nouveau fournisseur :')||'').trim();
+    if(n){
+      var ref=sel.querySelector('option[value="__new__"]');
+      var opt=document.createElement('option'); opt.value=n; opt.textContent=n;
+      sel.insertBefore(opt, ref); sel.value=n;
+    } else { sel.value=''; }
+  }
+}
+
 async function saveEdit(id){
   const name=(document.getElementById('edit-title')||{}).value?.trim()||'';
   const cat=(document.getElementById('edit-cat')||{}).value||'';
@@ -2048,8 +2113,12 @@ async function saveEdit(id){
   const fileData=window._pendingEditImg||'';
   const img=fileData||urlVal||items.find(x=>x.id===id)?.img||'';
   const description=(document.getElementById('edit-desc')||{}).value?.trim()||'';
-  items=items.map(i=>i.id===id?{...i,name:name||i.name,img,description,cat:cat||i.cat}:i);
-  if(isConfigured()) await SB.update(id,{name:name||undefined,img,description,cat:cat||undefined});
+  const cost=parseFloat((document.getElementById('edit-cost')||{}).value)||0;
+  const ship=parseFloat((document.getElementById('edit-ship')||{}).value)||0;
+  const supEl=document.getElementById('edit-supplier');
+  const supplier=(supEl && supEl.value!=='__new__')?supEl.value:'';
+  items=items.map(i=>i.id===id?{...i,name:name||i.name,img,description,cat:cat||i.cat,cost,ship,supplier}:i);
+  if(isConfigured()) await SB.update(id,{name:name||undefined,img,description,cat:cat||undefined,cost,ship,supplier});
   closeEdit();
 }
 
@@ -2210,9 +2279,12 @@ function purchaseRow(p){
 }
 
 function togglePart(id){
-  if(boughtParts.has(id)) boughtParts.delete(id); else boughtParts.add(id);
+  var on;
+  if(boughtParts.has(id)){ boughtParts.delete(id); on=false; } else { boughtParts.add(id); on=true; }
   var row=document.getElementById('buy-'+id);
-  if(row){ var on=boughtParts.has(id); row.classList.toggle('bought',on); var c=row.querySelector('.buy-check'); if(c){ c.classList.toggle('on',on); c.textContent=on?'✓':''; } }
+  if(row){ row.classList.toggle('bought',on); var c=row.querySelector('.buy-check'); if(c){ c.classList.toggle('on',on); c.textContent=on?'✓':''; } }
+  // Persistance en base (sans bloquer l'UI)
+  if(isConfigured()){ if(on) SB.boughtMark(id); else SB.boughtUnmark(id); }
 }
 
 function openSupplierLinks(si){
@@ -2297,6 +2369,8 @@ async function renderSelections(){
   });
   _allSelIds=sels.map(function(s){return s.id;});
   purchaseChecked=new Set();
+  // Charger les pièces déjà marquées comme achetées (todo persistant)
+  if(isConfigured()){ try{ boughtParts=new Set(await SB.boughtAll()); }catch(e){} }
   document.getElementById('view').innerHTML=
     '<div class="sels-top">'
       +'<div style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#999">'+sels.length+' sélection'+(sels.length>1?'s':'')+' enregistrée'+(sels.length>1?'s':'')+'</div>'
