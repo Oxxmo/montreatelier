@@ -269,6 +269,37 @@ a{color:inherit;text-decoration:none}
 .adm-hidden-btn{width:24px;height:24px;border-radius:50%;border:1px solid #ddd;background:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;transition:.2s;cursor:pointer;line-height:1;color:#ddd}
 .adm-hidden-btn.on{border-color:#7a7a7a;background:#7a7a7a;color:#fff}
 .adm-hidden-btn:hover:not(.on){border-color:#7a7a7a;color:#7a7a7a}
+
+/* ══ POLISH / MICRO-INTERACTIONS (ajouts non destructifs) ══ */
+/* Apparition douce des images — se termine toujours en opacité 1 (aucun risque d'image invisible) */
+.c-img img{animation:imgIn .5s ease}
+@keyframes imgIn{from{opacity:0}to{opacity:1}}
+/* Élévation des cartes au survol */
+.card{transition:transform .2s ease,box-shadow .2s ease,border-color .2s ease}
+.card:hover{transform:translateY(-3px)}
+/* Retour tactile sur les éléments cliquables */
+.btn:active{transform:translateY(1px)}
+.add-btn:active{transform:scale(.88)}
+.chip:active,.nb:active{transform:scale(.96)}
+/* Animation à l'ajout d'une pièce au panier */
+@keyframes pop{0%{transform:scale(1)}45%{transform:scale(1.3)}100%{transform:scale(1)}}
+.add-btn.justadded{animation:pop .35s ease}
+/* Pulsation du compteur de sélection */
+@keyframes countPulse{0%{transform:scale(1)}40%{transform:scale(1.45);color:#c9a96e}100%{transform:scale(1)}}
+.bbar-info strong.pulse{display:inline-block;animation:countPulse .45s ease}
+/* Anneau de focus discret sur les champs (plus pro) */
+.s-in:focus,.field input:focus,.field select:focus,.field textarea:focus,.url-row input:focus{box-shadow:0 0 0 3px rgba(26,26,26,.06)}
+/* Squelette de chargement */
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.skel{background:linear-gradient(90deg,#ececec 25%,#f6f5f3 37%,#ececec 63%);background-size:200% 100%;animation:shimmer 1.5s ease infinite;border-radius:2px}
+.skel-card{background:#fff;border:1px solid #e8e5e0;border-radius:2px;overflow:hidden}
+.skel-img{width:100%;height:160px}
+.skel-line{height:10px;margin:11px 12px;border-radius:2px}
+.skel-line.short{width:45%}
+/* Bouton « copier le code » */
+.copy-code-btn{margin-top:.625rem;width:100%;padding:9px;font-size:11px;letter-spacing:.07em;text-transform:uppercase;border:1px solid #d8d4ce;border-radius:2px;background:#fff;color:#555;cursor:pointer;transition:.15s;font-family:inherit}
+.copy-code-btn:hover{border-color:#1a1a1a;color:#1a1a1a}
+.copy-code-btn.done{border-color:#6a9a6a;color:#2a6a2a;background:#f3faf3}
 </style>
 </head>
 <body>
@@ -652,8 +683,17 @@ function isConfigured(){ return CONFIG.supabase_url!=='VOTRE_SUPABASE_URL'; }
 /* ══ INIT ══ */
 async function init(){
   isAdmin = sessionStorage.getItem('mwa_admin')==='1';
-  if(isConfigured()) items = await SB.all();
+  if(isConfigured()){ renderLoading(); items = await SB.all(); }
   render();
+}
+
+/* Écran de chargement (squelette) pendant la récupération du catalogue */
+function renderLoading(){
+  var sk='<div class="skel-card"><div class="skel skel-img"></div><div class="skel skel-line"></div><div class="skel skel-line short"></div></div>';
+  var cards=''; for(var n=0;n<8;n++){ cards+=sk; }
+  document.getElementById('app').innerHTML=
+    '<div class="topbar"><div class="logo">'+CONFIG.shop_name+' <span>'+CONFIG.shop_tagline+'</span></div></div>'
+    +'<div class="grid">'+cards+'</div>';
 }
 
 /* ══ RENDER ══ */
@@ -726,10 +766,10 @@ function buildStatsBar(){
 function renderClient(){
   document.getElementById('view').innerHTML = `
     <div class="bbar">
-      <div class="bbar-info">Sélection : <strong id="bn">${basket.size}</strong> pièce${basket.size>1?'s':''}</div>
+      <div class="bbar-info">Sélection : <strong id="bn">${basket.size}</strong> <span id="bn-label">pièce${basket.size>1?'s':''}</span></div>
       <div class="bbar-btns">
         <button class="btn btn-s" onclick="clearBasket()">Vider</button>
-        <button class="btn btn-p" onclick="showSel()">Voir la sélection</button>
+        <button class="btn btn-p" id="btn-view-sel" onclick="showSel()">Voir la sélection${basket.size?' ('+basket.size+')':''}</button>
       </div>
     </div>
     <div id="sel-panel"></div>
@@ -794,7 +834,8 @@ function buildCards(){
   if(!list.length) return '<div class="empty">Aucune pièce</div>';
   function oneCard(i){
     var sel=basket.has(i.id);
-    var imgH=i.img?('<img src="'+i.img+'" alt="" onerror="this.style.display=\'none\'">'):('<span class="c-img-ph">Aucune photo</span>');
+    var altTxt=((i.name||'')+(i.cat?' — '+i.cat:'')).replace(/"/g,'');
+    var imgH=i.img?('<img src="'+i.img+'" alt="'+altTxt+'" loading="lazy" onerror="this.style.display=\'none\'">'):('<span class="c-img-ph">Aucune photo</span>');
     var nb=i.is_new?'<span class="badge-new">&#9733; Nouveau</span>':'';
     var pc=i.is_custom?'<span class="badge-custom">P Personnalisable</span>':'';
     var hd=(i.hidden&&isAdmin)?'<span class="badge-hidden-card">&#128065; Masqué</span>':'';
@@ -851,22 +892,33 @@ function refreshCards(){
 }
 function setCat(c){ filterCat=c; renderClient(); }
 
+// Met à jour tous les indicateurs de la sélection (compteur, pluriel, bouton)
+function updateBasketUI(pulse){
+  var bn=document.getElementById('bn');
+  if(bn){ bn.textContent=basket.size; if(pulse){ bn.classList.remove('pulse'); void bn.offsetWidth; bn.classList.add('pulse'); } }
+  var lbl=document.getElementById('bn-label');
+  if(lbl) lbl.textContent='pièce'+(basket.size>1?'s':'');
+  var vb=document.getElementById('btn-view-sel');
+  if(vb) vb.textContent='Voir la sélection'+(basket.size?' ('+basket.size+')':'');
+}
+
 function toggleB(id){
-  basket.has(id)?basket.delete(id):basket.add(id);
-  document.getElementById('bn').textContent=basket.size+(basket.size>1?'s':'');
+  var wasIn=basket.has(id);
+  wasIn?basket.delete(id):basket.add(id);
+  updateBasketUI(true);
   const crd=document.getElementById('crd-'+id);
-  if(crd){ crd.className='card'+(basket.has(id)?' sel':''); const b=crd.querySelector('.add-btn'); if(b){b.className='add-btn'+(basket.has(id)?' on':'');b.textContent=basket.has(id)?'✓':'+';} }
+  if(crd){ const on=basket.has(id); crd.className='card'+(on?' sel':''); const b=crd.querySelector('.add-btn'); if(b){b.className='add-btn'+(on?' on justadded':'');b.textContent=on?'✓':'+';} }
   // Si le panel sélection est ouvert, le rafraîchir
   const panel=document.getElementById('sel-panel');
   if(panel && panel.innerHTML.trim()) showSel();
 }
 
-function clearBasket(){ basket.clear(); currentSelectionId=null; document.getElementById('bn').textContent='0'; document.getElementById('sel-panel').innerHTML=''; refreshCards(); }
+function clearBasket(){ basket.clear(); currentSelectionId=null; updateBasketUI(); document.getElementById('sel-panel').innerHTML=''; refreshCards(); }
 
 function resetSelection(){
   basket.clear();
   currentSelectionId=null;
-  document.getElementById('bn').textContent='0';
+  updateBasketUI();
   document.getElementById('sel-panel').innerHTML='';
   refreshCards();
 }
@@ -915,6 +967,17 @@ function generateClientCode(){
   return code;
 }
 
+// Copie un code dans le presse-papiers (avec repli compatible iframe)
+function copyCode(code, btn){
+  function done(){ if(btn){ btn.textContent='Copié ✓'; btn.classList.add('done'); setTimeout(function(){ if(btn){ btn.textContent='Copier le code'; btn.classList.remove('done'); } },2000); } }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(code).then(done).catch(function(){ fallbackCopy(code); done(); });
+  } else { fallbackCopy(code); done(); }
+}
+function fallbackCopy(text){
+  try{ var ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.focus(); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); }catch(e){}
+}
+
 async function saveClientSel(){
   const name=(document.getElementById('client-name')||{}).value?.trim();
   if(!name && !currentSelectionId){ document.getElementById('sel-save-st').textContent='Saisissez votre prénom.'; return; }
@@ -957,8 +1020,9 @@ async function saveClientSel(){
       '<div style="background:#f8f7f4;border:1px solid #e8e5e0;border-radius:3px;padding:1.25rem;margin-top:.75rem">'
       +'<div style="color:#6a9a6a;margin-bottom:.875rem;font-size:13px">✓ Sélection enregistrée !</div>'
       +'<div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#999;margin-bottom:8px">Votre code de sélection</div>'
-      +'<div style="font-size:24px;font-weight:500;color:#1a1a1a;letter-spacing:.1em;font-family:monospace;margin-bottom:.875rem;padding:.625rem 1rem;background:#fff;border:1px solid #e0ddd8;border-radius:2px;text-align:center">'+code+'</div>'
-      +'<div style="font-size:11px;color:#777;line-height:1.65">Notez ce code précieusement. Il vous permettra de retrouver et modifier votre sélection à tout moment depuis le catalogue.</div>'
+      +'<div style="font-size:24px;font-weight:500;color:#1a1a1a;letter-spacing:.1em;font-family:monospace;margin-bottom:.5rem;padding:.625rem 1rem;background:#fff;border:1px solid #e0ddd8;border-radius:2px;text-align:center">'+code+'</div>'
+      +'<button class="copy-code-btn" onclick="copyCode(\''+code+'\',this)">Copier le code</button>'
+      +'<div style="font-size:11px;color:#777;line-height:1.65;margin-top:.875rem">Notez ce code précieusement. Il vous permettra de retrouver et modifier votre sélection à tout moment depuis le catalogue.</div>'
       +'</div>';
     if(btn){btn.textContent='Enregistré ✓';btn.style.opacity='.5';}
   } else {
@@ -986,7 +1050,7 @@ async function loadByCode(){
     codeInput='';
     if(status) status.innerHTML='<span style="color:#6a9a6a">✓ Sélection de <strong>'+sel.client_name+'</strong> chargée — '+itemIds.length+' pièce'+(itemIds.length>1?'s':'')+'. Modifiez puis enregistrez.</span>';
     refreshCards();
-    const bn=document.getElementById('bn'); if(bn) bn.textContent=basket.size;
+    updateBasketUI();
     const ci=document.getElementById('code-input'); if(ci) ci.value='';
     setTimeout(showSel,500);
   } catch(err) {
@@ -1466,7 +1530,7 @@ function admCard(i){
   return `<div class="adm-item${sel?' adm-sel':''}" id="adm-${i.id}">
     <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
       <div class="adm-cb${sel?' on':''}" onclick="admToggle('${i.id}')" title="Sélectionner">${sel?'✓':''}</div>
-      <div class="adm-thumb" onclick="openEdit('${i.id}')" title="Modifier">${i.img?`<img src="${i.img}" onerror="this.parentNode.innerHTML=''" alt="">`:''}</div>
+      <div class="adm-thumb" onclick="openEdit('${i.id}')" title="Modifier">${i.img?`<img src="${i.img}" loading="lazy" onerror="this.parentNode.innerHTML=''" alt="${(i.name||'').replace(/"/g,'')}">`:''}</div>
       <button class="adm-new-btn${i.is_new?' on':''}" onclick="toggleNew('${i.id}')" title="Marquer comme Nouveauté">&#9733;</button>
       <button class="adm-custom-btn${i.is_custom?' on':''}" onclick="toggleCustom('${i.id}')" title="Marquer comme Personnalisable">P</button>
       <button class="adm-hidden-btn${i.hidden?' on':''}" onclick="toggleHidden('${i.id}')" title="Masquer du catalogue client (visible uniquement ici et dans les devis)">&#128065;</button>
