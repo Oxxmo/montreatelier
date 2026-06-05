@@ -317,8 +317,7 @@ body{background:radial-gradient(1200px 620px at 50% -12%,#fbfaf8,#f0ede7) fixed}
 
 /* ── HERO ── */
 .hero{position:relative;margin:0 -1rem 1.5rem;padding:2.75rem 1.75rem 2.5rem;background:linear-gradient(135deg,#211e1b,#2d2825 55%,#1a1a1a);overflow:hidden}
-.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(620px 320px at 88% 18%,rgba(201,169,110,.24),transparent 70%);pointer-events:none}
-.hero::after{content:'';position:absolute;left:0;right:0;bottom:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold) 18%,#e8d5a3 50%,var(--gold) 82%,transparent)}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(620px 320px at 88% 18%,rgba(201,169,110,.16),transparent 70%);pointer-events:none}
 .hero-inner{position:relative;max-width:680px}
 .hero-eyebrow{font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin-bottom:.9rem}
 .hero-title{font-size:35px;font-weight:300;letter-spacing:.005em;color:#fff;line-height:1.08;margin-bottom:.75rem}
@@ -439,6 +438,26 @@ body{background:radial-gradient(1200px 620px at 50% -12%,#fbfaf8,#f0ede7) fixed}
 .sc-price-edit{font-size:10px;color:#888;display:inline-flex;align-items:center;gap:4px}
 .sc-price-inp{width:64px;font-family:inherit;font-size:11px;padding:3px 6px;border:1px solid #d8d4ce;border-radius:6px;background:#fff;color:#1a1a1a;outline:none}
 .sc-price-inp:focus{border-color:#1a1a1a}
+
+/* ── IMPORT / SCANNER : design ── */
+.section{border-radius:14px;border-color:var(--line);box-shadow:0 8px 24px -18px rgba(26,26,26,.22)}
+.sec-title{color:#1a1a1a;font-weight:600}
+.mode-pills{gap:7px}
+.mode-pill{border-radius:30px;padding:8px 15px;border-color:var(--line);color:#8a8378;font-weight:500;transition:.18s}
+.mode-pill:hover:not(.active){border-color:var(--gold);color:var(--ink);transform:translateY(-1px)}
+.mode-pill.active{background:var(--ink);border-color:var(--ink);color:#fff;box-shadow:0 6px 16px -8px rgba(26,26,26,.5)}
+.url-row input,.ship-row input{border-radius:10px;border-color:var(--line)}
+.url-row input:focus,.ship-row input:focus{box-shadow:0 0 0 3px rgba(201,169,110,.12)}
+.section .btn-p{border-radius:10px}
+.upload-zone{border-radius:14px;border-color:var(--line);background:#faf9f6;padding:2.25rem 1.25rem}
+.upload-zone:hover,.upload-zone.drag-over{border-color:var(--ink);background:#f4f2ee}
+.upload-zone.drag-over{box-shadow:0 0 0 4px rgba(201,169,110,.15)}
+.drop-zone{border-radius:12px;border-color:var(--line)}
+.paste-hint{display:inline-flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.04em;color:#9a948b;background:#f1ede6;border:1px solid var(--line);border-radius:20px;padding:4px 11px;margin-top:.75rem}
+.paste-hint kbd{font-family:inherit;font-size:9px;background:#fff;border:1px solid #d8d4ce;border-bottom-width:2px;border-radius:4px;padding:1px 5px;color:#555}
+.scan-steps{counter-reset:step;list-style:none;margin:0 0 1rem;padding:0}
+.scan-steps li{position:relative;padding:0 0 0 30px;margin-bottom:.55rem;font-size:11.5px;color:#666;line-height:1.6}
+.scan-steps li::before{counter-increment:step;content:counter(step);position:absolute;left:0;top:0;width:20px;height:20px;border-radius:50%;background:var(--ink);color:#fff;font-size:10px;font-weight:600;display:flex;align-items:center;justify-content:center}
 
 /* ── OPTIMISEUR D'ACHATS ── */
 .sels-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:.4rem}
@@ -621,6 +640,7 @@ async function generateDesc(name, rawDesc, cat) {
       if(out && (out.title || out.desc)) return out;
     }catch(err){
       console.error('[generateDesc] tentative '+(attempt+1)+' échouée:', err.message);
+      window._aiLastError = err.message || 'erreur IA';
       if(attempt===0) await new Promise(function(r){setTimeout(r,800);}); // petite pause puis 1 retry
     }
   }
@@ -1514,28 +1534,29 @@ function renderScan(){
           <span style="font-size:11px;color:#888">× prix → € &nbsp;<em style="color:#bbb">(1 = EUR, PHP→EUR ≈ 0.016)</em></span>
         </div>
       `:scanMode==='screenshot'?`
-        <div style="margin-bottom:.875rem">
-          <div style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:#555;margin-bottom:.5rem">Comment faire :</div>
-          <div style="font-size:11px;color:#444;line-height:1.7;margin-bottom:.875rem">
-            1. Ouvrez la page produit sur <strong style="color:#666">n'importe quel site</strong> — AliExpress, Alibaba, Amazon, Etsy, un site japonais ou coréen, un fournisseur inconnu…<br>
-            2. Faites une capture d'écran (Mac : <strong style="color:#555">⌘⇧4</strong> · Windows : <strong style="color:#555">Win+Maj+S</strong> · Mobile : bouton power+volume)<br>
-            3. Importez-la ci-dessous — Claude lit le titre, le prix, la finition, la compatibilité, et génère une description en français
+        <ol class="scan-steps">
+          <li>Ouvrez la page produit sur <strong>n'importe quel site</strong> — AliExpress, Alibaba, Amazon, Etsy, un site japonais ou coréen, un fournisseur inconnu…</li>
+          <li>Faites une capture d'écran — Mac <strong>⌘⇧4</strong> · Windows <strong>Win+Maj+S</strong> · Mobile bouton power+volume</li>
+          <li>Déposez-la, collez-la (Ctrl+V) ou choisissez le fichier ci-dessous — l'IA lit le titre, le prix, la finition et rédige une description en français</li>
+        </ol>
+        <label class="upload-zone" id="upload-zone" onclick="document.getElementById('img-upload').click()"
+          ondragover="event.preventDefault();this.classList.add('drag-over')"
+          ondragleave="this.classList.remove('drag-over')"
+          ondrop="event.preventDefault();this.classList.remove('drag-over');if(event.dataTransfer.files[0])setScreenshot(event.dataTransfer.files[0])">
+          <div id="upload-preview" style="pointer-events:none">
+            <div style="font-size:30px;margin-bottom:.5rem;color:#c9a96e">⤓</div>
+            <div style="font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:#444;font-weight:500">Glissez, collez ou cliquez</div>
+            <div style="font-size:10px;color:#999;margin-top:.3rem">une capture d'écran — JPG / PNG, max 10 Mo</div>
           </div>
-          <label class="upload-zone" id="upload-zone" onclick="document.getElementById('img-upload').click()">
-            <div id="upload-preview" style="pointer-events:none">
-              <div style="font-size:24px;margin-bottom:.5rem;color:#333">↑</div>
-              <div style="font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#444">Cliquez pour choisir une capture d'écran</div>
-              <div style="font-size:10px;color:#333;margin-top:.25rem">JPG, PNG — max 10 Mo</div>
-            </div>
-          </label>
-          <input type="file" id="img-upload" accept="image/*" style="display:none" onchange="previewUpload(this)">
-        </div>
-        <div class="ship-row">
+        </label>
+        <input type="file" id="img-upload" accept="image/*" style="display:none" onchange="previewUpload(this)">
+        <div style="text-align:center"><span class="paste-hint">Astuce : <kbd>Ctrl</kbd>+<kbd>V</kbd> colle directement votre capture</span></div>
+        <div class="ship-row" style="margin-top:1rem">
           <label>Frais de port :</label>
           <input type="number" id="ship-val" value="3" min="0" step="0.5">
           <span style="font-size:11px;color:#444">€</span>
         </div>
-        <button class="btn btn-p" id="bscan" onclick="doScan()" disabled>Analyser la capture</button>
+        <button class="btn btn-p" id="bscan" onclick="doScan()" disabled style="width:100%;margin-top:.5rem">Analyser la capture</button>
       `:scanMode==='manual'?`
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:.875rem">
           <div class="field" style="margin:0">
@@ -1596,7 +1617,19 @@ function renderScan(){
     <div id="scan-res"></div>`;
 }
 
-function setScanMode(m){ scanMode=m; renderScan(); }
+function setScanMode(m){ scanMode=m; window._screenshotFile=null; renderScan(); }
+
+// Coller une capture directement (Ctrl+V) dans le mode capture d'écran
+document.addEventListener('paste', function(e){
+  if(activeTab!=='scan' || scanMode!=='screenshot') return;
+  var items=(e.clipboardData&&e.clipboardData.items)||[];
+  for(var i=0;i<items.length;i++){
+    if(items[i].type && items[i].type.indexOf('image')===0){
+      var f=items[i].getAsFile();
+      if(f){ e.preventDefault(); setScreenshot(f); return; }
+    }
+  }
+});
 
 function processQuickFile(file){
   var reader=new FileReader();
@@ -1622,14 +1655,16 @@ function setSt(msg,st=''){
   el.innerHTML=`<span class="dot ${st==='loading'?'spin':st==='err'?'err':''}"></span><span>${msg}</span>`;
 }
 
-// Preview upload
-function previewUpload(input){
-  const file=input.files[0]; if(!file) return;
+// Capture : accepte fichier choisi, glissé ou collé (Ctrl+V)
+function previewUpload(input){ if(input.files[0]) setScreenshot(input.files[0]); }
+function setScreenshot(file){
+  if(!file || !file.type || file.type.indexOf('image')!==0){ setSt('Fichier non reconnu — il faut une image (capture d\'écran).','err'); return; }
+  window._screenshotFile = file;
   const zone=document.getElementById('upload-preview');
   const reader=new FileReader();
   reader.onload=e=>{
-    zone.innerHTML=`<img src="${e.target.result}" style="max-width:100%;max-height:200px;border-radius:3px;object-fit:contain">
-    <div style="font-size:10px;color:#888;margin-top:.5rem;letter-spacing:.04em">${file.name} — cliquez pour changer</div>`;
+    if(zone) zone.innerHTML=`<img src="${e.target.result}" style="max-width:100%;max-height:220px;border-radius:10px;object-fit:contain">
+    <div style="font-size:10px;color:#888;margin-top:.5rem;letter-spacing:.04em">${file.name||'capture collée'} — glissez, collez ou cliquez pour changer</div>`;
     const btn=document.getElementById('bscan'); if(btn) btn.disabled=false;
   };
   reader.readAsDataURL(file);
@@ -1639,6 +1674,7 @@ async function doScan(){
   document.getElementById('bscan').disabled=true;
   document.getElementById('scan-res').innerHTML='';
   scanRes=[]; scanChecked.clear();
+  window._aiLastError=null;
   try {
     let rawItems=[];
     if(scanMode==='shopify'){
@@ -1667,9 +1703,9 @@ async function doScan(){
       }
     } else if(scanMode==='screenshot'){
       const input=document.getElementById('img-upload');
-      if(!input||!input.files[0]){setSt('Sélectionnez d\'abord une capture d\'écran.','err');document.getElementById('bscan').disabled=false;return;}
+      const file=window._screenshotFile || (input&&input.files?input.files[0]:null);
+      if(!file){setSt('Ajoutez d\'abord une capture (glisser, coller Ctrl+V, ou cliquer).','err');document.getElementById('bscan').disabled=false;return;}
       setSt('Compression et analyse de la capture en cours...','loading');
-      const file=input.files[0];
       const base64 = await resizeImage(file);
       rawItems=await analyzeScreenshot(base64);
     } else {
@@ -1699,7 +1735,15 @@ async function doScan(){
     scanRes=rawItems;
     scanChecked=new Set(rawItems.map((_,i)=>i));
     renderScanResults();
-    setSt(`${scanRes.length} pièce${scanRes.length>1?'s':''} prête${scanRes.length>1?'s':''} — descriptions en français générées.`,'');
+    if(window._aiLastError){
+      var creditIssue=/credit balance|too low|billing|insufficient|quota/i.test(window._aiLastError);
+      var msg=creditIssue
+        ? 'Traduction IA indisponible : crédits Anthropic épuisés. Ajoutez des crédits sur console.anthropic.com (Plans & Billing). Les pièces sont importables avec leur titre d\'origine.'
+        : 'Traduction IA indisponible ('+window._aiLastError+'). Les pièces sont importables avec leur titre d\'origine.';
+      setSt('⚠ '+scanRes.length+' pièce(s) prête(s) — '+msg,'err');
+    } else {
+      setSt(`${scanRes.length} pièce${scanRes.length>1?'s':''} prête${scanRes.length>1?'s':''} — descriptions en français générées.`,'');
+    }
   } catch(e){
     setSt('Erreur : '+e.message,'err');
   }
