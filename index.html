@@ -306,6 +306,7 @@ a{color:inherit;text-decoration:none}
    ════════════════════════════════════════════════════════════ */
 :root{--ink:#1a1a1a;--gold:#c9a96e;--gold-d:#b3914f;--line:#e7e2da}
 body{background:radial-gradient(1200px 620px at 50% -12%,#fbfaf8,#f0ede7) fixed}
+.app{max-width:1440px}
 
 /* ── HERO ── */
 .hero{position:relative;margin:0 -1rem 1.5rem;padding:2.75rem 1.75rem 2.5rem;background:linear-gradient(135deg,#211e1b,#2d2825 55%,#1a1a1a);overflow:hidden}
@@ -329,7 +330,7 @@ body{background:radial-gradient(1200px 620px at 50% -12%,#fbfaf8,#f0ede7) fixed}
 .bbar-info strong{color:var(--ink);font-size:15px}
 
 /* ── FILTRES ── */
-.filter-bar{gap:8px;margin-bottom:1.6rem;padding-bottom:6px}
+.filter-bar{gap:8px;margin-bottom:1.6rem;padding-bottom:0;flex-wrap:wrap;overflow:visible}
 .chip{padding:8px 16px;border-radius:30px;border-color:var(--line);font-size:11px;font-weight:500;background:#fff;color:#8a8378;box-shadow:0 1px 2px rgba(0,0,0,.02);transition:.2s}
 .chip:hover:not(.active){border-color:var(--gold);color:var(--ink);transform:translateY(-1px)}
 .chip.active{background:var(--ink);border-color:var(--ink);color:#fff;box-shadow:0 7px 16px -7px rgba(26,26,26,.5)}
@@ -386,6 +387,8 @@ body{background:radial-gradient(1200px 620px at 50% -12%,#fbfaf8,#f0ede7) fixed}
 .detail-cta:hover{transform:translateY(-2px);box-shadow:0 20px 38px -14px rgba(26,26,26,.6)}
 .detail-cta.on{background:#fff;color:var(--ink);border:1.5px solid var(--ink);box-shadow:none}
 .detail-note{font-size:11.5px;color:#a8a298;margin-top:.95rem;text-align:center;letter-spacing:.02em}
+.detail-sel-link{width:100%;margin-top:.8rem;padding:13px;background:transparent;border:1px solid var(--line);border-radius:12px;color:#6a655d;font-family:inherit;font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:500;cursor:pointer;transition:.2s}
+.detail-sel-link:hover{border-color:var(--ink);color:var(--ink)}
 
 /* ── SIMILAIRES ── */
 .similar{margin-top:3rem}
@@ -1209,6 +1212,7 @@ function openModal(id){
   if(i.is_custom) badges+='<span class="detail-badge db-custom">Personnalisable</span>';
   if(i.hidden&&isAdmin) badges+='<span class="detail-badge" style="background:#7a7a7a;color:#fff">Masqué</span>';
   const cta='<button class="detail-cta'+(inB?' on':'')+'" id="detail-cta" onclick="detailToggle(\''+i.id+'\',this)">'+(inB?'&#10003; Dans ma sélection':'+ Ajouter à ma sélection')+'</button>';
+  const selLink='<button class="detail-sel-link" id="detail-sel-link" onclick="goToSelection()" style="'+(basket.size?'':'display:none')+'">Voir ma sélection ('+basket.size+')</button>';
   const sim=items.filter(function(x){return x.id!==i.id && x.cat===i.cat && (isAdmin||!x.hidden);}).slice(0,8);
   var simHtml='';
   if(sim.length){
@@ -1234,6 +1238,7 @@ function openModal(id){
     +'<div class="detail-desc">'+(i.description||'Pièce sélectionnée par l\'atelier bang. pour vos créations sur-mesure.')+'</div>'
     +cta
     +'<div class="detail-note" id="detail-note">'+(inB?'Cette pièce fait partie de votre sélection.':'Ajoutez-la pour la retrouver dans votre devis.')+'</div>'
+    +selLink
     +'</div></div>'
     +simHtml;
   window.scrollTo({top:0,behavior:'instant'});
@@ -1247,7 +1252,17 @@ function detailToggle(id, btn){
   updateBasketUI(true);
   if(btn){ btn.className='detail-cta'+(on?' on':''); btn.innerHTML=on?'&#10003; Dans ma sélection':'+ Ajouter à ma sélection'; }
   var note=document.getElementById('detail-note'); if(note) note.textContent=on?'Cette pièce fait partie de votre sélection.':'Ajoutez-la pour la retrouver dans votre devis.';
+  var link=document.getElementById('detail-sel-link'); if(link){ link.textContent='Voir ma sélection ('+basket.size+')'; link.style.display=basket.size?'':'none'; }
   window.parent.postMessage({type:'mwa-basket-update',id:id,inBasket:on},'*');
+}
+
+// Depuis la fiche produit : revenir au catalogue et ouvrir la sélection
+function goToSelection(){
+  renderClient();
+  showSel();
+  window.scrollTo({top:0,behavior:'instant'});
+  window.parent.postMessage({type:'mwa-scroll-top'},'*');
+  notifyHeight();
 }
 
 function openZoom(el){
