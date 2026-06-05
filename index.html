@@ -308,9 +308,15 @@ a{color:inherit;text-decoration:none}
 body{background:radial-gradient(1200px 620px at 50% -12%,#fbfaf8,#f0ede7) fixed}
 .app{max-width:1440px}
 
+/* ── MOTION « à la Framer » (natif, sans dépendance) ── */
+.grid{perspective:1100px}
+.card{transform-style:preserve-3d;will-change:transform}
+@keyframes heroBreathe{from{opacity:.8;transform:scale(1)}to{opacity:1;transform:scale(1.13)}}
+#view{will-change:opacity,transform}
+
 /* ── HERO ── */
 .hero{position:relative;margin:0 -1rem 1.5rem;padding:2.75rem 1.75rem 2.5rem;background:linear-gradient(135deg,#211e1b,#2d2825 55%,#1a1a1a);overflow:hidden}
-.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(620px 320px at 88% 18%,rgba(201,169,110,.24),transparent 70%);pointer-events:none}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(640px 340px at var(--gx,85%) var(--gy,20%),rgba(201,169,110,.26),transparent 70%);pointer-events:none;animation:heroBreathe 11s ease-in-out infinite alternate}
 .hero::after{content:'';position:absolute;left:0;right:0;bottom:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold) 18%,#e8d5a3 50%,var(--gold) 82%,transparent)}
 .hero-inner{position:relative;max-width:680px}
 .hero-eyebrow{font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--gold);margin-bottom:.9rem}
@@ -844,6 +850,63 @@ function render(){
 
 function go(t){ activeTab=t; scanRes=[]; scanChecked.clear(); render(); notifyHeight(); }
 
+/* ══ MOTION « à la Framer » (natif, compatible iframe) ══ */
+function prefersReduced(){ return window.matchMedia && window.matchMedia('(prefers-reduced-motion:reduce)').matches; }
+
+// Transition de vue : fondu/glissement maison (n'utilise pas l'API View Transitions
+// qui photographierait toute la hauteur de l'iframe → saccades sur grand catalogue)
+function transitionView(renderFn, after){
+  var v=document.getElementById('view');
+  if(!v || prefersReduced()){ renderFn(); if(after) after(); return; }
+  v.style.transition='opacity .15s ease, transform .15s ease';
+  v.style.opacity='0';
+  v.style.transform='translateY(8px)';
+  setTimeout(function(){
+    renderFn();
+    var nv=document.getElementById('view');
+    if(nv){
+      nv.style.opacity='0'; nv.style.transform='translateY(15px)';
+      requestAnimationFrame(function(){
+        nv.style.transition='opacity .34s ease, transform .4s cubic-bezier(.2,.85,.25,1)';
+        nv.style.opacity='1'; nv.style.transform='none';
+      });
+    }
+    if(after) after();
+  },150);
+}
+
+// Inclinaison 3D des cartes au survol
+function tiltCard(e, card){
+  if(prefersReduced()) return;
+  var r=card.getBoundingClientRect();
+  var px=(e.clientX-r.left)/r.width-0.5;
+  var py=(e.clientY-r.top)/r.height-0.5;
+  card.style.transform='translateY(-7px) rotateX('+(-py*5).toFixed(2)+'deg) rotateY('+(px*6).toFixed(2)+'deg)';
+}
+function untiltCard(card){ card.style.transform=''; }
+
+// Boutons « magnétiques » qui suivent légèrement le curseur
+function magnet(e, el){
+  if(prefersReduced()) return;
+  var r=el.getBoundingClientRect();
+  var x=(e.clientX-r.left-r.width/2)/r.width;
+  var y=(e.clientY-r.top-r.height/2)/r.height;
+  el.style.transform='translate('+(x*8).toFixed(1)+'px,'+(y*6).toFixed(1)+'px)';
+}
+function unmagnet(el){ el.style.transform=''; }
+
+// Lueur du hero qui suit le curseur
+function bindHeroGlow(){
+  var hero=document.querySelector('.hero');
+  if(!hero) return;
+  hero.addEventListener('pointermove',function(e){
+    var r=hero.getBoundingClientRect();
+    hero.style.setProperty('--gx',((e.clientX-r.left)/r.width*100).toFixed(1)+'%');
+    hero.style.setProperty('--gy',((e.clientY-r.top)/r.height*100).toFixed(1)+'%');
+  });
+  hero.addEventListener('pointerleave',function(){ hero.style.setProperty('--gx','85%'); hero.style.setProperty('--gy','20%'); });
+}
+
 /* ══ LOGIN ══ */
 function renderLogin(){
   document.getElementById('view').innerHTML = `
@@ -938,6 +1001,7 @@ function renderClient(){
   }
   // Réappliquer le filtre de recherche si une recherche était active
   if(searchQuery) applySearchFilter();
+  bindHeroGlow();
 }
 
 function shuffleByCategory(arr){
@@ -977,7 +1041,7 @@ function buildCards(){
     var btn='<button class="add-btn'+(sel?' on':'')+'" onclick="event.stopPropagation();toggleB(\''+i.id+'\')" title="'+(sel?'Retirer de la sélection':'Ajouter à la sélection')+'">'+( sel?'&#10003;':'+')+'</button>';
     var searchData=((i.name||'')+' '+(i.description||'')+' '+(i.cat||'')).toLowerCase().replace(/"/g,'');
     var delay=Math.min(idx||0,12)*35;
-    return '<div class="card'+(sel?' sel':'')+'" id="crd-'+i.id+'" data-search="'+searchData+'" style="position:relative;animation-delay:'+delay+'ms">'
+    return '<div class="card'+(sel?' sel':'')+'" id="crd-'+i.id+'" data-search="'+searchData+'" style="position:relative;animation-delay:'+delay+'ms" onmousemove="tiltCard(event,this)" onmouseleave="untiltCard(this)">'
       +nb+pc+hd
       +'<div class="c-img" onclick="openModal(\''+i.id+'\')">'+imgH
       +'<div class="c-hover"><span class="c-hover-cta">Voir le détail &#8594;</span></div></div>'
@@ -1211,7 +1275,7 @@ function openModal(id){
   if(i.is_new) badges+='<span class="detail-badge db-new">&#9733; Nouveauté</span>';
   if(i.is_custom) badges+='<span class="detail-badge db-custom">Personnalisable</span>';
   if(i.hidden&&isAdmin) badges+='<span class="detail-badge" style="background:#7a7a7a;color:#fff">Masqué</span>';
-  const cta='<button class="detail-cta'+(inB?' on':'')+'" id="detail-cta" onclick="detailToggle(\''+i.id+'\',this)">'+(inB?'&#10003; Dans ma sélection':'+ Ajouter à ma sélection')+'</button>';
+  const cta='<button class="detail-cta'+(inB?' on':'')+'" id="detail-cta" onclick="detailToggle(\''+i.id+'\',this)" onmousemove="magnet(event,this)" onmouseleave="unmagnet(this)">'+(inB?'&#10003; Dans ma sélection':'+ Ajouter à ma sélection')+'</button>';
   const selLink='<button class="detail-sel-link" id="detail-sel-link" onclick="goToSelection()" style="'+(basket.size?'':'display:none')+'">Voir ma sélection ('+basket.size+')</button>';
   const sim=items.filter(function(x){return x.id!==i.id && x.cat===i.cat && (isAdmin||!x.hidden);}).slice(0,8);
   var simHtml='';
@@ -1226,7 +1290,7 @@ function openModal(id){
       }).join('')
       +'</div></div>';
   }
-  view.innerHTML=
+  var detailHtml=
     '<button class="btn-back-nav" onclick="closeModal()">&#8592; Retour au catalogue</button>'
     +'<div class="detail">'
     +'<div class="detail-media">'+media+'</div>'
@@ -1241,9 +1305,11 @@ function openModal(id){
     +selLink
     +'</div></div>'
     +simHtml;
-  window.scrollTo({top:0,behavior:'instant'});
-  window.parent.postMessage({type:'mwa-scroll-top'},'*');
-  notifyHeight();
+  transitionView(function(){ var vv=document.getElementById('view'); if(vv) vv.innerHTML=detailHtml; }, function(){
+    window.scrollTo({top:0,behavior:'instant'});
+    window.parent.postMessage({type:'mwa-scroll-top'},'*');
+    notifyHeight();
+  });
 }
 
 function detailToggle(id, btn){
@@ -1258,11 +1324,11 @@ function detailToggle(id, btn){
 
 // Depuis la fiche produit : revenir au catalogue et ouvrir la sélection
 function goToSelection(){
-  renderClient();
-  showSel();
-  window.scrollTo({top:0,behavior:'instant'});
-  window.parent.postMessage({type:'mwa-scroll-top'},'*');
-  notifyHeight();
+  transitionView(function(){ renderClient(); showSel(); }, function(){
+    window.scrollTo({top:0,behavior:'instant'});
+    window.parent.postMessage({type:'mwa-scroll-top'},'*');
+    notifyHeight();
+  });
 }
 
 function openZoom(el){
@@ -1277,10 +1343,11 @@ function openZoom(el){
 }
 
 function closeModal(){
-  renderClient();
-  window.scrollTo({top:0,behavior:'instant'});
-  window.parent.postMessage({type:'mwa-scroll-top'},'*');
-  notifyHeight();
+  transitionView(function(){ renderClient(); }, function(){
+    window.scrollTo({top:0,behavior:'instant'});
+    window.parent.postMessage({type:'mwa-scroll-top'},'*');
+    notifyHeight();
+  });
 }
 
 function modalToggle(btn){
