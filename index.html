@@ -403,6 +403,23 @@ body{background:radial-gradient(1200px 620px at 50% -12%,#fbfaf8,#f0ede7) fixed}
 .sim-cat{font-size:8.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold-d);font-weight:600;margin-bottom:4px}
 .sim-name{font-size:11.5px;font-weight:500;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 
+/* ── ADMIN : polish + actions groupées ── */
+.stat{border-radius:11px}
+.stat-clk{cursor:pointer;transition:border-color .15s,background .15s,transform .15s}
+.stat-clk:hover{border-color:var(--gold);transform:translateY(-1px)}
+.stat-on{border-color:var(--ink);background:var(--ink)}
+.stat-on .stat-l{color:#9a948b}
+.stat-on .stat-v{color:#fff}
+.adm-item{border-radius:11px}
+.adm-thumb,.adm-cb{border-radius:8px}
+.bulk-bar{display:flex;flex-wrap:wrap;align-items:center;gap:7px;background:var(--ink);border-radius:12px;padding:.7rem .9rem;margin-bottom:1rem;box-shadow:0 10px 26px -16px rgba(26,26,26,.5)}
+.bulk-bar .bulk-count{color:#fff;font-size:10px;letter-spacing:.08em;text-transform:uppercase;margin-right:4px;font-weight:500}
+.bulk-bar .btn-xs{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.22);color:#eee}
+.bulk-bar .btn-xs:hover{background:rgba(255,255,255,.2);border-color:#fff;color:#fff}
+.bulk-bar .btn-xs.del{background:rgba(192,96,96,.2);border-color:rgba(192,96,96,.5);color:#f0b4b4}
+.bulk-bar .btn-xs.del:hover{background:rgba(192,96,96,.35);color:#fff}
+.bulk-sel{padding:6px 10px;border-radius:7px;border:1px solid rgba(255,255,255,.22);background:#2b2926;color:#eee;font-family:inherit;font-size:11px;outline:none;cursor:pointer}
+
 /* ── RESPONSIVE REDESIGN ── */
 @media(max-width:760px){
   .detail{grid-template-columns:1fr;gap:1.25rem}
@@ -1596,6 +1613,7 @@ async function doImport(){
 let adminSelected = new Set();
 let adminFilterCat = 'Tout';
 let adminFilterSup = 'Tout';
+let adminFilterStatus = 'Tout';
 let adminSort = 'date';
 let adminSearch = '';
 
@@ -1634,20 +1652,26 @@ function buildDupBlock(dups, onDelete){
   return html;
 }
 
-function renderAdmin(){
-  const totalCost=items.reduce(function(a,i){return a+Number(i.cost||0)+Number(i.ship||0);},0);
-  const allCats=['Tout',...new Set(items.map(function(i){return i.cat;}).filter(Boolean))].sort();
-  const allSups=['Tout',...new Set(items.map(function(i){return i.supplier;}).filter(Boolean))].sort();
-
-  // Filtrer
-  let list=items.filter(function(i){
+// Liste filtrée (catégorie + fournisseur + recherche + statut) — partagée
+function adminFilteredList(){
+  return items.filter(function(i){
     const matchCat=adminFilterCat==='Tout'||i.cat===adminFilterCat;
     const matchSup=adminFilterSup==='Tout'||i.supplier===adminFilterSup;
-    const matchSearch=!adminSearch||i.name.toLowerCase().includes(adminSearch.toLowerCase());
-    return matchCat&&matchSup&&matchSearch;
+    const matchSearch=!adminSearch||(i.name||'').toLowerCase().includes(adminSearch.toLowerCase());
+    const s=adminFilterStatus;
+    const matchStatus=s==='Tout'||(s==='new'&&i.is_new)||(s==='custom'&&i.is_custom)||(s==='hidden'&&i.hidden)||(s==='visible'&&!i.hidden);
+    return matchCat&&matchSup&&matchSearch&&matchStatus;
   });
+}
+function admStatus(s){ adminFilterStatus=(adminFilterStatus===s?'Tout':s); renderAdmin(); }
 
-  // Trier
+function renderAdmin(){
+  const allCats=['Tout',...new Set(items.map(function(i){return i.cat;}).filter(Boolean))].sort();
+  const allSups=['Tout',...new Set(items.map(function(i){return i.supplier;}).filter(Boolean))].sort();
+  const stdCats=['Boîtier','Cadran','Lunette','Bracelet','Aiguilles','Verre','Couronne','Mouvement','Rotor','Insert lunette','Fond','Anneau','Joint','Axe','Barre ressort','Autre'];
+  const bulkCats=[...new Set([...stdCats,...items.map(function(i){return i.cat;}).filter(Boolean)])].sort(function(a,b){return a.localeCompare(b,'fr');});
+
+  let list=adminFilteredList();
   list=[...list].sort(function(a,b){
     if(adminSort==='nom') return (a.name||'').localeCompare(b.name||'','fr');
     if(adminSort==='cout') return (Number(a.cost||0)+Number(a.ship||0))-(Number(b.cost||0)+Number(b.ship||0));
@@ -1656,30 +1680,43 @@ function renderAdmin(){
   });
 
   const dups=findDuplicates(items);
+  const nHidden=items.filter(function(i){return i.hidden;}).length;
+  const nNew=items.filter(function(i){return i.is_new;}).length;
+  const nCustom=items.filter(function(i){return i.is_custom;}).length;
+  const nVisible=items.length-nHidden;
+  function statCard(label,val,status){
+    const on=status&&adminFilterStatus===status;
+    const cls='stat'+(status?(' stat-clk'+(on?' stat-on':'')):'');
+    const oc=status?(' onclick="admStatus(\''+status+'\')"'):'';
+    return '<div class="'+cls+'"'+oc+'><div class="stat-l">'+label+'</div><div class="stat-v">'+val+'</div></div>';
+  }
 
   document.getElementById('view').innerHTML=`
-    <div style="text-align:right;margin-bottom:.5rem">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:.85rem">
+      <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#999">Gestion du catalogue</div>
       <button class="btn-xs" onclick="normalizeCats()" title="Corriger automatiquement les accents dans les catégories">✓ Normaliser les catégories</button>
     </div>
     <div class="stat-row">
-      <div class="stat"><div class="stat-l">Pièces</div><div class="stat-v">${items.length}</div></div>
-      <div class="stat"><div class="stat-l">Coût catalogue</div><div class="stat-v">${Math.round(totalCost).toLocaleString('fr-FR')} €</div></div>
-      <div class="stat"><div class="stat-l">Catégories</div><div class="stat-v">${cats().length-1}</div></div>
-      <div class="stat"><div class="stat-l">Fournisseurs</div><div class="stat-v">${allSups.length-1}</div></div>
+      ${statCard('Pièces',items.length,'Tout')}
+      ${statCard('Visibles client',nVisible,'visible')}
+      ${statCard('Nouveautés',nNew,'new')}
+      ${statCard('Personnalisables',nCustom,'custom')}
+      ${statCard('Masquées',nHidden,'hidden')}
+      ${statCard('Catégories',allCats.length-1,null)}
     </div>
 
     ${dups.length?buildDupBlock(dups,'delItem'):''}
 
-    <div style="background:#fff;border:1px solid #e8e5e0;border-radius:2px;padding:1rem;margin-bottom:1rem">
+    <div style="background:#fff;border:1px solid #e8e5e0;border-radius:12px;padding:1rem;margin-bottom:1rem">
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:.75rem">
         <input class="s-in" style="flex:1;min-width:160px" placeholder="Rechercher une pièce..." value="${adminSearch}" oninput="adminSearch=this.value;renderAdmin()">
-        <select onchange="adminFilterCat=this.value;renderAdmin()" style="padding:7px 10px;border:1px solid #d4cfc8;border-radius:2px;font-family:inherit;font-size:12px;background:#fff;color:#1a1a1a;outline:none">
+        <select onchange="adminFilterCat=this.value;renderAdmin()" style="padding:7px 10px;border:1px solid #d4cfc8;border-radius:8px;font-family:inherit;font-size:12px;background:#fff;color:#1a1a1a;outline:none">
           ${allCats.map(function(c){return '<option value="'+c+'"'+(adminFilterCat===c?' selected':'')+'>'+c+'</option>';}).join('')}
         </select>
-        <select onchange="adminFilterSup=this.value;renderAdmin()" style="padding:7px 10px;border:1px solid #d4cfc8;border-radius:2px;font-family:inherit;font-size:12px;background:#fff;color:#1a1a1a;outline:none;max-width:180px">
+        <select onchange="adminFilterSup=this.value;renderAdmin()" style="padding:7px 10px;border:1px solid #d4cfc8;border-radius:8px;font-family:inherit;font-size:12px;background:#fff;color:#1a1a1a;outline:none;max-width:180px">
           ${allSups.map(function(s){return '<option value="'+s+'"'+(adminFilterSup===s?' selected':'')+'>'+s+'</option>';}).join('')}
         </select>
-        <select onchange="adminSort=this.value;renderAdmin()" style="padding:7px 10px;border:1px solid #d4cfc8;border-radius:2px;font-family:inherit;font-size:12px;background:#fff;color:#1a1a1a;outline:none">
+        <select onchange="adminSort=this.value;renderAdmin()" style="padding:7px 10px;border:1px solid #d4cfc8;border-radius:8px;font-family:inherit;font-size:12px;background:#fff;color:#1a1a1a;outline:none">
           <option value="date" ${adminSort==='date'?'selected':''}>Plus récent</option>
           <option value="nom" ${adminSort==='nom'?'selected':''}>Nom A→Z</option>
           <option value="cout" ${adminSort==='cout'?'selected':''}>Coût ↑</option>
@@ -1690,11 +1727,24 @@ function renderAdmin(){
         <div style="display:flex;align-items:center;gap:8px">
           <button class="btn-xs" onclick="admToggleAll()">${adminSelected.size===list.length&&list.length>0?'Tout décocher':'Tout cocher'}</button>
           ${adminSelected.size>0?`<span style="font-size:11px;color:#999">${adminSelected.size} sélectionnée${adminSelected.size>1?'s':''}</span>`:''}
-          <span style="font-size:11px;color:#bbb">${list.length} pièce${list.length>1?'s':''} affichée${list.length>1?'s':''}</span>
+          <span style="font-size:11px;color:#bbb">${list.length} pièce${list.length>1?'s':''} affichée${list.length>1?'s':''}${adminFilterStatus!=='Tout'?` · <a style="color:#c9a96e;cursor:pointer" onclick="adminFilterStatus='Tout';renderAdmin()">voir tout</a>`:''}</span>
         </div>
-        ${adminSelected.size>0?`<button class="btn-xs del" onclick="delSelected()">Supprimer (${adminSelected.size})</button>`:''}
       </div>
     </div>
+
+    ${adminSelected.size>0?`
+    <div class="bulk-bar">
+      <span class="bulk-count">${adminSelected.size} sélectionnée${adminSelected.size>1?'s':''}</span>
+      <select class="bulk-sel" onchange="bulkSetCat(this.value);this.selectedIndex=0">
+        <option value="">Changer catégorie…</option>
+        ${bulkCats.map(function(c){return '<option value="'+c+'">'+c+'</option>';}).join('')}
+      </select>
+      <button class="btn-xs" onclick="bulkFlag('is_new',true)" title="Marquer comme Nouveauté">★ Nouveauté</button>
+      <button class="btn-xs" onclick="bulkFlag('is_new',false)" title="Retirer le statut Nouveauté">Retirer ★</button>
+      <button class="btn-xs" onclick="bulkFlag('hidden',true)" title="Masquer du catalogue client">Masquer</button>
+      <button class="btn-xs" onclick="bulkFlag('hidden',false)" title="Afficher dans le catalogue client">Afficher</button>
+      <button class="btn-xs del" onclick="delSelected()">Supprimer (${adminSelected.size})</button>
+    </div>`:''}
 
     <div id="adm-list">
       ${list.length?list.map(admCard).join(''):`<div class="alert alert-info">Aucune pièce ne correspond aux filtres.</div>`}
@@ -1702,16 +1752,27 @@ function renderAdmin(){
 }
 
 function admToggleAll(){
-  // Sélectionner seulement les items visibles (filtrés)
-  const visible=items.filter(function(i){
-    const matchCat=adminFilterCat==='Tout'||i.cat===adminFilterCat;
-    const matchSup=adminFilterSup==='Tout'||i.supplier===adminFilterSup;
-    const matchSearch=!adminSearch||i.name.toLowerCase().includes(adminSearch.toLowerCase());
-    return matchCat&&matchSup&&matchSearch;
-  });
-  const allSelected=visible.every(function(i){return adminSelected.has(i.id);});
+  // Sélectionner seulement les pièces actuellement affichées (filtres + statut)
+  const visible=adminFilteredList();
+  const allSelected=visible.length>0&&visible.every(function(i){return adminSelected.has(i.id);});
   if(allSelected) visible.forEach(function(i){adminSelected.delete(i.id);});
   else visible.forEach(function(i){adminSelected.add(i.id);});
+  renderAdmin();
+}
+
+// Actions groupées sur la sélection admin
+async function bulkSetCat(cat){
+  if(!cat||!adminSelected.size) return;
+  const ids=[...adminSelected];
+  items=items.map(function(i){return adminSelected.has(i.id)?Object.assign({},i,{cat:cat}):i;});
+  if(isConfigured()){ for(const id of ids){ await SB.update(id,{cat:cat}); } }
+  renderAdmin();
+}
+async function bulkFlag(flag,val){
+  if(!adminSelected.size) return;
+  const ids=[...adminSelected];
+  items=items.map(function(i){ if(!adminSelected.has(i.id)) return i; var n=Object.assign({},i); n[flag]=val; return n; });
+  if(isConfigured()){ for(const id of ids){ var patch={}; patch[flag]=val; await SB.update(id,patch); } }
   renderAdmin();
 }
 
