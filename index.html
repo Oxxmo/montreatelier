@@ -419,6 +419,16 @@ body{background:radial-gradient(1200px 620px at 50% -12%,#fbfaf8,#f0ede7) fixed}
 .bulk-bar .btn-xs.del{background:rgba(192,96,96,.2);border-color:rgba(192,96,96,.5);color:#f0b4b4}
 .bulk-bar .btn-xs.del:hover{background:rgba(192,96,96,.35);color:#fff}
 .bulk-sel{padding:6px 10px;border-radius:7px;border:1px solid rgba(255,255,255,.22);background:#2b2926;color:#eee;font-family:inherit;font-size:11px;outline:none;cursor:pointer}
+/* Toggles de statut en ligne (Nouveauté / Personnalisable / Visible) */
+.adm-toggles{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.adm-tg{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid #e0ddd8;border-radius:20px;background:#fff;color:#9a948b;font-size:10px;letter-spacing:.03em;font-family:inherit;cursor:pointer;transition:.15s;line-height:1.1}
+.adm-tg b{font-size:11px;font-weight:700}
+.adm-tg:hover{border-color:#999;color:#444}
+.tg-new.on{border-color:#1a1a1a;background:#1a1a1a;color:#fff}
+.tg-custom.on{border-color:#c9a96e;background:#c9a96e;color:#fff}
+.tg-hidden.on{border-color:#7a7a7a;background:#7a7a7a;color:#fff}
+.sc-cat-sel{font-family:inherit;font-size:10px;padding:3px 7px;border:1px solid #d8d4ce;border-radius:6px;background:#fff;color:#555;outline:none;cursor:pointer}
+.sc-cat-sel:hover{border-color:#1a1a1a}
 
 /* ── RESPONSIVE REDESIGN ── */
 @media(max-width:760px){
@@ -663,15 +673,27 @@ async function fetchShopifyProduct(info) {
   return items.length ? items : [p];
 }
 
+// Ordre IMPORTANT : du plus spécifique au plus générique (la 1re correspondance gagne).
 const CAT_MAP = {
-  'bezel insert':'Insert lunette','bezel':'Lunette','dial':'Cadran','hands':'Aiguilles','hand':'Aiguilles',
-  'case':'Boîtier','crown':'Couronne','crystal':'Verre','bracelet':'Bracelet','strap':'Bracelet',
-  'movement':'Mouvement','rotor':'Rotor','stem':'Axe','gasket':'Joint','spring bar':'Barre ressort',
-  'chapter ring':'Anneau','back':'Fond','tube':'Tube couronne',
+  'bezel insert':'Insert lunette','insert lunette':'Insert lunette','insert':'Insert lunette',
+  'chapter ring':'Anneau','rehaut':'Anneau','anneau':'Anneau',
+  'bezel':'Lunette','lunette':'Lunette',
+  'rotor':'Rotor',
+  'seconds hand':'Aiguilles','second hand':'Aiguilles','hour hand':'Aiguilles','minute hand':'Aiguilles',
+  'hand set':'Aiguilles','handset':'Aiguilles','hands':'Aiguilles','aiguille':'Aiguilles','hand':'Aiguilles',
+  'cadran':'Cadran','dial':'Cadran',
+  'caseback':'Fond','case back':'Fond','fond':'Fond',
+  'crystal':'Verre','sapphire':'Verre','saphir':'Verre','verre':'Verre','glass':'Verre',
+  'tube':'Tube couronne',
+  'crown':'Couronne','couronne':'Couronne',
+  'bracelet':'Bracelet','strap':'Bracelet','clasp':'Bracelet','end link':'Bracelet','endlink':'Bracelet','band':'Bracelet',
+  'movement':'Mouvement','mouvement':'Mouvement','nh35':'Mouvement','nh36':'Mouvement','caliber':'Mouvement','calibre':'Mouvement',
+  'boitier':'Boîtier','boîtier':'Boîtier','case':'Boîtier',
+  'stem':'Axe','gasket':'Joint','joint':'Joint','spring bar':'Barre ressort','back':'Fond',
 };
 
 function detectCat(name) {
-  const nl = name.toLowerCase();
+  const nl = (name||'').toLowerCase();
   for (const [k,v] of Object.entries(CAT_MAP)) if (nl.includes(k)) return v;
   return 'Autre';
 }
@@ -1213,6 +1235,68 @@ async function loadByCode(){
   }
 }
 
+/* ══ ASSORTIMENT — logique de montre custom (mod Seiko) ══ */
+// Pour chaque type de pièce, les pièces qui composent naturellement la montre avec.
+// Base : un mod Seiko s'articule autour de Boîtier + Cadran + Aiguilles + Lunette/Insert + Bracelet.
+const WATCH_COMPLEMENTS = {
+  'Cadran':       ['Aiguilles','Boîtier','Insert lunette','Lunette','Bracelet'],
+  'Boîtier':      ['Cadran','Aiguilles','Lunette','Insert lunette','Bracelet','Verre'],
+  'Aiguilles':    ['Cadran','Boîtier','Insert lunette','Bracelet'],
+  'Lunette':      ['Insert lunette','Boîtier','Cadran','Bracelet'],
+  'Insert lunette':['Lunette','Boîtier','Cadran','Aiguilles'],
+  'Bracelet':     ['Boîtier','Cadran','Aiguilles','Lunette'],
+  'Verre':        ['Boîtier','Lunette','Cadran'],
+  'Couronne':     ['Boîtier','Cadran','Tube couronne'],
+  'Mouvement':    ['Cadran','Aiguilles','Rotor','Fond'],
+  'Rotor':        ['Mouvement','Fond','Boîtier'],
+  'Fond':         ['Boîtier','Mouvement','Rotor'],
+  'Anneau':       ['Cadran','Boîtier','Lunette'],
+  'Tube couronne':['Couronne','Boîtier']
+};
+// Ramène une catégorie (FR ou EN, avec ou sans accent) vers une clé canonique
+function canonCat(c){
+  var s=(c||'').toLowerCase();
+  function has(){ for(var i=0;i<arguments.length;i++){ if(s.indexOf(arguments[i])!==-1) return true; } return false; }
+  if(has('insert')) return 'Insert lunette';
+  if(has('chapter','rehaut','anneau')) return 'Anneau';
+  if(has('lunette','bezel')) return 'Lunette';
+  if(has('rotor')) return 'Rotor';
+  if(has('aiguille','hand')) return 'Aiguilles';
+  if(has('cadran','dial')) return 'Cadran';
+  if(has('caseback','case back','fond')) return 'Fond';
+  if(has('boit','boît','case')) return 'Boîtier';
+  if(has('bracelet','strap','band','clasp')) return 'Bracelet';
+  if(has('verre','crystal','glass','sapphire','saphir')) return 'Verre';
+  if(has('tube')) return 'Tube couronne';
+  if(has('couronne','crown')) return 'Couronne';
+  if(has('mouvement','movement','nh3','calib')) return 'Mouvement';
+  return c||'Autre';
+}
+function shuffleArr(a){ a=a.slice(); for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+// Suggestions d'assortiment : pièces complémentaires (pas la même catégorie), variées
+function buildSuggestions(item){
+  var avail=items.filter(function(x){ return x.id!==item.id && (isAdmin||!x.hidden); });
+  var byCat={};
+  avail.forEach(function(x){ var k=canonCat(x.cat); (byCat[k]=byCat[k]||[]).push(x); });
+  Object.keys(byCat).forEach(function(k){ byCat[k]=shuffleArr(byCat[k]); });
+  var key=canonCat(item.cat);
+  var order=WATCH_COMPLEMENTS[key]||['Cadran','Boîtier','Aiguilles','Bracelet','Lunette'];
+  var picks=[], used={};
+  // Tour de table entre catégories complémentaires (1 de chaque, puis on recommence)
+  var idx=0, guard=0;
+  while(picks.length<8 && guard<80){
+    guard++;
+    var cat=order[idx%order.length]; idx++;
+    var pool=byCat[cat];
+    if(pool && pool.length){ var next=pool.shift(); if(next && !used[next.id]){ used[next.id]=1; picks.push(next); } }
+    if(idx%order.length===0 && !order.some(function(c){return byCat[c]&&byCat[c].length;})) break;
+  }
+  // Compléter si besoin (même catégorie, puis le reste)
+  if(picks.length<8){ (byCat[key]||[]).forEach(function(x){ if(picks.length<8 && !used[x.id]){ used[x.id]=1; picks.push(x); } }); }
+  if(picks.length<4){ avail.forEach(function(x){ if(picks.length<8 && !used[x.id]){ used[x.id]=1; picks.push(x); } }); }
+  return picks.slice(0,8);
+}
+
 /* ══ FICHE PRODUIT (rendue dans l'app, fonctionne partout) ══ */
 function openModal(id){
   const i=items.find(x=>x.id===id); if(!i) return;
@@ -1230,10 +1314,10 @@ function openModal(id){
   if(i.hidden&&isAdmin) badges+='<span class="detail-badge" style="background:#7a7a7a;color:#fff">Masqué</span>';
   const cta='<button class="detail-cta'+(inB?' on':'')+'" id="detail-cta" onclick="detailToggle(\''+i.id+'\',this)">'+(inB?'&#10003; Dans ma sélection':'+ Ajouter à ma sélection')+'</button>';
   const selLink='<button class="detail-sel-link" id="detail-sel-link" onclick="goToSelection()" style="'+(basket.size?'':'display:none')+'">Voir ma sélection ('+basket.size+')</button>';
-  const sim=items.filter(function(x){return x.id!==i.id && x.cat===i.cat && (isAdmin||!x.hidden);}).slice(0,8);
+  const sim=buildSuggestions(i);
   var simHtml='';
   if(sim.length){
-    simHtml='<div class="similar"><div class="similar-head">Dans la même catégorie</div><div class="similar-row">'
+    simHtml='<div class="similar"><div class="similar-head">Pour composer votre montre</div><div class="similar-row">'
       +sim.map(function(s){
         var sAlt=(s.name||'').replace(/"/g,'');
         return '<div class="sim-card" onclick="openModal(\''+s.id+'\')">'
@@ -1523,13 +1607,21 @@ async function doScan(){
     }
 
     setSt(`${rawItems.length} pièce${rawItems.length>1?'s':''} trouvée${rawItems.length>1?'s':''}. Traduction et descriptions en français...`,'loading');
-    for(let i=0;i<rawItems.length;i++){
-      setSt('Traduction '+(i+1)+'/'+rawItems.length+'...','loading');
-      const result = await generateDesc(rawItems[i].name, rawItems[i].rawDesc, rawItems[i].cat);
-      rawItems[i].name = result.title || rawItems[i].name;
-      rawItems[i].description = result.desc || '';
-      // Pause anti-rate-limit entre chaque appel IA
-      if(i < rawItems.length-1) await new Promise(function(r){setTimeout(r,1500);});
+    // Traitement par lots concurrents (3 en parallèle) = nettement plus rapide,
+    // tout en restant doux pour l'API. generateDesc gère déjà ses propres erreurs.
+    const CONCURRENCY=3; let done=0;
+    async function processDesc(idx){
+      const result = await generateDesc(rawItems[idx].name, rawItems[idx].rawDesc, rawItems[idx].cat);
+      rawItems[idx].name = result.title || rawItems[idx].name;
+      rawItems[idx].description = result.desc || '';
+      done++;
+      setSt('Traduction des descriptions… '+done+'/'+rawItems.length,'loading');
+    }
+    for(let start=0;start<rawItems.length;start+=CONCURRENCY){
+      const batch=[];
+      for(let k=start;k<Math.min(start+CONCURRENCY,rawItems.length);k++) batch.push(processDesc(k));
+      await Promise.all(batch);
+      if(start+CONCURRENCY<rawItems.length) await new Promise(function(r){setTimeout(r,400);});
     }
     scanRes=rawItems;
     scanChecked=new Set(rawItems.map((_,i)=>i));
@@ -1552,13 +1644,16 @@ function renderScanResults(){
     function norm(s){return (s||'').toLowerCase().replace(/[^a-z0-9]/g,' ').replace(/\s+/g,' ').trim();}
     if(items.some(function(ex){return norm(ex.name)===norm(p.name);})) existDupIds.add(String(i));
   });
+  const scStdCats=['Cadran','Boîtier','Lunette','Insert lunette','Aiguilles','Bracelet','Verre','Couronne','Mouvement','Rotor','Fond','Anneau','Tube couronne','Axe','Joint','Barre ressort','Autre'];
+  const nChecked=scanChecked.size;
   document.getElementById('scan-res').innerHTML=`
     <div class="section">
       <div class="scan-top">
         <div class="sec-title" style="margin:0">${scanRes.length} pièce(s) trouvée(s)${(dupScanIds.size+existDupIds.size)>0?' — <span style=\"color:#856404;font-size:10px\">⚠ '+(dupScanIds.size+existDupIds.size)+' doublon(s)</span>':''}</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+          <span style="font-size:11px;color:#bbb" id="sc-count">${nChecked}/${scanRes.length} cochée(s)</span>
           <button class="btn btn-s" onclick="toggleAll()">Tout cocher / décocher</button>
-          <button class="btn btn-p" onclick="doImport()">Importer la sélection</button>
+          <button class="btn btn-p" id="sc-import-btn" onclick="doImport()">Importer la sélection (${nChecked})</button>
         </div>
       </div>
       <div id="sc-list">
@@ -1568,7 +1663,12 @@ function renderScanResults(){
           <div class="sc-thumb">${p.img?`<img src="${p.img}" onerror="this.parentNode.innerHTML=''" alt="">`:''}</div>
           <div class="sc-info">
             <div class="sc-name">${p.name||'—'}${dupScanIds.has(String(i))?'<span class="dup-badge">doublon</span>':''}${existDupIds.has(String(i))?'<span class="dup-badge" style="background:#fde8e8;color:#c0392b;border-color:#e74c3c">déjà dans catalogue</span>':''}</div>
-            <div class="sc-meta">${p.cat||'?'} · ${p.supplier||'—'}</div>
+            <div class="sc-meta" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <select class="sc-cat-sel" onclick="event.stopPropagation()" onchange="event.stopPropagation();setScanCat(${i},this.value)" title="Corriger la catégorie">
+                ${scStdCats.map(function(c){return '<option value="'+c+'"'+((p.cat||'Autre')===c?' selected':'')+'>'+c+'</option>';}).join('')}
+              </select>
+              <span>· ${p.supplier||'—'}</span>
+            </div>
             <div class="sc-price">${p.price?Number(p.price).toLocaleString('fr-FR')+' €':'—'}</div>
             ${p.description?`<div class="sc-desc-preview">${p.description}</div>`:''}
             ${p.url?`<div class="sc-url">${p.url}</div>`:''}
@@ -1577,12 +1677,15 @@ function renderScanResults(){
       </div>
     </div>`;
 }
+function setScanCat(i,val){ if(scanRes[i]) scanRes[i].cat=val; }
 
 function togCheck(i){
   scanChecked.has(i)?scanChecked.delete(i):scanChecked.add(i);
   const el=document.getElementById('sci-'+i), ch=document.getElementById('scc-'+i);
   if(el) el.className='sc-item'+(scanChecked.has(i)?' on':'');
   if(ch){ch.className='sc-check'+(scanChecked.has(i)?' on':'');ch.textContent=scanChecked.has(i)?'✓':'';}
+  const cnt=document.getElementById('sc-count'); if(cnt) cnt.textContent=scanChecked.size+'/'+scanRes.length+' cochée(s)';
+  const ib=document.getElementById('sc-import-btn'); if(ib) ib.textContent='Importer la sélection ('+scanChecked.size+')';
 }
 function toggleAll(){ scanChecked.size===scanRes.length?scanChecked.clear():scanRes.forEach((_,i)=>scanChecked.add(i)); renderScanResults(); }
 
@@ -1797,12 +1900,9 @@ function admCard(i){
   const tc=Number(i.cost||0)+Number(i.ship||0);
   const sel=adminSelected.has(i.id);
   return `<div class="adm-item${sel?' adm-sel':''}" id="adm-${i.id}">
-    <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
       <div class="adm-cb${sel?' on':''}" onclick="admToggle('${i.id}')" title="Sélectionner">${sel?'✓':''}</div>
       <div class="adm-thumb" onclick="openEdit('${i.id}')" title="Modifier">${i.img?`<img src="${i.img}" loading="lazy" onerror="this.parentNode.innerHTML=''" alt="${(i.name||'').replace(/"/g,'')}">`:''}</div>
-      <button class="adm-new-btn${i.is_new?' on':''}" onclick="toggleNew('${i.id}')" title="Marquer comme Nouveauté">&#9733;</button>
-      <button class="adm-custom-btn${i.is_custom?' on':''}" onclick="toggleCustom('${i.id}')" title="Marquer comme Personnalisable">P</button>
-      <button class="adm-hidden-btn${i.hidden?' on':''}" onclick="toggleHidden('${i.id}')" title="Masquer du catalogue client (visible uniquement ici et dans les devis)">&#128065;</button>
     </div>
     <div>
       <div class="adm-name">${i.name}${i.is_new?' <span style="font-size:9px;background:#1a1a1a;color:#fff;padding:1px 6px;border-radius:1px;letter-spacing:.06em">NOUVEAU</span>':''}${i.is_custom?' <span style="font-size:9px;background:#c9a96e;color:#fff;padding:1px 6px;border-radius:1px;letter-spacing:.06em">PERSONNALISABLE</span>':''}${i.hidden?' <span style="font-size:9px;background:#7a7a7a;color:#fff;padding:1px 6px;border-radius:1px;letter-spacing:.06em">MASQU\u00c9</span>':''}</div>
@@ -1812,6 +1912,11 @@ function admCard(i){
         <span class="badge b-cost">Achat ${Number(i.cost||0).toLocaleString('fr-FR')} €</span>
         <span class="badge b-ship">Port ${Number(i.ship||0).toLocaleString('fr-FR')} €</span>
         ${tc>0?`<span class="badge b-total">Coût ${tc.toLocaleString('fr-FR')} €</span>`:''}
+      </div>
+      <div class="adm-toggles">
+        <button class="adm-tg tg-new${i.is_new?' on':''}" onclick="toggleNew('${i.id}')" title="Afficher dans la section Nouveautés du catalogue"><b>&#9733;</b> Nouveauté</button>
+        <button class="adm-tg tg-custom${i.is_custom?' on':''}" onclick="toggleCustom('${i.id}')" title="Marquer comme pièce personnalisable"><b>P</b> Personnalisable</button>
+        <button class="adm-tg tg-hidden${i.hidden?' on':''}" onclick="toggleHidden('${i.id}')" title="Visible ou masquée du catalogue client">${i.hidden?'<b>&#128065;</b> Masquée':'<b>&#128065;</b> Visible'}</button>
       </div>
     </div>
     <div class="adm-acts">
