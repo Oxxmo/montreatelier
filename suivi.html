@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>bang. — suivi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0b0b0c;
+    --bg-soft: #1d1d1f;
+    --bg-card: #151517;
+    --ink: #ededec;
+    --ink-soft: #cfceca;
+    --ink-mute: #8c8b87;
+    --line: #2c2c2f;
+    --line-soft: #202022;
+    --gold: #c9a96e;
+    --gold-soft: #e2cfa3;
+    --danger: #d96e5f;
+    --ok: #7ba35f;
+    --amber: #d6a84a;
+    --pop: #050506;
+    --pop-text: #f4f2ee;
+    --shadow: 0 2px 6px rgba(0,0,0,.4), 0 12px 32px rgba(0,0,0,.35);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--ink); font-family: 'League Spartan', sans-serif; font-weight: 400; -webkit-font-smoothing: antialiased; }
+  html, body { max-width: 100%; overflow-x: hidden; }
+  body { min-height: 100vh; font-size: 14px; line-height: 1.45; letter-spacing: .01em; }
+  button, input, select, textarea { font-family: inherit; font-size: inherit; color: inherit; }
+  button { cursor: pointer; border: none; background: none; }
+
+  /* ===== GATE ===== */
+  .gate-overlay { position: fixed; inset: 0; z-index: 9999; background: #0b0b0c; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .gate-overlay[hidden] { display: none; }
+  .gate-card { width: 100%; max-width: 340px; background: var(--bg-card); border: 1px solid var(--line); border-top: 2px solid var(--gold); padding: 40px 32px 32px; text-align: center; }
+  .gate-brand { font-size: 38px; font-weight: 700; letter-spacing: .02em; line-height: 1; }
+  .gate-brand .dot { color: var(--gold); }
+  .gate-sub { font-size: 11px; text-transform: uppercase; letter-spacing: .2em; color: var(--ink-mute); margin: 10px 0 28px; font-weight: 500; }
+  .gate-card input { width: 100%; padding: 13px 14px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); font-size: 15px; text-align: center; letter-spacing: .05em; margin-bottom: 12px; }
+  .gate-card input:focus { outline: none; border-color: var(--gold); }
+  .gate-btn { width: 100%; padding: 13px; background: var(--gold); color: #0a0a0a; border: 1px solid var(--gold); font-size: 12px; text-transform: uppercase; letter-spacing: .2em; font-weight: 600; }
+  .gate-btn:hover { background: #d8b87a; }
+  .gate-error { color: var(--danger); font-size: 12px; margin-top: 14px; }
+  .gate-error[hidden] { display: none; }
+
+  /* ===== TOPBAR ===== */
+  .topbar { background: var(--pop); color: var(--pop-text); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; gap: 20px; border-bottom: 1px solid var(--gold); position: sticky; top: 0; z-index: 100; }
+  .brand { font-weight: 700; font-size: 22px; letter-spacing: .02em; }
+  .brand .dot { color: var(--gold); }
+  .brand-sub { font-weight: 300; font-size: 13px; color: #a8a39a; margin-left: 8px; text-transform: uppercase; letter-spacing: .15em; }
+  .top-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .top-actions button { background: transparent; color: var(--pop-text); padding: 8px 14px; border: 1px solid #3a3633; font-size: 12px; text-transform: uppercase; letter-spacing: .1em; font-weight: 500; transition: all .15s; }
+  .top-actions button:hover { background: rgba(201,169,110,.08); border-color: var(--gold); }
+  .top-actions button.primary { background: var(--gold); color: #0a0a0a; border-color: var(--gold); font-weight: 600; }
+  .top-actions button.primary:hover { background: #d8b87a; }
+
+  .container { max-width: 1600px; margin: 0 auto; padding: 24px; }
+
+  /* ===== STATS ===== */
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+  .stat { background: var(--bg-card); border: 1px solid var(--line); padding: 16px 18px; }
+  .stat .label { font-size: 10px; text-transform: uppercase; letter-spacing: .15em; color: var(--ink-mute); font-weight: 600; margin-bottom: 8px; }
+  .stat .value { font-size: 28px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; }
+  .stat .value small { font-size: 14px; color: var(--ink-mute); font-weight: 400; }
+  .stat.capacity .value.over { color: var(--danger); }
+  .stat .bar { height: 4px; background: var(--bg-soft); margin-top: 10px; overflow: hidden; }
+  .stat .bar span { display: block; height: 100%; background: var(--gold); transition: width .3s; }
+  .stat .bar span.over { background: var(--danger); }
+
+  /* ===== BOARD =====
+     Toutes les colonnes restent visibles à l'écran : grille fluide qui
+     réduit le nombre de colonnes par ligne plutôt que de déborder
+     horizontalement. Plus de barre de défilement en bas. */
+  .board { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 14px; align-items: stretch; }
+  .col { background: var(--bg-card); border: 1px solid var(--line); min-height: 120px; display: flex; flex-direction: column; min-width: 0; }
+  .col-head { padding: 12px 14px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; gap: 8px; position: sticky; top: 0; background: var(--bg-card); z-index: 1; }
+  .col-head .title { font-size: 11px; text-transform: uppercase; letter-spacing: .14em; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .col-head .count { font-size: 11px; color: var(--ink-mute); background: var(--bg-soft); padding: 2px 8px; border-radius: 10px; font-weight: 600; flex-shrink: 0; }
+  .col-body { padding: 10px; display: flex; flex-direction: column; gap: 10px; min-height: 40px; }
+  .col-empty { color: var(--ink-mute); font-size: 11px; text-align: center; padding: 16px 8px; font-style: italic; }
+
+  /* Largeurs intermédiaires : on passe à 3 puis 2 colonnes par ligne. */
+  @media (max-width: 1440px) { .board { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 1024px) { .board { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+  /* ===== CARD ===== */
+  .card { background: var(--bg); border: 1px solid var(--line); border-left: 2px solid var(--line); padding: 12px; transition: border-color .12s; cursor: pointer; }
+  .card:hover { border-color: var(--gold); }
+  .card.prio { border-left-color: var(--gold); }
+  .card.overdue { border-left-color: var(--danger); }
+  .card .ctop { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .card .client { font-weight: 600; font-size: 14px; overflow-wrap: anywhere; }
+  .card .project { font-size: 12px; color: var(--ink-mute); margin-top: 1px; overflow-wrap: anywhere; }
+  .card .star { font-size: 14px; color: var(--line); flex-shrink: 0; padding: 2px; }
+  .card .star.on { color: var(--gold); }
+  .card .meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; align-items: center; }
+  .badge { font-size: 10px; padding: 3px 8px; border: 1px solid var(--line); color: var(--ink-mute); letter-spacing: .04em; display: inline-flex; align-items: center; gap: 4px; }
+  .badge.total { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .badge.deadline.soon { border-color: var(--amber); color: var(--amber); }
+  .badge.deadline.over { border-color: var(--danger); color: var(--danger); }
+  .pay { display: inline-flex; gap: 4px; align-items: center; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; border: 1px solid var(--ink-mute); display: inline-block; }
+  .dot.on { background: var(--ok); border-color: var(--ok); }
+  .pay-label { font-size: 9px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-mute); }
+  .card .nav { display: flex; justify-content: space-between; margin-top: 10px; gap: 6px; }
+  .card .nav button { flex: 1; padding: 6px; border: 1px solid var(--line); color: var(--ink-mute); font-size: 14px; line-height: 1; transition: all .12s; }
+  .card .nav button:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); }
+  .card .nav button:disabled { opacity: .3; cursor: default; }
+
+  /* ===== MODAL ===== */
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(5,5,6,.6); display: flex; align-items: center; justify-content: center; z-index: 200; padding: 20px; }
+  .modal-backdrop[hidden] { display: none; }
+  .modal { background: var(--bg-card); border: 1px solid var(--line); max-width: 520px; width: 100%; max-height: 88vh; overflow: auto; box-shadow: var(--shadow); }
+  .modal.wide { max-width: 760px; }
+  .modal-header { padding: 16px 22px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; }
+  .modal-header h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .18em; font-weight: 600; }
+  .modal-close { font-size: 22px; color: var(--ink-mute); width: 32px; height: 32px; }
+  .modal-body { padding: 20px 22px; }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .12em; color: var(--ink-mute); margin-bottom: 6px; font-weight: 600; }
+  .field input, .field select, .field textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+  .field input:focus, .field select:focus, .field textarea:focus { outline: none; border-color: var(--gold); }
+  .field select { color-scheme: dark; }
+  .field select option { background: #1d1d1f; color: var(--ink); }
+  .field textarea { min-height: 70px; resize: vertical; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .checks { display: flex; gap: 18px; flex-wrap: wrap; }
+  .check { display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; }
+  .check input { width: 18px; height: 18px; accent-color: var(--gold); }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; flex-wrap: wrap; }
+  .btn { padding: 10px 18px; border: 1px solid var(--pop); background: var(--pop); color: var(--pop-text); font-size: 11px; text-transform: uppercase; letter-spacing: .14em; font-weight: 600; transition: all .15s; }
+  .btn:hover { background: #1a1a1a; border-color: var(--gold); }
+  .btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+  .btn.ghost:hover { background: var(--bg-soft); border-color: var(--ink); }
+  .btn.gold { background: var(--gold); color: #0a0a0a; border-color: var(--gold); }
+  .btn.gold:hover { background: #d8b87a; }
+  .btn.danger { background: transparent; color: var(--danger); border-color: var(--danger); margin-right: auto; }
+  .btn.danger:hover { background: var(--danger); color: #fff; }
+
+  /* import list */
+  .imp-list { display: flex; flex-direction: column; gap: 8px; }
+  .imp-item { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--line); background: var(--bg); }
+  .imp-item:hover { border-color: var(--gold); }
+  .imp-item .nm { font-weight: 600; font-size: 14px; }
+  .imp-item .mt { font-size: 11px; color: var(--ink-mute); margin-top: 2px; }
+  .imp-item button { padding: 7px 14px; border: 1px solid var(--pop); background: var(--pop); color: var(--pop-text); font-size: 10px; text-transform: uppercase; letter-spacing: .1em; font-weight: 600; }
+  .imp-item button:hover { background: var(--gold); border-color: var(--gold); color: #0a0a0a; }
+  .imp-item button.added { background: var(--ok); border-color: var(--ok); color: #fff; }
+  .empty-state { text-align: center; padding: 30px 20px; color: var(--ink-mute); font-size: 13px; }
+
+  /* spec list in editor */
+  .spec-mini { margin-top: 4px; padding: 10px 12px; background: var(--bg); border: 1px solid var(--line-soft); font-size: 12px; color: var(--ink-soft); line-height: 1.7; }
+  .spec-mini .sc { color: var(--ink-mute); text-transform: uppercase; font-size: 9px; letter-spacing: .08em; margin-right: 6px; }
+
+  /* toast */
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--pop); color: var(--pop-text); padding: 12px 22px; font-size: 12px; text-transform: uppercase; letter-spacing: .15em; font-weight: 500; border: 1px solid var(--gold); z-index: 300; transition: transform .25s ease; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* narrow (téléphone) : colonnes empilées verticalement */
+  body.is-narrow .topbar { flex-direction: column; align-items: stretch; gap: 12px; padding: 12px 16px; }
+  body.is-narrow .top-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  body.is-narrow .top-actions button { text-align: center; }
+  body.is-narrow .container { padding: 16px 12px 48px; }
+  body.is-narrow .stats { grid-template-columns: 1fr 1fr; }
+  body.is-narrow .board { display: grid; grid-template-columns: 1fr; gap: 16px; }
+  body.is-narrow .col { width: 100%; }
+  body.is-narrow .modal { max-height: 100%; height: 100%; }
+  body.is-narrow .field-row { grid-template-columns: 1fr; }
+</style>
+</head>
+<body>
+
+<!-- GATE -->
+<div id="gate" class="gate-overlay" hidden>
+  <div class="gate-card">
+    <div class="gate-brand">bang<span class="dot">.</span></div>
+    <div class="gate-sub">Accès atelier — suivi</div>
+    <input type="password" id="gate-input" placeholder="Mot de passe" autocomplete="current-password"
+           onkeydown="if(event.key==='Enter'){submitGate();}">
+    <button class="gate-btn" onclick="submitGate()">Entrer</button>
+    <div class="gate-error" id="gate-error" hidden>Mot de passe incorrect.</div>
+  </div>
+</div>
+
+<header class="topbar">
+  <div><span class="brand">bang<span class="dot">.</span></span><span class="brand-sub">Suivi · v1</span></div>
+  <div class="top-actions">
+    <button onclick="loadProjects()" title="Rafraîchir">↻ Rafraîchir</button>
+    <button onclick="openImport()">Importer un devis</button>
+    <button class="primary" onclick="openEditor()">+ Nouveau projet</button>
+  </div>
+</header>
+
+<div class="container">
+  <div class="stats" id="stats"></div>
+  <div class="board" id="board"></div>
+</div>
+
+<!-- EDITOR MODAL -->
+<div id="modal-edit" class="modal-backdrop" hidden>
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="edit-title">Nouveau projet</h3>
+      <button class="modal-close" onclick="closeModal('modal-edit')">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="e-id">
+      <input type="hidden" id="e-chiffrage">
+      <div class="field-row">
+        <div class="field"><label>Client</label><input type="text" id="e-client" placeholder="Nom du client"></div>
+        <div class="field"><label>Projet</label><input type="text" id="e-project" placeholder="Nom de la montre"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Étape</label><select id="e-stage"></select></div>
+        <div class="field"><label>Échéance</label><input type="date" id="e-deadline"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Montant (€)</label><input type="number" id="e-total" min="0" step="1" placeholder="0"></div>
+        <div class="field"><label>Priorité</label>
+          <label class="check" style="margin-top:8px;"><input type="checkbox" id="e-prio"> Projet prioritaire</label>
+        </div>
+      </div>
+      <div class="field">
+        <label>Paiements</label>
+        <div class="checks" style="margin-top:6px;">
+          <label class="check"><input type="checkbox" id="e-acompte"> Acompte reçu</label>
+          <label class="check"><input type="checkbox" id="e-solde"> Solde reçu</label>
+        </div>
+      </div>
+      <div class="field"><label>Notes</label><textarea id="e-notes" placeholder="Pièces à sourcer, remarques client, blocages…"></textarea></div>
+      <div id="e-spec-wrap" class="field" hidden>
+        <label>Spécification (depuis le devis)</label>
+        <div class="spec-mini" id="e-spec"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn danger" id="e-delete" onclick="deleteProject()" hidden>Supprimer</button>
+        <button class="btn ghost" onclick="closeModal('modal-edit')">Annuler</button>
+        <button class="btn gold" onclick="saveEditor()">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT MODAL -->
+<div id="modal-import" class="modal-backdrop" hidden>
+  <div class="modal wide">
+    <div class="modal-header">
+      <h3>Importer un devis comme projet</h3>
+      <button class="modal-close" onclick="closeModal('modal-import')">×</button>
+    </div>
+    <div class="modal-body">
+      <div id="imp-status" style="font-size:12px;color:var(--ink-mute);text-transform:uppercase;letter-spacing:.1em;margin-bottom:14px;">Chargement…</div>
+      <div class="imp-list" id="imp-list"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ========== SUPABASE CONFIG (même projet que le chiffrage) ========== */
+const SUPABASE_URL = 'https://fybbiyghjnjsnigjzatv.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_177KiLL6i-E3SxxRckZpVQ_5oZFD7KF';
+/* ==================================================================== */
+
+const STAGES = [
+  { key: 'brief',       label: 'Brief' },
+  { key: 'sourcing',    label: 'Sourcing' },
+  { key: 'proposition', label: 'Proposition' },
+  { key: 'assemblage',  label: 'Assemblage' },
+  { key: 'livraison',   label: 'Livraison' },
+  { key: 'termine',     label: 'Terminé' },
+];
+const STAGE_KEYS = STAGES.map(s => s.key);
+const MONTHLY_CAP = 7;
+const STORAGE_KEY = 'bang.suivi.projets';
+
+let PROJECTS = [];
+
+/* ========== HELPERS ========== */
+const fmtEURint = n => Math.round(Number(n) || 0).toLocaleString('fr-FR') + ' €';
+function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function slug(s){ return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); }
+function projetId(client, project){ return (slug(client)||'projet') + '__' + (slug(project)||'sansnom'); }
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+
+/* ========== SUPABASE ========== */
+function hasSupabase(){ return SUPABASE_ANON_KEY && SUPABASE_ANON_KEY !== 'COLLE_TA_ANON_KEY_ICI'; }
+function sbHeaders(){ const k=(SUPABASE_ANON_KEY||'').trim(); return { 'apikey':k, 'Authorization':`Bearer ${k}`, 'Content-Type':'application/json' }; }
+function getLocal(){ try { return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'); } catch { return []; } }
+function setLocal(a){ try { localStorage.setItem(STORAGE_KEY, JSON.stringify(a)); } catch {} }
+
+async function loadProjects(){
+  let rows;
+  if (hasSupabase()){
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/projets?select=*&order=updated_at.desc`, { headers: sbHeaders() });
+      if (!res.ok) throw new Error('HTTP '+res.status+' — '+await res.text());
+      rows = await res.json();
+      setLocal(rows);
+    } catch(e){
+      console.error(e);
+      rows = getLocal();
+      toast("Cloud injoignable — cache local");
+    }
+  } else {
+    rows = getLocal();
+  }
+  PROJECTS = rows || [];
+  renderStats();
+  renderBoard();
+}
+
+async function upsertProject(p){
+  p.updated_at = new Date().toISOString();
+  // local mirror
+  const local = getLocal();
+  const i = local.findIndex(x => x.id === p.id);
+  if (i >= 0) local[i] = p; else local.push(p);
+  setLocal(local);
+  if (hasSupabase()){
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/projets?on_conflict=id`, {
+      method: 'POST',
+      headers: { ...sbHeaders(), 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify(p),
+    });
+    if (!res.ok) throw new Error('HTTP '+res.status+' — '+await res.text());
+  }
+}
+
+async function removeProject(id){
+  setLocal(getLocal().filter(x => x.id !== id));
+  if (hasSupabase()){
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/projets?id=eq.${encodeURIComponent(id)}`, { method:'DELETE', headers: sbHeaders() });
+    if (!res.ok) throw new Error('HTTP '+res.status);
+  }
+}
+
+/* ========== STATS ========== */
+function renderStats(){
+  const active = PROJECTS.filter(p => p.stage !== 'termine');
+  const toDeliver = PROJECTS.filter(p => p.stage === 'livraison');
+  const awaitingDeposit = PROJECTS.filter(p => p.stage === 'proposition' && !p.acompte_recu);
+  const pipeline = active.reduce((s,p) => s + (Number(p.total)||0), 0);
+  const over = active.length > MONTHLY_CAP;
+  const pct = Math.min(100, Math.round(active.length / MONTHLY_CAP * 100));
+
+  document.getElementById('stats').innerHTML = `
+    <div class="stat capacity">
+      <div class="label">Projets actifs</div>
+      <div class="value ${over?'over':''}">${active.length}<small> / ${MONTHLY_CAP}</small></div>
+      <div class="bar"><span class="${over?'over':''}" style="width:${pct}%"></span></div>
+    </div>
+    <div class="stat">
+      <div class="label">À livrer</div>
+      <div class="value">${toDeliver.length}</div>
+    </div>
+    <div class="stat">
+      <div class="label">En attente d'acompte</div>
+      <div class="value">${awaitingDeposit.length}</div>
+    </div>
+    <div class="stat">
+      <div class="label">CA en cours</div>
+      <div class="value" style="font-size:24px;">${fmtEURint(pipeline)}</div>
+    </div>`;
+}
+
+/* ========== BOARD ========== */
+function deadlineState(p){
+  if (!p.deadline || p.stage === 'termine') return '';
+  const d = new Date(p.deadline); const now = new Date(); now.setHours(0,0,0,0);
+  const days = Math.round((d - now) / 86400000);
+  if (days < 0) return 'over';
+  if (days <= 7) return 'soon';
+  return '';
+}
+function fmtDeadline(iso){ return iso ? new Date(iso).toLocaleDateString('fr-FR', {day:'2-digit', month:'short'}) : ''; }
+
+function renderBoard(){
+  const board = document.getElementById('board');
+  board.innerHTML = STAGES.map(st => {
+    const items = PROJECTS.filter(p => (p.stage||'brief') === st.key);
+    const cards = items.length
+      ? items.map(cardHTML).join('')
+      : '<div class="col-empty">—</div>';
+    return `<div class="col">
+      <div class="col-head"><span class="title">${st.label}</span><span class="count">${items.length}</span></div>
+      <div class="col-body">${cards}</div>
+    </div>`;
+  }).join('');
+}
+
+function cardHTML(p){
+  const dl = deadlineState(p);
+  const idx = STAGE_KEYS.indexOf(p.stage || 'brief');
+  const dlBadge = p.deadline ? `<span class="badge deadline ${dl}">⏱ ${fmtDeadline(p.deadline)}</span>` : '';
+  const totalBadge = p.total ? `<span class="badge total">${fmtEURint(p.total)}</span>` : '';
+  return `<div class="card ${p.priority?'prio':''} ${dl==='over'?'overdue':''}" onclick="openEditor('${escapeHtml(p.id)}')">
+    <div class="ctop">
+      <div>
+        <div class="client">${escapeHtml(p.client||'—')}</div>
+        <div class="project">${escapeHtml(p.project||'')}</div>
+      </div>
+      <button class="star ${p.priority?'on':''}" onclick="event.stopPropagation();togglePriority('${escapeHtml(p.id)}')" title="Prioritaire">★</button>
+    </div>
+    <div class="meta">
+      ${totalBadge}${dlBadge}
+      <span class="pay" onclick="event.stopPropagation();togglePay('${escapeHtml(p.id)}','acompte_recu')" title="Acompte">
+        <span class="dot ${p.acompte_recu?'on':''}"></span><span class="pay-label">Ac.</span>
+      </span>
+      <span class="pay" onclick="event.stopPropagation();togglePay('${escapeHtml(p.id)}','solde_recu')" title="Solde">
+        <span class="dot ${p.solde_recu?'on':''}"></span><span class="pay-label">Sld</span>
+      </span>
+    </div>
+    <div class="nav">
+      <button onclick="event.stopPropagation();moveStage('${escapeHtml(p.id)}',-1)" ${idx<=0?'disabled':''}>←</button>
+      <button onclick="event.stopPropagation();moveStage('${escapeHtml(p.id)}',1)" ${idx>=STAGE_KEYS.length-1?'disabled':''}>→</button>
+    </div>
+  </div>`;
+}
+
+/* ========== ACTIONS ========== */
+function findP(id){ return PROJECTS.find(p => p.id === id); }
+
+async function moveStage(id, dir){
+  const p = findP(id); if (!p) return;
+  const idx = STAGE_KEYS.indexOf(p.stage||'brief');
+  const next = idx + dir;
+  if (next < 0 || next >= STAGE_KEYS.length) return;
+  p.stage = STAGE_KEYS[next];
+  renderStats(); renderBoard();
+  try { await upsertProject(p); } catch(e){ console.error(e); toast("Sync échouée"); }
+}
+
+async function togglePriority(id){
+  const p = findP(id); if (!p) return;
+  p.priority = !p.priority;
+  renderBoard();
+  try { await upsertProject(p); } catch(e){ console.error(e); }
+}
+
+async function togglePay(id, field){
+  const p = findP(id); if (!p) return;
+  p[field] = !p[field];
+  renderStats(); renderBoard();
+  try { await upsertProject(p); } catch(e){ console.error(e); }
+}
+
+/* ========== EDITOR ========== */
+function fillStageSelect(sel, current){
+  sel.innerHTML = STAGES.map(s => `<option value="${s.key}" ${s.key===current?'selected':''}>${s.label}</option>`).join('');
+}
+
+function openEditor(id){
+  const p = id ? findP(id) : null;
+  document.getElementById('edit-title').textContent = p ? 'Modifier le projet' : 'Nouveau projet';
+  document.getElementById('e-id').value = p ? p.id : '';
+  document.getElementById('e-chiffrage').value = p ? (p.chiffrage_id||'') : '';
+  document.getElementById('e-client').value = p ? (p.client||'') : '';
+  document.getElementById('e-project').value = p ? (p.project||'') : '';
+  fillStageSelect(document.getElementById('e-stage'), p ? (p.stage||'brief') : 'brief');
+  document.getElementById('e-deadline').value = p ? (p.deadline||'') : '';
+  document.getElementById('e-total').value = p ? (p.total||'') : '';
+  document.getElementById('e-prio').checked = p ? !!p.priority : false;
+  document.getElementById('e-acompte').checked = p ? !!p.acompte_recu : false;
+  document.getElementById('e-solde').checked = p ? !!p.solde_recu : false;
+  document.getElementById('e-notes').value = p ? (p.notes||'') : '';
+  document.getElementById('e-delete').hidden = !p;
+
+  // Spec from linked chiffrage
+  const specWrap = document.getElementById('e-spec-wrap');
+  if (p && p.spec && p.spec.length){
+    document.getElementById('e-spec').innerHTML = p.spec.map(s => `<div><span class="sc">${escapeHtml(s.cat)}</span>${escapeHtml(s.name)||'—'}</div>`).join('');
+    specWrap.hidden = false;
+  } else { specWrap.hidden = true; }
+
+  openModal('modal-edit');
+}
+
+async function saveEditor(){
+  const id0 = document.getElementById('e-id').value;
+  const client = document.getElementById('e-client').value.trim();
+  const project = document.getElementById('e-project').value.trim();
+  if (!client && !project){ toast("Renseigne au moins un client ou un projet."); return; }
+
+  const existing = id0 ? findP(id0) : null;
+  const id = id0 || projetId(client, project);
+  const p = Object.assign({}, existing || {}, {
+    id,
+    client, project,
+    stage: document.getElementById('e-stage').value,
+    deadline: document.getElementById('e-deadline').value || null,
+    total: parseFloat(document.getElementById('e-total').value) || null,
+    priority: document.getElementById('e-prio').checked,
+    acompte_recu: document.getElementById('e-acompte').checked,
+    solde_recu: document.getElementById('e-solde').checked,
+    notes: document.getElementById('e-notes').value,
+    chiffrage_id: document.getElementById('e-chiffrage').value || null,
+  });
+  if (!existing) p.created_at = new Date().toISOString();
+
+  // update local PROJECTS
+  const i = PROJECTS.findIndex(x => x.id === id);
+  if (i >= 0) PROJECTS[i] = p; else PROJECTS.unshift(p);
+  renderStats(); renderBoard();
+  closeModal('modal-edit');
+  try { await upsertProject(p); toast(existing ? "Projet mis à jour" : "Projet créé"); }
+  catch(e){ console.error(e); toast("Enregistré en local — sync échouée"); }
+}
+
+async function deleteProject(){
+  const id = document.getElementById('e-id').value;
+  if (!id) return;
+  if (!confirm("Supprimer définitivement ce projet du suivi ?")) return;
+  PROJECTS = PROJECTS.filter(p => p.id !== id);
+  renderStats(); renderBoard();
+  closeModal('modal-edit');
+  try { await removeProject(id); toast("Projet supprimé"); }
+  catch(e){ console.error(e); toast("Supprimé en local — sync échouée"); }
+}
+
+/* ========== IMPORT FROM DEVIS (chiffrages) ========== */
+async function openImport(){
+  openModal('modal-import');
+  const status = document.getElementById('imp-status');
+  const list = document.getElementById('imp-list');
+  list.innerHTML = '';
+  if (!hasSupabase()){ status.textContent = 'Supabase non configuré'; return; }
+  status.textContent = 'Chargement des devis…';
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/chiffrages?select=id,client,project,data,updated_at&order=updated_at.desc`, { headers: sbHeaders() });
+    if (!res.ok) throw new Error('HTTP '+res.status);
+    const rows = await res.json();
+    if (!rows.length){ status.textContent = '0 devis'; list.innerHTML = '<div class="empty-state">Aucun devis enregistré.</div>'; return; }
+    status.textContent = rows.length + ' devis';
+    list.innerHTML = rows.map(r => {
+      const total = (r.data && r.data.finalPrice) ? Math.round(r.data.finalPrice)+' €' : '—';
+      const exists = PROJECTS.some(p => p.id === r.id || p.chiffrage_id === r.id);
+      return `<div class="imp-item">
+        <div>
+          <div class="nm">${escapeHtml(r.client||'—')} — ${escapeHtml(r.project||'')}</div>
+          <div class="mt">Prix : ${total}${exists?' · déjà suivi':''}</div>
+        </div>
+        <button onclick="importDevis('${escapeHtml(r.id)}', this)" ${exists?'class="added" disabled':''}>${exists?'✓ Suivi':'Importer'}</button>
+      </div>`;
+    }).join('');
+    window.__chiffrages = rows;
+  } catch(e){
+    console.error(e); status.textContent = 'Erreur'; list.innerHTML = `<div class="empty-state">Impossible de charger les devis.</div>`;
+  }
+}
+
+async function importDevis(chId, btn){
+  const rows = window.__chiffrages || [];
+  const r = rows.find(x => x.id === chId);
+  if (!r) return;
+  const d = r.data || {};
+  const id = r.id; // reuse chiffrage id so it stays linked & dedup'd
+  if (PROJECTS.some(p => p.id === id)){ toast("Déjà dans le suivi"); return; }
+  const p = {
+    id,
+    client: r.client || d.client || '',
+    project: r.project || d.project || '',
+    stage: 'proposition',                 // un devis existe déjà → étape proposition
+    deadline: null,
+    total: d.finalPrice || null,
+    priority: false,
+    acompte_recu: false,
+    solde_recu: false,
+    notes: '',
+    chiffrage_id: id,
+    spec: Array.isArray(d.parts) ? d.parts.map(x => ({cat:x.cat, name:x.name})) : [],
+    created_at: new Date().toISOString(),
+  };
+  PROJECTS.unshift(p);
+  renderStats(); renderBoard();
+  if (btn){ btn.textContent = '✓ Suivi'; btn.classList.add('added'); btn.disabled = true; }
+  try { await upsertProject(p); toast("Projet importé"); }
+  catch(e){ console.error(e); toast("Importé en local — sync échouée"); }
+}
+
+/* ========== MODALS / TOAST ========== */
+function openModal(id){ document.getElementById(id).hidden = false; }
+function closeModal(id){ document.getElementById(id).hidden = true; }
+document.querySelectorAll('.modal-backdrop').forEach(b => b.addEventListener('click', e => { if (e.target === b) b.hidden = true; }));
+let toastTimer;
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2200); }
+
+/* ========== GATE ========== */
+const GATE_PASSWORD = 'bang2025';
+const GATE_KEY = 'bang.chiffrage.unlocked'; // même clé que le chiffrage → déverrouillage partagé
+function isUnlocked(){ try { return localStorage.getItem(GATE_KEY) === '1'; } catch { return false; } }
+function showGate(){ const g=document.getElementById('gate'); g.hidden=false; setTimeout(()=>{const i=document.getElementById('gate-input'); if(i)i.focus();},100); }
+function submitGate(){
+  const input=document.getElementById('gate-input');
+  if (input.value === GATE_PASSWORD){ try{localStorage.setItem(GATE_KEY,'1');}catch{} document.getElementById('gate').hidden=true; }
+  else { document.getElementById('gate-error').hidden=false; input.value=''; input.focus(); }
+}
+
+/* ========== NARROW DETECTION ========== */
+const NARROW_BP = 760;
+function updateNarrow(){
+  const c = document.querySelector('.container') || document.body;
+  const w = (c && c.clientWidth) ? c.clientWidth : window.innerWidth;
+  document.body.classList.toggle('is-narrow', (w>0?w:window.innerWidth) <= NARROW_BP);
+}
+function setupNarrow(){
+  updateNarrow();
+  window.addEventListener('resize', updateNarrow);
+  window.addEventListener('orientationchange', () => setTimeout(updateNarrow, 100));
+  if (window.ResizeObserver){ const ro=new ResizeObserver(()=>updateNarrow()); const t=document.querySelector('.container'); if(t)ro.observe(t); }
+  setTimeout(updateNarrow, 300);
+}
+
+/* ========== INIT ========== */
+function init(){
+  console.log('bang. suivi — v1 chargé');
+  setupNarrow();
+  if (!isUnlocked()) showGate();
+  loadProjects();
+}
+init();
+</script>
+</body>
+</html>
