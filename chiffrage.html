@@ -1,0 +1,2675 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>bang. — chiffrage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root {
+    /* DARK THEME — éditeur (par défaut) — neutre, sans cast marron */
+    --bg: #0b0b0c;
+    --bg-soft: #1d1d1f;
+    --bg-card: #151517;
+    --ink: #ededec;
+    --ink-soft: #cfceca;
+    --ink-mute: #8c8b87;
+    --line: #2c2c2f;
+    --line-soft: #202022;
+    --gold: #c9a96e;
+    --gold-soft: #e2cfa3;
+    --danger: #d96e5f;
+    --ok: #7ba35f;
+    --pop: #050506;        /* always-deep-dark for emphasis panels */
+    --pop-text: #f4f2ee;
+    --shadow: 0 2px 6px rgba(0,0,0,.4), 0 12px 32px rgba(0,0,0,.35);
+  }
+
+  body.client-view {
+    /* LIGHT THEME — vue devis client (document papier) */
+    --bg: #f4f2ee;
+    --bg-soft: #ebe8e1;
+    --bg-card: #ffffff;
+    --ink: #0a0a0a;
+    --ink-soft: #1a1a1a;
+    --ink-mute: #6b6760;
+    --line: #d9d4cb;
+    --line-soft: #e7e2d9;
+    --pop: #0a0a0a;
+    --pop-text: #f4f2ee;
+    --shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.04);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { background: var(--bg); color: var(--ink); font-family: 'League Spartan', sans-serif; font-weight: 400; -webkit-font-smoothing: antialiased; }
+  body { min-height: 100vh; padding: 0; font-size: 14px; line-height: 1.45; letter-spacing: .01em; }
+  button, input, select, textarea { font-family: inherit; font-size: inherit; color: inherit; }
+  button { cursor: pointer; border: none; background: none; }
+  a { color: inherit; }
+
+  /* ==================== PASSWORD GATE ==================== */
+  .gate-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    background: #0b0b0c;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+  }
+  .gate-overlay[hidden] { display: none; }
+  .gate-card {
+    width: 100%; max-width: 340px;
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    border-top: 2px solid var(--gold);
+    padding: 40px 32px 32px;
+    text-align: center;
+  }
+  .gate-brand { font-size: 38px; font-weight: 700; letter-spacing: .02em; line-height: 1; }
+  .gate-brand .dot { color: var(--gold); }
+  .gate-sub {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .2em;
+    color: var(--ink-mute); margin-top: 10px; margin-bottom: 28px; font-weight: 500;
+  }
+  .gate-card input {
+    width: 100%; padding: 13px 14px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+    font-size: 15px; text-align: center; letter-spacing: .05em;
+    margin-bottom: 12px;
+  }
+  .gate-card input:focus { outline: none; border-color: var(--gold); }
+  .gate-btn {
+    width: 100%; padding: 13px;
+    background: var(--gold); color: #0a0a0a; border: 1px solid var(--gold);
+    font-size: 12px; text-transform: uppercase; letter-spacing: .2em; font-weight: 600;
+    transition: background .15s;
+  }
+  .gate-btn:hover { background: #d8b87a; }
+  .gate-error { color: var(--danger); font-size: 12px; margin-top: 14px; letter-spacing: .03em; }
+  .gate-error[hidden] { display: none; }
+
+  .topbar {
+    background: var(--pop);
+    color: var(--pop-text);
+    padding: 14px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 1px solid var(--gold);
+  }
+  .brand { font-weight: 700; font-size: 22px; letter-spacing: .02em; }
+  .brand .dot { color: var(--gold); }
+  .brand-sub { font-weight: 300; font-size: 13px; color: #a8a39a; margin-left: 8px; text-transform: uppercase; letter-spacing: .15em; }
+  .top-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .top-actions button {
+    background: transparent;
+    color: var(--pop-text);
+    padding: 8px 14px;
+    border: 1px solid #3a3633;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    font-weight: 500;
+    transition: all .15s;
+  }
+  .top-actions button:hover { background: rgba(201,169,110,.08); border-color: var(--gold); }
+  .top-actions button.primary { background: var(--gold); color: #0a0a0a; border-color: var(--gold); font-weight: 600; }
+  .top-actions button.primary:hover { background: #d8b87a; border-color: #d8b87a; }
+
+  /* ==================== LAYOUT ==================== */
+  .container {
+    max-width: 1480px;
+    margin: 0 auto;
+    padding: 28px 32px 60px;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 28px;
+    align-items: start;
+  }
+  @media (max-width: 1100px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+
+  /* ==================== PROJECT INFO ==================== */
+  .project-card {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    padding: 24px 28px;
+    margin-bottom: 24px;
+  }
+  .project-card h2 {
+    font-weight: 600;
+    font-size: 12px;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    margin-bottom: 16px;
+  }
+  .project-form {
+    display: grid;
+    grid-template-columns: 2fr 2fr 1fr 1fr;
+    gap: 16px;
+  }
+  @media (max-width: 800px) {
+    .project-form { grid-template-columns: 1fr 1fr; }
+  }
+  .field label {
+    display: block;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    color: var(--ink-mute);
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  .field input, .field select {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--line);
+    background: var(--bg);
+    font-size: 14px;
+    font-weight: 400;
+    transition: border-color .15s;
+  }
+  .field input:focus, .field select:focus {
+    outline: none;
+    border-color: var(--gold);
+  }
+
+  /* ==================== PARTS SECTION ==================== */
+  .section-card {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+  }
+  .section-header {
+    padding: 18px 28px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .section-header h2 {
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+  }
+  .mode-toggle {
+    display: inline-flex;
+    border: 1px solid var(--line);
+    background: var(--bg);
+  }
+  .mode-toggle button {
+    padding: 7px 14px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    font-weight: 500;
+    color: var(--ink-mute);
+    transition: all .15s;
+  }
+  .mode-toggle button.active { background: var(--gold); color: #0a0a0a; }
+
+  /* ==================== PARTS TABLE ==================== */
+  .parts-table { width: 100%; border-collapse: collapse; }
+  .parts-table thead th {
+    text-align: left;
+    padding: 12px 10px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    font-weight: 600;
+    color: var(--ink-mute);
+    border-bottom: 1px solid var(--line);
+    background: var(--bg-soft);
+    white-space: nowrap;
+  }
+  .parts-table thead th.num { text-align: right; }
+  .parts-table tbody tr {
+    border-bottom: 1px solid var(--line-soft);
+    transition: background .12s;
+  }
+  .parts-table tbody tr:hover { background: var(--bg-soft); }
+  .parts-table tbody tr.empty { opacity: .55; }
+  .parts-table td { padding: 6px 8px; vertical-align: middle; }
+  .parts-table td input, .parts-table td select {
+    width: 100%;
+    border: 1px solid transparent;
+    background: transparent;
+    padding: 8px 8px;
+    font-size: 13px;
+    transition: all .12s;
+  }
+  .parts-table td input:hover, .parts-table td select:hover { border-color: var(--line); }
+  .parts-table td input:focus, .parts-table td select:focus {
+    outline: none;
+    border-color: var(--gold);
+    background: var(--bg);
+  }
+  .parts-table td.num input { text-align: right; }
+  .parts-table td.col-cat { width: 16%; }
+  .parts-table td.col-name { width: 22%; }
+  .parts-table td.col-supplier { width: 14%; }
+  .parts-table td.col-num { width: 10%; }
+  .parts-table td.col-action { width: 72px; text-align: center; white-space: nowrap; }
+  .parts-table td.col-action button { vertical-align: middle; }
+  .parts-table td.computed {
+    text-align: right;
+    font-weight: 500;
+    padding-right: 14px;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  .parts-table td.computed.zero { color: var(--ink-mute); font-weight: 400; }
+  .row-delete {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    color: var(--ink-mute);
+    font-size: 16px;
+    line-height: 1;
+    transition: all .15s;
+  }
+  .row-delete:hover { background: var(--danger); color: white; }
+
+  /* Masquer / afficher une ligne au client */
+  .row-hide {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    color: var(--ink-mute);
+    font-size: 13px;
+    line-height: 1;
+    transition: all .15s;
+  }
+  .row-hide:hover { background: var(--bg-soft); color: var(--ink); }
+  .row-hide .rh-label { display: none; }
+  .row-hide.on { color: var(--gold); }
+  .row-hide.on:hover { background: rgba(201,169,110,.12); }
+  /* Ligne masquée : grisée + barrée, sert au chiffrage mais pas au client */
+  .parts-table tbody tr.row-hidden { opacity: .5; }
+  .parts-table tbody tr.row-hidden:hover { opacity: .72; }
+  .parts-table tbody tr.row-hidden td.col-name input { text-decoration: line-through; }
+  .hidden-badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 1px 7px;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    font-weight: 600;
+    color: var(--gold);
+    border: 1px solid var(--gold);
+    border-radius: 2px;
+    vertical-align: middle;
+  }
+
+  /* Hide margin column when global mode */
+  body.mode-global .col-margin-part,
+  body.mode-global td.col-margin-part { display: none; }
+  body.mode-perpart .global-margin-row { display: none; }
+
+  .add-row {
+    width: 100%;
+    padding: 14px;
+    border-top: 1px solid var(--line);
+    color: var(--ink-mute);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .15em;
+    font-weight: 500;
+    transition: all .15s;
+  }
+  .add-row:hover { background: var(--bg-soft); color: var(--ink); }
+
+  /* Global margin bar */
+  .global-margin-row {
+    padding: 14px 28px;
+    background: var(--bg-soft);
+    border-top: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .global-margin-row label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .15em;
+    color: var(--ink-mute);
+    font-weight: 600;
+  }
+  .global-margin-row input {
+    width: 100px;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    background: var(--bg-card);
+    text-align: right;
+    font-weight: 600;
+  }
+
+  /* ==================== SIDEBAR ==================== */
+  aside.sidebar { display: flex; flex-direction: column; gap: 24px; position: sticky; top: 80px; }
+  @media (max-width: 1100px) { aside.sidebar { position: static; } }
+  .panel { background: var(--bg-card); border: 1px solid var(--line); }
+  .panel-header {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--line);
+    font-size: 11px;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--ink-mute);
+  }
+  .panel-body { padding: 16px 20px; }
+  .config-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+  }
+  .config-row label { font-size: 13px; color: var(--ink-soft); flex: 1; }
+  .config-row input {
+    width: 90px;
+    padding: 7px 10px;
+    border: 1px solid var(--line);
+    background: var(--bg);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .config-row input:focus { outline: none; border-color: var(--gold); }
+
+  .totals-list { padding: 4px 0; }
+  .total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 9px 20px;
+    font-size: 13px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .total-row:last-child { border-bottom: none; }
+  .total-row .label { color: var(--ink-soft); }
+  .total-row .val {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+  }
+  .total-row.muted .label, .total-row.muted .val { color: var(--ink-mute); font-weight: 400; }
+  .total-row.divider { background: var(--bg-soft); }
+  .total-row.highlight {
+    background: var(--pop);
+    color: var(--pop-text);
+    padding: 14px 20px;
+    border-top: 1px solid var(--gold);
+  }
+  .total-row.highlight .label { color: var(--gold); font-size: 11px; text-transform: uppercase; letter-spacing: .15em; font-weight: 600; }
+  .total-row.highlight .val { color: var(--pop-text); font-size: 18px; font-weight: 600; }
+  .total-row.gold { background: var(--gold); color: #0a0a0a; padding: 14px 20px; }
+  .total-row.gold .label { color: #0a0a0a; font-size: 11px; text-transform: uppercase; letter-spacing: .15em; font-weight: 600; }
+  .total-row.gold .val { color: #0a0a0a; font-size: 18px; font-weight: 700; }
+
+  /* Final price input */
+  .final-price-panel { background: var(--pop); color: var(--pop-text); padding: 20px; border: 1px solid var(--gold) !important; }
+  .final-price-panel .label { font-size: 10px; text-transform: uppercase; letter-spacing: .2em; color: var(--gold); margin-bottom: 8px; font-weight: 600; }
+  .final-price-panel input {
+    width: 100%;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #333;
+    color: var(--pop-text);
+    font-size: 28px;
+    font-weight: 700;
+    padding: 4px 0;
+    text-align: left;
+    font-variant-numeric: tabular-nums;
+  }
+  .final-price-panel input:focus { outline: none; border-bottom-color: var(--gold); }
+  .final-price-panel .euro { color: var(--gold); margin-left: 4px; }
+  .final-price-panel .hint { font-size: 11px; color: #908b81; margin-top: 6px; letter-spacing: .05em; }
+
+  /* ==================== MODAL ==================== */
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(10,10,10,.55);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200;
+    padding: 20px;
+  }
+  .modal-backdrop[hidden] { display: none; }
+  .modal {
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    max-width: 540px;
+    width: 100%;
+    max-height: 80vh;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    box-shadow: var(--shadow);
+  }
+  .modal.modal-wide { max-width: 920px; max-height: 86vh; }
+
+  /* ==================== CATALOG MODAL ==================== */
+  .catalog-toolbar {
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    gap: 10px;
+    background: var(--bg-soft);
+    flex-wrap: wrap;
+  }
+  .catalog-toolbar input, .catalog-toolbar select {
+    padding: 9px 12px;
+    border: 1px solid var(--line);
+    background: var(--bg-card);
+    font-size: 13px;
+  }
+  .catalog-toolbar input:focus, .catalog-toolbar select:focus { outline: none; border-color: var(--gold); }
+  .catalog-toolbar input { flex: 1; min-width: 200px; }
+  .catalog-toolbar select { min-width: 160px; }
+  .catalog-status {
+    padding: 14px 24px;
+    font-size: 12px;
+    color: var(--ink-mute);
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .catalog-list {
+    overflow-y: auto;
+    padding: 8px 0;
+    flex: 1;
+    min-height: 0;
+  }
+  .catalog-item {
+    display: grid;
+    grid-template-columns: 60px 1fr auto auto;
+    gap: 14px;
+    align-items: center;
+    padding: 10px 24px;
+    border-bottom: 1px solid var(--line-soft);
+    transition: background .12s;
+  }
+  .catalog-item:hover { background: var(--bg-soft); }
+  .catalog-item .img {
+    width: 60px; height: 60px;
+    background: var(--bg-soft);
+    border: 1px solid var(--line);
+    background-size: cover;
+    background-position: center;
+    flex-shrink: 0;
+  }
+  .catalog-item .meta { min-width: 0; }
+  .catalog-item .meta .name {
+    font-weight: 500;
+    font-size: 13px;
+    margin-bottom: 3px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .catalog-item .meta .sub {
+    font-size: 11px;
+    color: var(--ink-mute);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+  .catalog-item .prices {
+    text-align: right;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-mute);
+  }
+  .catalog-item .prices .cost { color: var(--ink); font-weight: 500; }
+  .catalog-item .add-btn {
+    padding: 8px 14px;
+    border: 1px solid var(--pop);
+    background: var(--pop);
+    color: var(--pop-text);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    font-weight: 600;
+    transition: all .12s;
+  }
+  .catalog-item .add-btn:hover { background: var(--gold); border-color: var(--gold); color: #0a0a0a; }
+  .catalog-item .add-btn.added { background: var(--ok); border-color: var(--ok); }
+  @media (max-width: 600px) {
+    .catalog-item { grid-template-columns: 50px 1fr auto; }
+    .catalog-item .prices { display: none; }
+    .catalog-item .img { width: 50px; height: 50px; }
+  }
+  .catalog-empty, .catalog-error {
+    padding: 50px 24px;
+    text-align: center;
+    color: var(--ink-mute);
+    font-size: 13px;
+  }
+  .catalog-error { color: var(--danger); }
+  .catalog-error code {
+    display: block;
+    margin-top: 12px;
+    font-family: monospace;
+    font-size: 11px;
+    background: var(--bg-soft);
+    padding: 8px 12px;
+    color: var(--ink);
+    text-align: left;
+  }
+
+  /* Selection items (different layout than catalog items) */
+  .selection-item {
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--line-soft);
+    transition: background .12s;
+  }
+  .selection-item:hover { background: var(--bg-soft); }
+  .selection-item .top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 6px;
+  }
+  .selection-item .client {
+    font-weight: 600;
+    font-size: 15px;
+  }
+  .selection-item .meta {
+    font-size: 11px;
+    color: var(--ink-mute);
+    text-transform: uppercase;
+    letter-spacing: .12em;
+  }
+  .selection-item .preview {
+    font-size: 12px;
+    color: var(--ink-mute);
+    line-height: 1.5;
+    margin-bottom: 10px;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+  .selection-item .actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+  .selection-item .add-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--pop);
+    background: var(--pop);
+    color: var(--pop-text);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .12em;
+    font-weight: 600;
+    transition: all .12s;
+  }
+  .selection-item .add-btn:hover { background: var(--gold); border-color: var(--gold); color: #0a0a0a; }
+  .modal-header {
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .modal-header h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .2em; font-weight: 600; }
+  .modal-close { font-size: 22px; color: var(--ink-mute); width: 32px; height: 32px; }
+  .modal-body { padding: 20px 24px; }
+  .modal-body input.full {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    background: var(--bg);
+    margin-bottom: 12px;
+  }
+  .modal-body textarea {
+    width: 100%;
+    min-height: 90px;
+    padding: 10px 12px;
+    border: 1px solid var(--line);
+    background: var(--bg);
+    font-family: monospace;
+    font-size: 12px;
+    margin-bottom: 12px;
+    resize: vertical;
+  }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px; }
+  .btn {
+    padding: 9px 18px;
+    border: 1px solid var(--pop);
+    background: var(--pop);
+    color: var(--pop-text);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .15em;
+    font-weight: 600;
+    transition: all .15s;
+  }
+  .btn:hover { background: #1a1a1a; border-color: var(--gold); }
+  .btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+  .btn.ghost:hover { background: var(--bg-soft); border-color: var(--ink); }
+  .btn.gold { background: var(--gold); color: #0a0a0a; border-color: var(--gold); }
+  .btn.gold:hover { background: #d8b87a; border-color: #d8b87a; }
+
+  .saved-list { list-style: none; }
+  .saved-list li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    margin-bottom: 8px;
+    background: var(--bg);
+    transition: border-color .12s;
+  }
+  .saved-list li:hover { border-color: var(--ink); }
+  .saved-list .info { flex: 1; }
+  .saved-list .name { font-weight: 600; font-size: 14px; }
+  .saved-list .meta { font-size: 11px; color: var(--ink-mute); margin-top: 2px; }
+  .saved-list .actions { display: flex; gap: 6px; }
+  .saved-list .actions button {
+    padding: 6px 10px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    border: 1px solid var(--line);
+    color: var(--ink-soft);
+  }
+  .saved-list .actions button:hover { border-color: var(--pop); background: var(--pop); color: var(--pop-text); }
+  .saved-list .actions button.del:hover { background: var(--danger); border-color: var(--danger); }
+  .empty-state { text-align: center; padding: 30px 20px; color: var(--ink-mute); font-size: 13px; }
+
+  /* ==================== PDF PROGRESS ==================== */
+  .pdf-progress {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 20px; padding: 14px 18px;
+    background: var(--bg-card); border: 1px solid var(--gold);
+    font-size: 12px; text-transform: uppercase; letter-spacing: .12em; color: var(--ink);
+  }
+  .pdf-progress .spin {
+    width: 16px; height: 16px; border: 2px solid var(--line); border-top-color: var(--gold);
+    border-radius: 50%; animation: pdfspin .8s linear infinite; flex-shrink: 0;
+  }
+  @keyframes pdfspin { to { transform: rotate(360deg); } }
+
+  /* Offscreen stage used to render the document for PDF capture (always light/A4) */
+  #pdf-stage {
+    position: fixed; left: -10000px; top: 0;
+    width: 794px; /* ~A4 @96dpi */
+    background: #ffffff; color: #0a0a0a;
+    --bg: #ffffff; --bg-card: #ffffff; --bg-soft: #f4f2ee;
+    --ink: #0a0a0a; --ink-soft: #2a2a2a; --ink-mute: #555;
+    --line: #cccccc; --line-soft: #e2e2e2; --pop: #0a0a0a; --pop-text: #ffffff;
+    padding: 48px 48px 36px;
+    font-family: 'League Spartan', sans-serif;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: var(--pop);
+    color: var(--pop-text);
+    padding: 12px 22px;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .15em;
+    font-weight: 500;
+    border: 1px solid var(--gold);
+    z-index: 300;
+    transition: transform .25s ease;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+
+  /* ==================== SELECT DROPDOWN FIX (dark) ==================== */
+  .field select, .parts-table td select, .catalog-toolbar select {
+    color-scheme: dark;
+  }
+  .field select option, .parts-table td select option, .catalog-toolbar select option {
+    background: #1d1d1f;
+    color: #ededec;
+  }
+  body.client-view select { color-scheme: light; }
+
+  /* ==================== DEVIS / CLIENT VIEW ==================== */
+  body.client-view { background: var(--bg); }
+  body.client-view .topbar, body.client-view aside.sidebar, body.client-view .add-row,
+  body.client-view .row-delete, body.client-view .global-margin-row { display: none; }
+  .client-doc {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 56px 56px 48px;
+    background: var(--bg-card);
+    border: 1px solid var(--line);
+    color: var(--ink);
+  }
+
+  .devis-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 24px;
+    border-bottom: 2px solid var(--ink);
+    margin-bottom: 28px;
+  }
+  .devis-brand .brand-mark { font-size: 34px; font-weight: 700; letter-spacing: .02em; line-height: 1; }
+  .devis-brand .brand-mark .dot { color: var(--gold); }
+  .devis-brand .brand-tagline { font-size: 11px; color: var(--ink-mute); letter-spacing: .08em; margin-top: 8px; }
+  .devis-ref { text-align: right; }
+  .devis-ref .doc-type { font-size: 20px; letter-spacing: .3em; text-transform: uppercase; font-weight: 600; }
+  .devis-ref .devis-num { font-size: 12px; color: var(--ink-mute); letter-spacing: .1em; margin-top: 4px; font-variant-numeric: tabular-nums; }
+
+  .devis-parties { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; margin-bottom: 24px; }
+  .partie-label { font-size: 10px; text-transform: uppercase; letter-spacing: .2em; color: var(--ink-mute); font-weight: 600; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+  .partie-body { font-size: 12.5px; line-height: 1.6; color: var(--ink-soft); }
+  .partie-body .nom { font-weight: 600; font-size: 14px; color: var(--ink); }
+
+  .devis-dates { display: flex; gap: 36px; padding: 14px 0; border-top: 1px solid var(--line-soft); border-bottom: 1px solid var(--line-soft); margin-bottom: 28px; }
+  .devis-dates > div { display: flex; flex-direction: column; gap: 3px; }
+  .devis-dates .dl { font-size: 9px; text-transform: uppercase; letter-spacing: .18em; color: var(--ink-mute); font-weight: 600; }
+  .devis-dates .dv { font-size: 13px; font-weight: 500; }
+
+  .devis-table { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
+  .devis-table th {
+    text-align: left;
+    padding: 10px 4px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .15em;
+    color: var(--ink-mute);
+    border-bottom: 1px solid var(--ink);
+    font-weight: 600;
+  }
+  .devis-table th.num { text-align: right; }
+  .devis-table td { padding: 14px 4px; border-bottom: 1px solid var(--line-soft); font-size: 13px; vertical-align: top; }
+  .devis-table td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; font-size: 15px; white-space: nowrap; }
+  .devis-table .presta-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  .devis-table .presta-sub { font-size: 11px; color: var(--ink-mute); margin-bottom: 10px; }
+  .devis-table .spec-list { list-style: none; padding: 0; margin: 8px 0 0; display: flex; flex-direction: column; gap: 14px; }
+  .devis-table .spec-list li.spec-item { font-size: 12px; color: var(--ink-soft); padding: 0; display: flex; gap: 14px; align-items: flex-start; page-break-inside: avoid; }
+  .devis-table .spec-list .spec-thumb {
+    width: 66px; height: 66px; flex-shrink: 0;
+    background-size: cover; background-position: center;
+    background-color: var(--bg-soft);
+    border: 1px solid var(--line); border-radius: 3px;
+  }
+  .devis-table .spec-list .spec-text { flex: 1; min-width: 0; }
+  .devis-table .spec-list .spec-line { display: flex; gap: 10px; align-items: baseline; }
+  .devis-table .spec-list .spec-cat { color: var(--ink-mute); min-width: 110px; text-transform: uppercase; font-size: 10px; letter-spacing: .08em; flex-shrink: 0; padding-top: 1px; }
+  .devis-table .spec-list .spec-name { font-weight: 600; font-size: 13px; }
+  .devis-table .spec-list .spec-desc { font-size: 11.5px; color: var(--ink-mute); line-height: 1.5; margin-top: 4px; white-space: pre-wrap; }
+
+  .devis-totaux { margin-top: 18px; }
+  .devis-total-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 16px 18px;
+    background: var(--pop);
+    color: var(--pop-text);
+  }
+  .devis-total-line span:first-child { font-size: 12px; text-transform: uppercase; letter-spacing: .25em; color: var(--gold); font-weight: 600; }
+  .devis-total-line span:last-child { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .devis-tva { text-align: right; font-size: 10.5px; color: var(--ink-mute); margin-top: 8px; font-style: italic; }
+
+  .devis-reglement { margin-top: 32px; padding: 20px 22px; background: var(--bg-soft); border: 1px solid var(--line); }
+  .reg-title { font-size: 11px; text-transform: uppercase; letter-spacing: .2em; font-weight: 600; margin-bottom: 12px; }
+  .reg-lines { font-size: 12.5px; line-height: 1.7; color: var(--ink-soft); }
+  .reg-lines .reg-row { display: flex; justify-content: space-between; padding: 3px 0; }
+  .reg-lines .reg-row .amt { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .reg-highlight { margin-top: 14px; padding: 12px 14px; background: var(--bg-card); border-left: 3px solid var(--gold); font-size: 12px; font-weight: 500; line-height: 1.5; }
+
+  .client-notes {
+    margin-top: 28px;
+    padding: 18px 20px;
+    background: var(--bg-soft);
+    border-left: 3px solid var(--gold);
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    line-height: 1.6;
+    white-space: pre-wrap;
+  }
+
+  .devis-accord { margin-top: 36px; display: flex; justify-content: flex-end; }
+  .accord-block { width: 280px; }
+  .accord-label { font-size: 11px; text-transform: uppercase; letter-spacing: .18em; font-weight: 600; }
+  .accord-hint { font-size: 10px; color: var(--ink-mute); margin-top: 4px; line-height: 1.4; }
+  .accord-line { margin-top: 48px; border-bottom: 1px solid var(--ink); }
+
+  .devis-cgv { margin-top: 40px; padding-top: 24px; border-top: 1px solid var(--line); }
+  .devis-cgv h4 { font-size: 11px; text-transform: uppercase; letter-spacing: .2em; font-weight: 600; margin-bottom: 14px; }
+  .devis-cgv .cgv-art { margin-bottom: 12px; }
+  .devis-cgv .cgv-art .cgv-h { font-size: 11px; font-weight: 600; color: var(--ink); margin-bottom: 3px; }
+  .devis-cgv .cgv-art .cgv-b { font-size: 10.5px; color: var(--ink-mute); line-height: 1.55; }
+
+  .client-footer {
+    margin-top: 32px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    text-align: center;
+    font-size: 10.5px;
+    color: var(--ink-mute);
+    letter-spacing: .04em;
+    line-height: 1.7;
+  }
+  .client-actions {
+    max-width: 800px;
+    margin: 24px auto 0;
+    padding: 0 56px;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+  .client-actions button {
+    padding: 10px 18px;
+    border: 1px solid var(--gold);
+    background: var(--gold);
+    color: #0a0a0a;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .15em;
+    font-weight: 600;
+    transition: all .15s;
+  }
+  .client-actions button:hover { background: #d8b87a; }
+
+  /* ==================== NARROW LAYOUT (JS-driven, robust for embeds) ====================
+     Activé par la classe body.is-narrow, posée en JS selon la largeur réelle de l'outil
+     (pas du viewport) — fonctionne même intégré en iframe/bloc WordPress. */
+  body.is-narrow { font-size: 14px; }
+
+  /* Topbar */
+  body.is-narrow .topbar { flex-direction: column; align-items: stretch; gap: 12px; padding: 12px 16px; }
+  body.is-narrow .brand { font-size: 20px; }
+  body.is-narrow .brand-sub { font-size: 11px; }
+  body.is-narrow .top-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  body.is-narrow .top-actions button { padding: 10px 8px; font-size: 11px; text-align: center; }
+  body.is-narrow .top-actions button.primary { grid-column: 1 / -1; }
+
+  body.is-narrow .container { padding: 16px 12px 48px; }
+
+  /* Project form: single column */
+  body.is-narrow .project-card { padding: 18px 16px; }
+  body.is-narrow .project-form { grid-template-columns: 1fr; gap: 12px; }
+
+  /* Section header */
+  body.is-narrow .section-header { padding: 14px 16px; flex-direction: column; align-items: stretch; }
+  body.is-narrow .mode-toggle { width: 100%; }
+  body.is-narrow .mode-toggle button { flex: 1; }
+
+  /* === PARTS TABLE → CARDS === */
+  body.is-narrow .parts-table thead { display: none; }
+  body.is-narrow .parts-table,
+  body.is-narrow .parts-table tbody,
+  body.is-narrow .parts-table tr,
+  body.is-narrow .parts-table td { display: block; width: 100%; }
+  body.is-narrow .parts-table tr {
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    margin: 0 12px 12px;
+    padding: 6px 12px 12px;
+    background: var(--bg-card);
+  }
+  body.is-narrow .parts-table tr:hover { background: var(--bg-card); }
+  body.is-narrow .parts-table td {
+    padding: 7px 0;
+    border-bottom: 1px solid var(--line-soft);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  body.is-narrow .parts-table td:last-child { border-bottom: none; }
+  body.is-narrow .parts-table td::before {
+    content: attr(data-label);
+    flex: 0 0 92px;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: var(--ink-mute);
+    font-weight: 600;
+  }
+  body.is-narrow .parts-table td input,
+  body.is-narrow .parts-table td select { flex: 1; padding: 11px 10px; border: 1px solid var(--line); background: var(--bg); }
+  body.is-narrow .parts-table td.num input { text-align: left; }
+  body.is-narrow .parts-table td.computed { justify-content: flex-start; font-size: 16px; padding-top: 10px; }
+  body.is-narrow .parts-table td.col-action { justify-content: flex-end; padding-top: 10px; }
+  body.is-narrow .parts-table td.col-action::before { display: none; }
+  body.is-narrow .row-delete {
+    width: auto; height: auto; border-radius: 2px;
+    padding: 9px 16px; font-size: 12px;
+    border: 1px solid var(--line); color: var(--ink-mute);
+    letter-spacing: .05em;
+  }
+  body.is-narrow .row-delete:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+  body.is-narrow .row-hide {
+    width: auto; height: auto; border-radius: 2px;
+    padding: 9px 16px; font-size: 12px;
+    border: 1px solid var(--line); color: var(--ink-mute);
+    letter-spacing: .05em; margin-right: 8px;
+  }
+  body.is-narrow .row-hide.on { color: var(--gold); border-color: var(--gold); }
+  body.is-narrow .row-hide .rh-label { display: inline; }
+
+  body.is-narrow .add-row { padding: 16px; font-size: 12px; }
+  body.is-narrow .global-margin-row { flex-wrap: wrap; padding: 14px 16px; }
+
+  /* Sidebar */
+  body.is-narrow aside.sidebar { gap: 16px; }
+  body.is-narrow .config-row input { width: 100px; }
+  body.is-narrow .final-price-panel input { font-size: 24px; }
+
+  /* Modals near full-screen */
+  body.is-narrow .modal-backdrop { padding: 0; align-items: stretch; }
+  body.is-narrow .modal,
+  body.is-narrow .modal.modal-wide { max-width: 100%; max-height: 100%; height: 100%; border-left: none; border-right: none; }
+  body.is-narrow .catalog-toolbar { flex-direction: column; }
+  body.is-narrow .catalog-toolbar input,
+  body.is-narrow .catalog-toolbar select { width: 100%; }
+  body.is-narrow .catalog-item { grid-template-columns: 48px 1fr auto; gap: 10px; padding: 10px 16px; }
+  body.is-narrow .catalog-item .prices { display: none; }
+  body.is-narrow .catalog-item .img { width: 48px; height: 48px; }
+  body.is-narrow .modal-header,
+  body.is-narrow .catalog-status { padding-left: 16px; padding-right: 16px; }
+  body.is-narrow .modal-body { padding: 16px; }
+  body.is-narrow .modal-actions { flex-wrap: wrap; }
+  body.is-narrow .modal-actions .btn { flex: 1; }
+
+  /* Devis / client view */
+  body.is-narrow .client-doc { margin: 16px 10px; padding: 24px 18px; }
+  body.is-narrow .client-actions { padding: 0 10px; margin-top: 14px; flex-wrap: wrap; }
+  body.is-narrow .client-actions button { flex: 1; }
+  body.is-narrow .devis-top { flex-direction: column; gap: 16px; }
+  body.is-narrow .devis-ref { text-align: left; }
+  body.is-narrow .devis-parties { grid-template-columns: 1fr; gap: 18px; }
+  body.is-narrow .devis-dates { flex-wrap: wrap; gap: 16px 28px; }
+  body.is-narrow .devis-total-line span:last-child { font-size: 22px; }
+  body.is-narrow .devis-accord { justify-content: stretch; }
+  body.is-narrow .accord-block { width: 100%; }
+
+  /* ==================== PRINT (A4 devis) ==================== */
+  @media print {
+    @page { size: A4; margin: 14mm; }
+    html, body {
+      background: #fff !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+      /* Force light theme for the printed devis */
+      --bg: #ffffff; --bg-card: #ffffff; --bg-soft: #f4f2ee;
+      --ink: #0a0a0a; --ink-soft: #2a2a2a; --ink-mute: #555;
+      --line: #bbb; --line-soft: #ddd; --pop: #0a0a0a; --pop-text: #fff;
+    }
+    #editor { display: none !important; }
+    #share, #share[hidden] { display: block !important; }
+    .client-actions, .modal-backdrop, .toast { display: none !important; }
+    .client-doc {
+      margin: 0 !important;
+      padding: 0 !important;
+      border: none !important;
+      max-width: 100% !important;
+    }
+    .devis-cgv, .devis-reglement, .devis-accord { page-break-inside: avoid; }
+    .devis-cgv { page-break-before: auto; }
+  }
+</style>
+</head>
+<body class="mode-perpart">
+
+<!-- ==================== PASSWORD GATE (barrière légère) ==================== -->
+<div id="gate" class="gate-overlay" hidden>
+  <div class="gate-card">
+    <div class="gate-brand">bang<span class="dot">.</span></div>
+    <div class="gate-sub">Accès atelier — chiffrage</div>
+    <input type="password" id="gate-input" placeholder="Mot de passe" autocomplete="current-password"
+           onkeydown="if(event.key==='Enter'){submitGate();}">
+    <button class="gate-btn" onclick="submitGate()">Entrer</button>
+    <div class="gate-error" id="gate-error" hidden>Mot de passe incorrect.</div>
+  </div>
+</div>
+
+<!-- ==================== EDITOR VIEW ==================== -->
+<div id="editor">
+  <header class="topbar">
+    <div>
+      <span class="brand">bang<span class="dot">.</span></span>
+      <span class="brand-sub">Chiffrage · v9</span>
+    </div>
+    <div class="top-actions">
+      <button onclick="resetProject()" title="Nouveau projet">Nouveau</button>
+      <button onclick="openSavedModal()">Charger</button>
+      <button onclick="saveProject()">Enregistrer</button>
+      <button onclick="exportPDF('devis')">Devis PDF</button>
+      <button onclick="convertToFacture()">Convertir en facture</button>
+      <button class="primary" onclick="generateShareLink()">Partager au client</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div id="pdf-progress" class="pdf-progress" hidden><span class="spin"></span><span id="pdf-progress-txt">Génération du PDF…</span></div>
+
+    <div class="project-card">
+      <h2>Informations projet</h2>
+      <div class="project-form">
+        <div class="field">
+          <label>Client</label>
+          <input type="text" id="f-client" placeholder="Nom du client" oninput="markDirty()">
+        </div>
+        <div class="field">
+          <label>Projet</label>
+          <input type="text" id="f-project" placeholder="Nom de la montre" oninput="markDirty()">
+        </div>
+        <div class="field">
+          <label>Gamme</label>
+          <select id="f-tier" onchange="markDirty()">
+            <option value="Initiale">Initiale</option>
+            <option value="Signature" selected>Signature</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Date</label>
+          <input type="date" id="f-date" oninput="markDirty()">
+        </div>
+      </div>
+    </div>
+
+    <div class="grid">
+
+      <!-- LEFT: PARTS -->
+      <section class="section-card">
+        <div class="section-header">
+          <h2>Pièces &amp; coûts</h2>
+          <div class="mode-toggle" role="tablist">
+            <button id="mode-perpart-btn" class="active" onclick="setMode('perpart')">Marge par pièce</button>
+            <button id="mode-global-btn" onclick="setMode('global')">Marge globale</button>
+          </div>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table class="parts-table">
+            <thead>
+              <tr>
+                <th>Catégorie</th>
+                <th>Pièce / référence</th>
+                <th>Fournisseur</th>
+                <th class="num">Achat (€)</th>
+                <th class="num col-margin-part">Marge (×)</th>
+                <th class="num">Vente (€)</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="parts-body"></tbody>
+          </table>
+        </div>
+
+        <div class="global-margin-row">
+          <label>Marge globale appliquée au total des achats</label>
+          <input type="number" id="global-margin" min="0" step="0.01" value="1.9" oninput="recalc()">
+          <span style="font-size:11px; color: var(--ink-mute); letter-spacing:.05em;">×</span>
+        </div>
+
+        <button class="add-row" onclick="openSelections()" style="background: var(--gold); color: #0a0a0a; font-weight: 700; border-top: 1px solid var(--line);">★ Importer une sélection client</button>
+        <button class="add-row" onclick="openCatalog()" style="border-top: 1px solid var(--line); background: var(--bg-soft); color: var(--ink); font-weight: 600;">⊞ Ajouter depuis le catalogue</button>
+        <button class="add-row" onclick="addRow()">+ Ajouter une pièce manuellement</button>
+      </section>
+
+      <!-- RIGHT: SIDEBAR -->
+      <aside class="sidebar">
+
+        <div class="panel">
+          <div class="panel-header">Configuration</div>
+          <div class="panel-body">
+            <div class="config-row">
+              <label>Marge d'erreur (%)</label>
+              <input type="number" id="cfg-error" value="20" min="0" step="0.5" oninput="recalc()">
+            </div>
+            <div class="config-row">
+              <label>Cotisations BIC (%)</label>
+              <input type="number" id="cfg-bic" value="12.3" min="0" step="0.1" oninput="recalc()">
+            </div>
+            <div class="config-row">
+              <label>Taux horaire (€)</label>
+              <input type="number" id="cfg-rate" value="50" min="0" step="1" oninput="recalc()">
+            </div>
+            <div class="config-row">
+              <label>Heures recherche</label>
+              <input type="number" id="cfg-hres" value="1" min="0" step="0.25" oninput="recalc()">
+            </div>
+            <div class="config-row">
+              <label>Heures montage</label>
+              <input type="number" id="cfg-hmnt" value="1" min="0" step="0.25" oninput="recalc()">
+            </div>
+            <div class="config-row" style="border-top:1px solid var(--line-soft); margin-top:6px; padding-top:14px;">
+              <label>Acompte client (%)</label>
+              <input type="number" id="cfg-acompte" value="50" min="0" max="100" step="5" oninput="markDirty()">
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">Récapitulatif</div>
+          <div class="totals-list">
+            <div class="total-row"><span class="label">Total achats</span><span class="val" id="t-achat">0,00 €</span></div>
+            <div class="total-row"><span class="label">Total ventes</span><span class="val" id="t-vente">0,00 €</span></div>
+            <div class="total-row muted"><span class="label">Marge d'erreur (20%)</span><span class="val" id="t-erreur">0,00 €</span></div>
+            <div class="total-row muted"><span class="label">Cotisations BIC</span><span class="val" id="t-bic">0,00 €</span></div>
+            <div class="total-row muted"><span class="label">Coût temps passé</span><span class="val" id="t-temps">0,00 €</span></div>
+            <div class="total-row divider"><span class="label">Marge nette</span><span class="val" id="t-nette">0,00 €</span></div>
+            <div class="total-row divider"><span class="label">Marge après cotisations</span><span class="val" id="t-cot">0,00 €</span></div>
+            <div class="total-row divider"><span class="label">Marge après charges</span><span class="val" id="t-charges">0,00 €</span></div>
+            <div class="total-row gold"><span class="label">Prix min conseillé</span><span class="val" id="t-min">0,00 €</span></div>
+            <div class="total-row highlight"><span class="label">Prix max conseillé</span><span class="val" id="t-max">0,00 €</span></div>
+          </div>
+        </div>
+
+        <div class="panel final-price-panel">
+          <div class="label">Prix de vente final</div>
+          <input type="number" id="final-price" min="0" step="1" placeholder="0" oninput="markDirty()">
+          <div class="hint">Le prix qui apparaîtra sur le devis client.</div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">Notes internes</div>
+          <div class="panel-body">
+            <textarea id="notes-internal" placeholder="Notes pour vous (n'apparaissent pas sur le devis client)" style="width:100%;min-height:80px;border:1px solid var(--line);padding:10px;background:var(--bg);font-family:inherit;font-size:13px;resize:vertical;" oninput="markDirty()"></textarea>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-header">Message au client</div>
+          <div class="panel-body">
+            <textarea id="notes-client" placeholder="Texte qui apparaîtra sur le devis (livraison, délais, conditions…)" style="width:100%;min-height:80px;border:1px solid var(--line);padding:10px;background:var(--bg);font-family:inherit;font-size:13px;resize:vertical;" oninput="markDirty()"></textarea>
+          </div>
+        </div>
+
+      </aside>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== CLIENT / SHARE / DEVIS VIEW ==================== -->
+<div id="share" hidden>
+  <div class="client-actions">
+    <button onclick="exportPDF()">Exporter en PDF</button>
+    <button onclick="copyCurrentUrl()">Copier le lien</button>
+  </div>
+  <div class="client-doc" id="client-doc">
+
+    <!-- ZONE CAPTURÉE POUR LA PAGE 1 DU PDF -->
+    <div id="devis-capture">
+    <!-- En-tête -->
+    <div class="devis-top">
+      <div class="devis-brand">
+        <div class="brand-mark">bang<span class="dot">.</span></div>
+        <div class="brand-tagline">Atelier de montage horloger sur-mesure</div>
+      </div>
+      <div class="devis-ref">
+        <div class="doc-type" id="cv-doctype">Devis</div>
+        <div class="devis-num" id="cv-num">—</div>
+      </div>
+    </div>
+
+    <!-- Émetteur / Client -->
+    <div class="devis-parties">
+      <div class="partie">
+        <div class="partie-label">Émetteur</div>
+        <div class="partie-body" id="cv-emetteur"></div>
+      </div>
+      <div class="partie">
+        <div class="partie-label">Client</div>
+        <div class="partie-body" id="cv-client-block"></div>
+      </div>
+    </div>
+
+    <!-- Dates -->
+    <div class="devis-dates">
+      <div><span class="dl" id="cv-date-label">Date d'émission</span><span class="dv" id="cv-date">—</span></div>
+      <div id="cv-validity-wrap"><span class="dl">Validité</span><span class="dv" id="cv-validity">—</span></div>
+      <div><span class="dl">Gamme</span><span class="dv" id="cv-tier">—</span></div>
+    </div>
+
+    <!-- Prestation -->
+    <table class="devis-table">
+      <thead>
+        <tr>
+          <th>Désignation</th>
+          <th class="num">Montant TTC</th>
+        </tr>
+      </thead>
+      <tbody id="cv-rows"></tbody>
+    </table>
+
+    <!-- Total -->
+    <div class="devis-totaux">
+      <div class="devis-total-line"><span>Total</span><span id="cv-total">— €</span></div>
+      <div class="devis-tva" id="cv-tva">TVA non applicable, art. 293 B du CGI</div>
+    </div>
+
+    <!-- Règlement -->
+    <div class="devis-reglement">
+      <div class="reg-title">Conditions de règlement</div>
+      <div class="reg-lines" id="cv-reglement"></div>
+      <div class="reg-highlight" id="cv-debut-commande">
+        La commande n'est enregistrée et la fabrication ne débute qu'après encaissement de l'acompte (ou du règlement intégral).
+      </div>
+    </div>
+
+    <!-- Message libre -->
+    <div class="client-notes" id="cv-notes" hidden></div>
+
+    <!-- Bon pour accord (devis uniquement) -->
+    <div class="devis-accord" id="cv-accord">
+      <div class="accord-block">
+        <div class="accord-label">Bon pour accord</div>
+        <div class="accord-hint">Date et signature précédées de la mention « Bon pour accord »</div>
+        <div class="accord-line"></div>
+      </div>
+    </div>
+    </div><!-- /devis-capture (page 1 du PDF) -->
+
+    <!-- CGV intégrales (affichées en ligne ; rendues en texte natif dans le PDF) -->
+    <div class="devis-cgv" id="cv-cgv"></div>
+
+    <!-- Pied -->
+    <div class="client-footer" id="cv-footer"></div>
+
+  </div>
+</div>
+
+<!-- ==================== SAVED MODAL ==================== -->
+<div id="modal-saved" class="modal-backdrop" hidden>
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Chiffrages enregistrés</h3>
+      <button class="modal-close" onclick="closeModal('modal-saved')">×</button>
+    </div>
+    <div class="modal-body">
+      <ul class="saved-list" id="saved-list"></ul>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== FACTURE MODAL ==================== -->
+<div id="modal-facture" class="modal-backdrop" hidden>
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Facture créée</h3>
+      <button class="modal-close" onclick="closeModal('modal-facture')">×</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size:13px; color:var(--ink-mute); margin-bottom:8px; line-height:1.55;">
+        Numéro de facture attribué :
+      </p>
+      <div id="facture-num-display" style="font-size:22px; font-weight:700; letter-spacing:.05em; color:var(--gold); margin-bottom:18px;">—</div>
+      <p style="font-size:12.5px; color:var(--ink-soft); margin-bottom:16px; line-height:1.55;">
+        Tu peux exporter la facture en PDF puis l'envoyer à ton client. L'email ouvre ton logiciel de messagerie avec un message pré-rempli — pense à y joindre le PDF téléchargé.
+      </p>
+      <div class="modal-actions">
+        <button class="btn ghost" onclick="closeModal('modal-facture')">Fermer</button>
+        <button class="btn" onclick="emailFacture()">Envoyer par email</button>
+        <button class="btn gold" onclick="exportPDF('facture')">Exporter la facture PDF</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="modal-catalog" class="modal-backdrop" hidden>
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <h3>Catalogue — choisir une pièce</h3>
+      <button class="modal-close" onclick="closeModal('modal-catalog')">×</button>
+    </div>
+    <div class="catalog-toolbar">
+      <input type="search" id="catalog-search" placeholder="Rechercher par nom, fournisseur, description…" oninput="filterCatalog()">
+      <select id="catalog-cat" onchange="filterCatalog()">
+        <option value="">Toutes catégories</option>
+      </select>
+    </div>
+    <div class="catalog-status" id="catalog-status">Chargement du catalogue…</div>
+    <div class="catalog-list" id="catalog-list"></div>
+  </div>
+</div>
+
+<!-- ==================== SELECTIONS MODAL ==================== -->
+<div id="modal-selections" class="modal-backdrop" hidden>
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <h3>Sélections clients depuis MontrAtelier</h3>
+      <button class="modal-close" onclick="closeModal('modal-selections')">×</button>
+    </div>
+    <div class="catalog-toolbar">
+      <input type="search" id="sel-search" placeholder="Rechercher par nom client…" oninput="filterSelections()">
+    </div>
+    <div class="catalog-status" id="sel-status">Chargement des sélections…</div>
+    <div class="catalog-list" id="sel-list"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   bang. — chiffrage
+   Single-file pricing tool. Logic mirrors the Excel sheets:
+   - Per-part margin OR global margin
+   - 20% error margin on achats
+   - 12.3% BIC cotisations on sale price
+   - Hourly time cost
+   ========================================================= */
+
+/* ========== SUPABASE CONFIG ==========
+   Clé "anon public" (legacy JWT 'eyJ…') ou "publishable" ('sb_publishable_…').
+   Cette clé est publique par conception — sa place est ici côté front.
+   À récupérer dans Supabase → Project Settings → API Keys. */
+const SUPABASE_URL = 'https://fybbiyghjnjsnigjzatv.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_177KiLL6i-E3SxxRckZpVQ_5oZFD7KF';
+/* ============================================== */
+
+const DEFAULT_PARTS = [
+  { cat: 'Boîtier',           name: '', supplier: '', achat: 0, margin: 1.5 },
+  { cat: 'Verre',             name: '', supplier: '', achat: 0, margin: 1.5 },
+  { cat: 'Lunette',           name: '', supplier: '', achat: 0, margin: 1.5 },
+  { cat: 'Insert de lunette', name: '', supplier: '', achat: 0, margin: 1.5 },
+  { cat: 'Cadran',            name: '', supplier: '', achat: 0, margin: 1.5 },
+  { cat: 'Disque de date',    name: '', supplier: '', achat: 0, margin: 1.5 },
+  { cat: 'Mouvement',         name: '', supplier: '', achat: 0, margin: 1.8 },
+  { cat: 'Aiguilles',         name: '', supplier: '', achat: 0, margin: 1.5 },
+  { cat: 'Trotteuse',         name: '', supplier: '', achat: 0, margin: 1.5 },
+  { cat: 'Fond de boîtier',   name: '', supplier: '', achat: 0, margin: 1.5 },
+  { cat: 'Bracelet',          name: '', supplier: '', achat: 0, margin: 1.5 },
+  { cat: 'Boucle',            name: '', supplier: '', achat: 0, margin: 1.5 },
+  { cat: 'Marketing',         name: '', supplier: '', achat: 0, margin: 1.0 },
+  { cat: 'Garantie',          name: '', supplier: '', achat: 0, margin: 1.0 },
+  { cat: "Frais d'envoi",     name: '', supplier: '', achat: 0, margin: 1.0 },
+  { cat: 'Étanchéité',        name: '', supplier: '', achat: 0, margin: 1.5 },
+];
+
+const CATEGORIES = [
+  'Boîtier','Verre','Lunette','Insert de lunette','Cadran','Disque de date',
+  'Mouvement','Aiguilles','Trotteuse','Fond de boîtier','Bracelet','Boucle',
+  'Couronne','Chapter ring','Marketing','Garantie',"Frais d'envoi",'Étanchéité','Autre'
+];
+
+const STORAGE_KEY = 'bang.chiffrage.saves';
+
+/* ========== INFOS ÉMETTEUR / MENTIONS LÉGALES ========== */
+const EMETTEUR = {
+  nom: 'bang.',
+  raisonSociale: 'HEITGEN Scott',
+  statut: 'Entrepreneur Individuel',
+  siret: '929 417 210 — RCS Poitiers',
+  adresse: '89 impasse de la Ferme, 86130 Dissay — France',
+  email: 'contact@atelier-bang.com',
+  telephone: '+33 6 30 72 26 20',
+  iban: '',                       // optionnel — affiché pour le règlement si renseigné
+  mentionTVA: 'TVA non applicable, art. 293 B du CGI',
+  mediateur: '[À COMPLÉTER — nom, adresse et site du médiateur de la consommation]',
+  validiteJours: 30,
+  acomptePct: 50,
+};
+
+/* CGV intégrales — version 25/04/2026 (fournies par le client) */
+const CGV_FULL = [
+  ['Article 1 — Objet et champ d\'application', "Les présentes CGV s'appliquent aux ventes conclues à distance entre bang. (le « Vendeur ») et tout consommateur (le « Client ») portant sur des montres et accessoires (les « Produits »), y compris des Produits sur-mesure conçus selon les spécifications du Client."],
+  ['Article 2 — Informations précontractuelles', "bang. fournit avant commande toutes les informations exigées : caractéristiques essentielles, prix nets de taxes et frais additionnels, délais de livraison, identité et coordonnées du Vendeur, garanties légales, recours au médiateur, conditions et éventuelles limitations du droit de rétractation, coûts de retour, moyens de paiement et processus de commande."],
+  ['Article 3 — Produits et personnalisation', "Pour les Produits sur-mesure, le Client valide les dessins, les choix des composants et les gravures sur devis. Des tolérances artisanales minimes (teinte, texture) peuvent exister sans affecter l'usage ni la qualité. bang. peut substituer un composant équivalent de qualité au moins équivalente sans altérer les performances ni l'esthétique validées."],
+  ['Article 4 — Prix', "Les prix sont indiqués en euros, nets de taxes, sur le devis ou bon de commande. Conformément à l'article 293 B du CGI, la TVA n'est pas applicable. Les prix sont indiqués hors frais de livraison et sont fermés pendant la validité du devis. Toute taxe ou frais externe (ex. droits d'import hors UE) reste à la charge du Client."],
+  ['Article 5 — Commande', "Le processus de commande : (i) brief et devis ; (ii) validation écrite et paiement (acompte ou total) ; (iii) fabrication ; (iv) livraison. La commande est ferme après encaissement des sommes convenues. Les informations fournies par le Client (taille, gravure, adresse) l'engagent. bang. peut refuser toute commande pour motif légitime (impayé, fraude, anormalité)."],
+  ['Article 6 — Paiement', "Moyens acceptés : carte bancaire (paiement sécurisé), virement, PayPal, espèces (dans la limite légale). Sauf mention contraire au devis : acompte de 50 % à la commande, solde avant expédition. Aucun escompte pour paiement anticipé."],
+  ['Article 7 — Livraison et transfert des risques', "Délais précisés au devis ; à défaut, livraison au plus tard 30 jours après la commande. En cas de retard, le Client peut mettre bang. en demeure de livrer dans un délai supplémentaire raisonnable, puis résoudre la vente et obtenir remboursement sous 14 jours. Les risques sont transférés au Client à la prise de possession physique du Produit (ou à la remise au transporteur choisi par le Client). Le Client vérifie les colis et formule toute réserve utile auprès du transporteur."],
+  ['Article 8 — Droit de rétractation', "PRODUITS SUR-MESURE : AUCUN DROIT DE RÉTRACTATION. Conformément à l'article L221-28 3° du Code de la consommation, les montres conçues selon les spécifications du Client sont des biens nettement personnalisés et n'ouvrent aucun droit de rétractation. Toute commande validée est ferme et définitive ; l'acompte versé reste acquis au Vendeur en cas d'annulation à l'initiative du Client en cours de fabrication. Produits standard non personnalisés : délai de 14 jours à compter de la réception, frais de retour à la charge du Client, remboursement sous 14 jours."],
+  ['Article 9 — Garanties légales', "Garantie légale de conformité (art. L217-3 et s. du Code de la consommation) : 2 ans à compter de la délivrance, au choix réparation ou remplacement, mise en conformité gratuite. Garantie des vices cachés (art. 1641 et s. du Code civil). Garantie commerciale : bang. accorde 2 ans couvrant le bon fonctionnement du mouvement mécanique. Exclusions d'usage : usage inadapté, chocs/chutes, immersion au-delà de l'étanchéité annoncée, interventions non autorisées, usure normale (bracelets cuir, joints…) — sans priver le Client de ses droits légaux."],
+  ['Article 10 — Service après-vente et pièces détachées', "bang. assure le SAV des Produits vendus. Lorsque le fabricant ou l'importateur communique une période de disponibilité des pièces essentielles, bang. la répercute au Client ; à défaut, les pièces sont réputées non garanties disponibles. bang. s'efforce de proposer une réparation ou une équivalence de qualité."],
+  ['Article 11 — Propriété intellectuelle', "Les dessins, logos, photos, textes, noms de collection et modèles bang. sont protégés. Toute reproduction ou usage non autorisé est interdit. bang. reste propriétaire de tous les droits de propriété intellectuelle sur les études, dessins, modèles et prototypes réalisés."],
+  ['Article 12 — Données personnelles', "Les données sont traitées pour la gestion des commandes, la relation client et le SAV (voir Politique de confidentialité sur atelier-bang.com). Le Client dispose des droits RGPD auprès de contact@atelier-bang.com et peut saisir la CNIL. Archivage légal des contrats ≥ 120 € et pièces comptables : 10 ans."],
+  ['Article 13 — Médiation et règlement des litiges', "Après contact du service client (contact@atelier-bang.com) et à défaut de solution amiable sous un mois, le Client consommateur peut recourir gratuitement au médiateur de la consommation auquel bang. adhère : [À COMPLÉTER]. Plateforme européenne RLL : https://ec.europa.eu/consumers/odr. À défaut d'accord, compétence des tribunaux français."],
+  ['Article 14 — Loi applicable et langue', "Les présentes CGV sont soumises au droit français. La version française prévaut."],
+  ['Article 15 — Réserve de propriété', "La propriété est transférée au Client après paiement intégral du prix (principal, frais et taxes). Le transfert des risques intervient selon l'article 7."],
+  ['Article 16 — Force majeure', "Aucune partie n'est responsable d'une inexécution due à un événement imprévisible, irrésistible et extérieur. Les obligations sont suspendues pendant la durée de l'événement."],
+];
+
+const STATE = {
+  parts: [],
+  mode: 'perpart',
+  dirty: false,
+};
+
+/* =========================================================
+   FORMATTING
+   ========================================================= */
+const fmtEUR = (n) => (Number(n) || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+const fmtEURint = (n) => Math.round(Number(n) || 0).toLocaleString('fr-FR') + ' €';
+
+/* =========================================================
+   INITIALIZATION
+   ========================================================= */
+function init() {
+  console.log('bang. chiffrage — v9 chargé');
+  setupNarrowDetection();
+  document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
+
+  // Check for share view — clients must NOT be gated by the password
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('view') === 'client' && params.get('d')) {
+    const gate = document.getElementById('gate');
+    if (gate) gate.remove();
+    try {
+      const data = decodeData(params.get('d'));
+      showClientView(data);
+      return;
+    } catch (e) {
+      console.error('Invalid share data', e);
+    }
+  }
+
+  // Editor: behind the password gate
+  if (!isUnlocked()) showGate();
+
+  // Render editor (covered by the gate overlay while locked)
+  STATE.parts = JSON.parse(JSON.stringify(DEFAULT_PARTS));
+  renderRows();
+  recalc();
+}
+
+/* =========================================================
+   PASSWORD GATE (barrière légère, côté navigateur)
+   NB: ce n'est pas une vraie sécurité — le mot de passe est lisible
+   dans le code. Pour une vraie protection : Supabase Auth + RLS (étape suivante).
+   ========================================================= */
+const GATE_PASSWORD = 'bang2025';
+const GATE_KEY = 'bang.chiffrage.unlocked';
+function isUnlocked() {
+  try { return localStorage.getItem(GATE_KEY) === '1'; } catch { return false; }
+}
+function showGate() {
+  const g = document.getElementById('gate');
+  if (!g) return;
+  g.hidden = false;
+  setTimeout(() => { const i = document.getElementById('gate-input'); if (i) i.focus(); }, 100);
+}
+function submitGate() {
+  const input = document.getElementById('gate-input');
+  if (input.value === GATE_PASSWORD) {
+    try { localStorage.setItem(GATE_KEY, '1'); } catch {}
+    document.getElementById('gate').hidden = true;
+  } else {
+    document.getElementById('gate-error').hidden = false;
+    input.value = '';
+    input.focus();
+  }
+}
+
+/* Narrow-layout detection — measures actual rendered width, not the viewport,
+   so it works even embedded in a WordPress block / iframe where the viewport
+   meta is unreliable. */
+const NARROW_BREAKPOINT = 640;
+function updateNarrow() {
+  // Prefer the tool's own container width; fall back to client-doc, then window.
+  const cont = document.querySelector('.container')
+            || document.getElementById('client-doc')
+            || document.body;
+  const w = (cont && cont.clientWidth) ? cont.clientWidth : window.innerWidth;
+  // Guard: if clientWidth reads 0 (not laid out yet), use window width.
+  const effective = w > 0 ? w : window.innerWidth;
+  document.body.classList.toggle('is-narrow', effective <= NARROW_BREAKPOINT);
+}
+function setupNarrowDetection() {
+  updateNarrow();
+  window.addEventListener('resize', updateNarrow);
+  window.addEventListener('orientationchange', () => setTimeout(updateNarrow, 100));
+  if (window.ResizeObserver) {
+    const ro = new ResizeObserver(() => updateNarrow());
+    const target = document.querySelector('.container') || document.body;
+    if (target) ro.observe(target);
+  }
+  // A couple of delayed re-checks: embeds sometimes resize after first paint.
+  setTimeout(updateNarrow, 200);
+  setTimeout(updateNarrow, 800);
+}
+
+/* =========================================================
+   ROWS RENDERING
+   ========================================================= */
+function renderRows() {
+  const body = document.getElementById('parts-body');
+  body.innerHTML = '';
+  STATE.parts.forEach((p, i) => body.appendChild(buildRow(p, i)));
+}
+
+function buildRow(p, i) {
+  const tr = document.createElement('tr');
+  tr.dataset.i = i;
+  if (p.hidden) tr.classList.add('row-hidden');
+
+  const catOptions = CATEGORIES.map(c => `<option value="${c}" ${c === p.cat ? 'selected' : ''}>${c}</option>`).join('');
+  const badge = p.hidden ? '<span class="hidden-badge">Masqué</span>' : '';
+
+  tr.innerHTML = `
+    <td class="col-cat" data-label="Catégorie">
+      <select onchange="updateRow(${i}, 'cat', this.value)">${catOptions}</select>
+    </td>
+    <td class="col-name" data-label="Pièce / réf.">
+      <input type="text" placeholder="Nom / référence"
+             value="${escapeHtml(p.name)}" oninput="updateRow(${i}, 'name', this.value)">${badge}
+    </td>
+    <td class="col-supplier" data-label="Fournisseur">
+      <input type="text" placeholder="Fournisseur"
+             value="${escapeHtml(p.supplier)}" oninput="updateRow(${i}, 'supplier', this.value)">
+    </td>
+    <td class="col-num num" data-label="Achat (€)">
+      <input type="number" min="0" step="0.01"
+             value="${p.achat || ''}" oninput="updateRow(${i}, 'achat', this.value)">
+    </td>
+    <td class="col-num num col-margin-part" data-label="Marge (×)">
+      <input type="number" min="0" step="0.05"
+             value="${p.margin}" oninput="updateRow(${i}, 'margin', this.value)">
+    </td>
+    <td class="computed col-vente" id="vente-${i}" data-label="Vente (€)">0,00 €</td>
+    <td class="col-action" data-label="">
+      <button class="row-hide ${p.hidden ? 'on' : ''}" onclick="toggleHidden(${i})"
+              title="${p.hidden ? 'Masqué au client — cliquer pour réafficher' : 'Masquer cet article au client (devis & facture)'}">${p.hidden ? '🙈' : '👁'}<span class="rh-label">${p.hidden ? ' Masqué' : ' Visible'}</span></button>
+      <button class="row-delete" onclick="removeRow(${i})" title="Supprimer">× Supprimer</button>
+    </td>
+  `;
+  return tr;
+}
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function updateRow(i, field, val) {
+  if (field === 'achat' || field === 'margin') val = parseFloat(val) || 0;
+  STATE.parts[i][field] = val;
+  markDirty();
+  recalc();
+}
+
+function addRow() {
+  STATE.parts.push({ cat: 'Autre', name: '', supplier: '', achat: 0, margin: 1.5 });
+  renderRows();
+  markDirty();
+  recalc();
+  // Focus the new row's name input
+  setTimeout(() => {
+    const inputs = document.querySelectorAll('#parts-body tr:last-child input[type="text"]');
+    if (inputs[0]) inputs[0].focus();
+  }, 50);
+}
+
+function removeRow(i) {
+  STATE.parts.splice(i, 1);
+  renderRows();
+  markDirty();
+  recalc();
+}
+
+/* Masquer / réafficher une ligne : reste comptée dans le chiffrage (totaux,
+   marges, prix conseillé) mais retirée du devis ET de la facture client. */
+function toggleHidden(i) {
+  if (!STATE.parts[i]) return;
+  STATE.parts[i].hidden = !STATE.parts[i].hidden;
+  renderRows();
+  markDirty();
+  recalc();
+  toast(STATE.parts[i].hidden ? "Article masqué au client" : "Article réaffiché");
+}
+
+/* =========================================================
+   MODE TOGGLE
+   ========================================================= */
+function setMode(mode) {
+  STATE.mode = mode;
+  document.body.classList.toggle('mode-perpart', mode === 'perpart');
+  document.body.classList.toggle('mode-global', mode === 'global');
+  document.getElementById('mode-perpart-btn').classList.toggle('active', mode === 'perpart');
+  document.getElementById('mode-global-btn').classList.toggle('active', mode === 'global');
+  markDirty();
+  recalc();
+}
+
+/* =========================================================
+   CALCULATION
+   ========================================================= */
+function recalc() {
+  const cfg = getConfig();
+  const totalAchat = STATE.parts.reduce((s, p) => s + (p.achat || 0), 0);
+
+  let totalVente = 0;
+  STATE.parts.forEach((p, i) => {
+    let vente;
+    if (STATE.mode === 'perpart') {
+      vente = (p.achat || 0) * (p.margin || 0);
+    } else {
+      vente = (p.achat || 0) * cfg.globalMargin;
+    }
+    totalVente += vente;
+    const cell = document.getElementById('vente-' + i);
+    if (cell) {
+      cell.textContent = fmtEUR(vente);
+      cell.classList.toggle('zero', vente === 0);
+    }
+  });
+
+  const erreur = totalAchat * (cfg.errorPct / 100);
+  const cotis = totalVente * (cfg.bicPct / 100);
+  const heures = cfg.hRes + cfg.hMnt;
+  const cTemps = heures * cfg.rate;
+  const margeNette = totalVente - totalAchat;
+  const margeCot = margeNette - cotis;
+  const margeCharges = margeCot - erreur;
+  const prixMin = totalVente + erreur;
+  const prixMax = totalVente + erreur + cTemps;
+
+  document.getElementById('t-achat').textContent = fmtEUR(totalAchat);
+  document.getElementById('t-vente').textContent = fmtEUR(totalVente);
+  document.getElementById('t-erreur').textContent = fmtEUR(erreur);
+  document.getElementById('t-bic').textContent = fmtEUR(cotis);
+  document.getElementById('t-temps').textContent = fmtEUR(cTemps);
+  document.getElementById('t-nette').textContent = fmtEUR(margeNette);
+  document.getElementById('t-cot').textContent = fmtEUR(margeCot);
+  document.getElementById('t-charges').textContent = fmtEUR(margeCharges);
+  document.getElementById('t-min').textContent = fmtEUR(prixMin);
+  document.getElementById('t-max').textContent = fmtEUR(prixMax);
+
+  // Auto-suggest final price if empty
+  const fp = document.getElementById('final-price');
+  if (!fp.value && prixMax > 0) {
+    fp.placeholder = Math.round(prixMin) + ' (suggéré)';
+  }
+}
+
+function getConfig() {
+  const acEl = document.getElementById('cfg-acompte');
+  return {
+    errorPct: parseFloat(document.getElementById('cfg-error').value) || 0,
+    bicPct: parseFloat(document.getElementById('cfg-bic').value) || 0,
+    rate: parseFloat(document.getElementById('cfg-rate').value) || 0,
+    hRes: parseFloat(document.getElementById('cfg-hres').value) || 0,
+    hMnt: parseFloat(document.getElementById('cfg-hmnt').value) || 0,
+    globalMargin: parseFloat(document.getElementById('global-margin').value) || 1,
+    acomptePct: acEl ? (parseFloat(acEl.value) || 0) : (EMETTEUR.acomptePct || 50),
+  };
+}
+
+/* =========================================================
+   STATE SERIALIZATION
+   ========================================================= */
+function getProjectData() {
+  return {
+    v: 1,
+    client: document.getElementById('f-client').value,
+    project: document.getElementById('f-project').value,
+    tier: document.getElementById('f-tier').value,
+    date: document.getElementById('f-date').value,
+    mode: STATE.mode,
+    parts: STATE.parts,
+    config: getConfig(),
+    finalPrice: parseFloat(document.getElementById('final-price').value) || null,
+    notesInternal: document.getElementById('notes-internal').value,
+    notesClient: document.getElementById('notes-client').value,
+  };
+}
+
+function loadProjectData(d) {
+  document.getElementById('f-client').value = d.client || '';
+  document.getElementById('f-project').value = d.project || '';
+  document.getElementById('f-tier').value = d.tier || 'Signature';
+  document.getElementById('f-date').value = d.date || new Date().toISOString().slice(0,10);
+  document.getElementById('cfg-error').value = d.config?.errorPct ?? 20;
+  document.getElementById('cfg-bic').value = d.config?.bicPct ?? 12.3;
+  document.getElementById('cfg-rate').value = d.config?.rate ?? 50;
+  document.getElementById('cfg-hres').value = d.config?.hRes ?? 1;
+  document.getElementById('cfg-hmnt').value = d.config?.hMnt ?? 1;
+  document.getElementById('global-margin').value = d.config?.globalMargin ?? 1.9;
+  if (document.getElementById('cfg-acompte')) document.getElementById('cfg-acompte').value = d.config?.acomptePct ?? (EMETTEUR.acomptePct || 50);
+  document.getElementById('final-price').value = d.finalPrice || '';
+  document.getElementById('notes-internal').value = d.notesInternal || '';
+  document.getElementById('notes-client').value = d.notesClient || '';
+  STATE.parts = d.parts && d.parts.length ? d.parts : JSON.parse(JSON.stringify(DEFAULT_PARTS));
+  setMode(d.mode || 'perpart');
+  renderRows();
+  recalc();
+  STATE.dirty = false;
+}
+
+/* =========================================================
+   SAVE / LOAD — Supabase (cross-device) + localStorage fallback
+   ========================================================= */
+let SAVED_CACHE = [];
+
+function hasSupabase() {
+  return SUPABASE_ANON_KEY && SUPABASE_ANON_KEY !== 'COLLE_TA_ANON_KEY_ICI';
+}
+function sbHeaders() {
+  const key = (SUPABASE_ANON_KEY || '').trim();
+  // Same pattern as the official supabase-js client: always send both headers.
+  // Works for legacy anon (JWT 'eyJ…') and new publishable keys ('sb_publishable_…').
+  return {
+    'apikey': key,
+    'Authorization': `Bearer ${key}`,
+    'Content-Type': 'application/json',
+  };
+}
+function sbKeyHint() {
+  return "Clé Supabase rejetée (401). Vérifie : (1) c'est bien la clé anon/public (legacy 'eyJ…') ou publishable ('sb_publishable_…'), JAMAIS la service_role/secret ; (2) elle vient bien du projet pointé par SUPABASE_URL ; (3) pas de retour à la ligne ou caractère parasite au collage.";
+}
+function chiffrageId(d) {
+  const slug = s => (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  return (slug(d.client) || 'projet') + '__' + (slug(d.project) || 'sansnom');
+}
+
+// localStorage cache (offline fallback)
+function getLocalSaves() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+  catch { return []; }
+}
+function setLocalSaves(s) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {}
+}
+
+async function saveProject() {
+  const d = getProjectData();
+  if (!d.client && !d.project) {
+    toast("Renseignez au moins un nom de client ou de projet.");
+    return;
+  }
+  const id = chiffrageId(d);
+  const savedAt = new Date().toISOString();
+  const entry = { id, client: d.client || '', project: d.project || '', savedAt, data: d };
+
+  // Always mirror locally
+  const local = getLocalSaves();
+  const li = local.findIndex(s => s.id === id);
+  if (li >= 0) local[li] = entry; else local.push(entry);
+  setLocalSaves(local);
+
+  if (hasSupabase()) {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/chiffrages?on_conflict=id`, {
+        method: 'POST',
+        headers: { ...sbHeaders(), 'Prefer': 'resolution=merge-duplicates,return=minimal' },
+        body: JSON.stringify({ id, client: d.client || '', project: d.project || '', data: d, updated_at: savedAt }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status} — ${await res.text()}`);
+      STATE.dirty = false;
+      toast(li >= 0 ? "Chiffrage mis à jour — synchronisé" : "Chiffrage enregistré — synchronisé");
+      return;
+    } catch (e) {
+      console.error(e);
+      STATE.dirty = false;
+      toast("Enregistré en local — échec synchro cloud");
+      return;
+    }
+  }
+  STATE.dirty = false;
+  toast(li >= 0 ? "Chiffrage mis à jour (local)" : "Chiffrage enregistré (local)");
+}
+
+async function openSavedModal() {
+  const list = document.getElementById('saved-list');
+  list.innerHTML = '<div class="empty-state">Chargement…</div>';
+  openModal('modal-saved');
+
+  let saves;
+  if (hasSupabase()) {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/chiffrages?select=id,client,project,data,updated_at&order=updated_at.desc`, { headers: sbHeaders() });
+      if (!res.ok) throw new Error(`HTTP ${res.status} — ${await res.text()}`);
+      const rows = await res.json();
+      saves = rows.map(r => ({ id: r.id, client: r.client, project: r.project, savedAt: r.updated_at, data: r.data }));
+      setLocalSaves(saves); // refresh cache
+    } catch (e) {
+      console.error(e);
+      saves = getLocalSaves();
+      toast("Cloud injoignable — affichage du cache local");
+    }
+  } else {
+    saves = getLocalSaves();
+  }
+  SAVED_CACHE = saves.sort((a,b) => (b.savedAt || '').localeCompare(a.savedAt || ''));
+  renderSavedList();
+}
+
+function renderSavedList() {
+  const list = document.getElementById('saved-list');
+  list.innerHTML = '';
+  if (!SAVED_CACHE.length) {
+    list.innerHTML = '<div class="empty-state">Aucun chiffrage enregistré pour le moment.</div>';
+    return;
+  }
+  SAVED_CACHE.forEach((s, idx) => {
+    const li = document.createElement('li');
+    const total = (s.data && s.data.finalPrice) ? Math.round(s.data.finalPrice) + ' €' : '—';
+    const dateStr = s.savedAt ? new Date(s.savedAt).toLocaleDateString('fr-FR') : '';
+    const name = (s.client || 'projet') + ' — ' + (s.project || 'sans nom');
+    li.innerHTML = `
+      <div class="info">
+        <div class="name">${escapeHtml(name)}</div>
+        <div class="meta">${dateStr} · Prix final : ${total}</div>
+      </div>
+      <div class="actions">
+        <button onclick="loadSaved(${idx})">Ouvrir</button>
+        <button class="del" onclick="deleteSaved(${idx})">Suppr.</button>
+      </div>`;
+    list.appendChild(li);
+  });
+}
+
+function loadSaved(idx) {
+  const entry = SAVED_CACHE[idx];
+  if (!entry) return;
+  loadProjectData(entry.data);
+  closeModal('modal-saved');
+  toast("Chiffrage chargé");
+}
+
+async function deleteSaved(idx) {
+  const entry = SAVED_CACHE[idx];
+  if (!entry) return;
+  if (!confirm("Supprimer définitivement ce chiffrage ?")) return;
+
+  setLocalSaves(getLocalSaves().filter(s => s.id !== entry.id));
+
+  if (hasSupabase()) {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/chiffrages?id=eq.${encodeURIComponent(entry.id)}`, {
+        method: 'DELETE', headers: sbHeaders(),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    } catch (e) { console.error(e); toast("Supprimé en local — échec côté cloud"); }
+  }
+  SAVED_CACHE.splice(idx, 1);
+  renderSavedList();
+  toast("Chiffrage supprimé");
+}
+
+/* =========================================================
+   RESET
+   ========================================================= */
+function resetProject() {
+  if (STATE.dirty && !confirm("Modifications non enregistrées. Démarrer un nouveau projet ?")) return;
+  document.getElementById('f-client').value = '';
+  document.getElementById('f-project').value = '';
+  document.getElementById('final-price').value = '';
+  document.getElementById('notes-internal').value = '';
+  document.getElementById('notes-client').value = '';
+  document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
+  STATE.parts = JSON.parse(JSON.stringify(DEFAULT_PARTS));
+  setMode('perpart');
+  renderRows();
+  recalc();
+  STATE.dirty = false;
+  toast("Nouveau projet");
+}
+
+function markDirty() { STATE.dirty = true; }
+
+/* =========================================================
+   SHARE LINK (URL-encoded data)
+   ========================================================= */
+function encodeData(obj) {
+  // Compact JSON → UTF-8 → base64 → URL-safe
+  const json = JSON.stringify(obj);
+  const bytes = new TextEncoder().encode(json);
+  let b64 = btoa(String.fromCharCode(...bytes));
+  return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+function decodeData(s) {
+  let b64 = s.replace(/-/g, '+').replace(/_/g, '/');
+  while (b64.length % 4) b64 += '=';
+  const bin = atob(b64);
+  const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
+function devisNumber(d) {
+  if (d.devisNumber) return d.devisNumber;
+  const date = (d.date || new Date().toISOString().slice(0,10)).replace(/-/g, '');
+  const base = ((d.client || '') + (d.project || ''));
+  let h = 0;
+  for (let i = 0; i < base.length; i++) { h = (h * 31 + base.charCodeAt(i)) >>> 0; }
+  return `BANG-${date}-${(h % 1000).toString().padStart(3, '0')}`;
+}
+
+function computeTotals() {
+  const d = getProjectData();
+  const cfg = d.config;
+  const totalAchat = d.parts.reduce((s,p) => s + (p.achat || 0), 0);
+  let totalVente = 0;
+  d.parts.forEach(p => {
+    totalVente += d.mode === 'perpart' ? (p.achat||0)*(p.margin||0) : (p.achat||0)*cfg.globalMargin;
+  });
+  const prixMin = totalVente + totalAchat * (cfg.errorPct/100);
+  const finalPrice = d.finalPrice || Math.round(prixMin);
+  return { d, finalPrice };
+}
+
+function buildClientPayload(type, extra) {
+  type = type || 'devis';
+  extra = extra || {};
+  const { d, finalPrice } = computeTotals();
+  const visibleParts = d.parts
+    .filter(p => !p.hidden)
+    .filter(p => (p.achat > 0) || (p.name && p.name.trim()))
+    .map(p => ({
+      cat: p.cat,
+      name: p.name,
+      description: p.description || '',
+      img: p.img || '',
+      url: p.url || '',
+    }));
+  const acomptePct = (d.config && d.config.acomptePct != null) ? d.config.acomptePct : (EMETTEUR.acomptePct || 50);
+  const acompte = Math.round(finalPrice * acomptePct / 100);
+
+  return {
+    v: 2,
+    type,
+    devisNumber: devisNumber(d),
+    factureNumber: extra.factureNumber || null,
+    factureDate: extra.factureDate || null,
+    client: d.client,
+    project: d.project,
+    tier: d.tier,
+    date: d.date,
+    parts: visibleParts,
+    total: finalPrice,
+    acomptePct,
+    acompte,
+    solde: finalPrice - acompte,
+    validiteJours: EMETTEUR.validiteJours || 30,
+    notes: d.notesClient,
+    emetteur: { ...EMETTEUR },
+  };
+}
+
+function generateShareLink() {
+  const payload = buildClientPayload('devis');
+  if (!payload.client && !payload.project) {
+    toast("Renseignez au moins un client ou un projet avant de partager.");
+    return;
+  }
+  const encoded = encodeData(payload);
+  const url = `${window.location.origin}${window.location.pathname}?view=client&d=${encoded}`;
+  navigator.clipboard.writeText(url).then(() => {
+    toast("Lien copié — aperçu ouvert dans un nouvel onglet");
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = url; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); } catch {}
+    document.body.removeChild(ta);
+    toast("Lien copié — aperçu ouvert dans un nouvel onglet");
+  });
+  window.open(`?view=client&d=${encoded}`, '_blank');
+}
+
+function copyCurrentUrl() {
+  navigator.clipboard.writeText(window.location.href).then(() => toast("Lien copié"));
+}
+
+/* =========================================================
+   DEVIS / FACTURE RENDERING
+   ========================================================= */
+function fmtDateLong(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
+}
+
+// On-screen CGV (full, from CGV_FULL) with médiateur substitution
+function buildCGVHtml(em) {
+  const med = em.mediateur || '[médiateur à désigner]';
+  return `<h4>Conditions générales de vente</h4>` + CGV_FULL.map(a => {
+    const body = a[1].replace(/\[À COMPLÉTER[^\]]*\]/g, med);
+    return `<div class="cgv-art"><div class="cgv-h">${escapeHtml(a[0])}</div><div class="cgv-b">${escapeHtml(body)}</div></div>`;
+  }).join('');
+}
+
+function renderDevisDoc(data, type) {
+  type = type || data.type || 'devis';
+  const em = data.emetteur || EMETTEUR;
+  const isFacture = type === 'facture';
+
+  document.getElementById('cv-doctype').textContent = isFacture ? 'Facture' : 'Devis';
+  document.getElementById('cv-num').textContent = isFacture ? (data.factureNumber || '') : (data.devisNumber || '');
+
+  // Émetteur block
+  const tel = em.telephone ? `${escapeHtml(em.telephone)}<br>` : '';
+  const iban = em.iban ? `IBAN : ${escapeHtml(em.iban)}<br>` : '';
+  document.getElementById('cv-emetteur').innerHTML =
+    `<span class="nom">${escapeHtml(em.nom)}</span><br>` +
+    `${escapeHtml(em.raisonSociale)} — ${escapeHtml(em.statut)}<br>` +
+    `${escapeHtml(em.adresse)}<br>` +
+    `SIRET : ${escapeHtml(em.siret)}<br>` +
+    `${escapeHtml(em.email)}<br>${tel}${iban}` +
+    `${escapeHtml(em.mentionTVA)}`;
+
+  // Client block
+  document.getElementById('cv-client-block').innerHTML =
+    `<span class="nom">${escapeHtml(data.client || '—')}</span>`;
+
+  // Dates
+  const issueIso = isFacture ? (data.factureDate || new Date().toISOString().slice(0,10)) : data.date;
+  document.getElementById('cv-date-label').textContent = isFacture ? "Date de facture" : "Date d'émission";
+  document.getElementById('cv-date').textContent = fmtDateLong(issueIso);
+  const validWrap = document.getElementById('cv-validity-wrap');
+  if (isFacture) {
+    validWrap.style.display = 'none';
+  } else {
+    validWrap.style.display = '';
+    const valid = new Date(new Date(data.date || Date.now()).getTime() + (data.validiteJours || 30) * 86400000);
+    document.getElementById('cv-validity').textContent = fmtDateLong(valid.toISOString().slice(0,10));
+  }
+  document.getElementById('cv-tier').textContent = data.tier || 'Signature';
+
+  // Prestation
+  const specItems = (data.parts || []).map(p => {
+    const thumb = (p.img && p.img.trim())
+      ? `<div class="spec-thumb" style="background-image:url('${escapeHtml(p.img)}')"></div>`
+      : '';
+    const desc = (p.description && p.description.trim())
+      ? `<div class="spec-desc">${escapeHtml(p.description)}</div>`
+      : '';
+    return `<li class="spec-item">
+      ${thumb}
+      <div class="spec-text">
+        <div class="spec-line"><span class="spec-cat">${escapeHtml(p.cat)}</span><span class="spec-name">${escapeHtml(p.name) || '—'}</span></div>
+        ${desc}
+      </div>
+    </li>`;
+  }).join('');
+  document.getElementById('cv-rows').innerHTML = `
+    <tr>
+      <td>
+        <div class="presta-title">Montre sur-mesure${data.project ? ' — ' + escapeHtml(data.project) : ''}</div>
+        <div class="presta-sub">Conception &amp; assemblage à la main · Gamme ${escapeHtml(data.tier || 'Signature')}</div>
+        <ul class="spec-list">${specItems}</ul>
+      </td>
+      <td class="num">${fmtEURint(data.total)}</td>
+    </tr>`;
+
+  document.getElementById('cv-total').textContent = fmtEURint(data.total);
+  document.getElementById('cv-tva').textContent = em.mentionTVA;
+
+  // Règlement
+  if (isFacture) {
+    document.getElementById('cv-reglement').innerHTML = `
+      <div class="reg-row"><span>Acompte réglé à la commande (${data.acomptePct}%)</span><span class="amt">${fmtEURint(data.acompte)}</span></div>
+      <div class="reg-row"><span>Solde à régler à la livraison</span><span class="amt">${fmtEURint(data.solde)}</span></div>`;
+    document.getElementById('cv-debut-commande').innerHTML =
+      `Montants en euros, ${escapeHtml(em.mentionTVA.toLowerCase())}. En cas de retard de paiement, des pénalités au taux d'intérêt légal en vigueur pourront être appliquées, sans préjudice des droits du vendeur.`;
+  } else {
+    document.getElementById('cv-reglement').innerHTML = `
+      <div class="reg-row"><span>Acompte de ${data.acomptePct}% à la commande</span><span class="amt">${fmtEURint(data.acompte)}</span></div>
+      <div class="reg-row"><span>Solde à la livraison</span><span class="amt">${fmtEURint(data.solde)}</span></div>`;
+    document.getElementById('cv-debut-commande').textContent =
+      "La commande n'est enregistrée et la fabrication ne débute qu'après encaissement de l'acompte (ou du règlement intégral).";
+  }
+
+  // Notes
+  const n = document.getElementById('cv-notes');
+  if (data.notes && data.notes.trim()) { n.textContent = data.notes; n.hidden = false; }
+  else { n.hidden = true; }
+
+  // Accord (devis only)
+  document.getElementById('cv-accord').style.display = isFacture ? 'none' : '';
+
+  // CGV (on-screen)
+  document.getElementById('cv-cgv').innerHTML = buildCGVHtml(em);
+
+  // Footer
+  document.getElementById('cv-footer').innerHTML =
+    `${escapeHtml(em.nom)} — ${escapeHtml(em.raisonSociale)} · ${escapeHtml(em.adresse)} · ${escapeHtml(em.email)}<br>` +
+    `SIRET ${escapeHtml(em.siret)} · ${escapeHtml(em.mentionTVA)}`;
+
+  document.title = (isFacture ? `Facture ${data.factureNumber || ''}` : `Devis ${data.devisNumber || ''}`) + ' — bang.';
+}
+
+function showClientView(data) {
+  document.body.classList.add('client-view');
+  document.getElementById('editor').hidden = true;
+  document.getElementById('share').hidden = false;
+  renderDevisDoc(data, data.type || 'devis');
+}
+
+/* =========================================================
+   PDF EXPORT (html2canvas page 1 + native CGV text)
+   ========================================================= */
+function showPdfProgress(on, txt) {
+  const el = document.getElementById('pdf-progress');
+  if (!el) return;
+  if (txt) document.getElementById('pdf-progress-txt').textContent = txt;
+  el.hidden = !on;
+}
+function ensurePdfLibs() {
+  return new Promise((resolve, reject) => {
+    if (window.jspdf && window.html2canvas) return resolve();
+    let tries = 0;
+    const iv = setInterval(() => {
+      if (window.jspdf && window.html2canvas) { clearInterval(iv); resolve(); }
+      else if (++tries > 50) { clearInterval(iv); reject(new Error('Librairies PDF non chargées')); }
+    }, 100);
+  });
+}
+function documentFontsReady() {
+  return (document.fonts && document.fonts.ready) ? document.fonts.ready : Promise.resolve();
+}
+
+function addCGVPages(pdf, payload) {
+  const em = payload.emetteur || EMETTEUR;
+  const pageW = 210, pageH = 297, mL = 16, mR = 16, mT = 18, mB = 16;
+  const contentW = pageW - mL - mR;
+  let y = mT;
+  pdf.addPage();
+
+  pdf.setFont('helvetica','bold'); pdf.setFontSize(13); pdf.setTextColor(10);
+  pdf.text('Conditions générales de vente', mL, y); y += 5;
+  pdf.setFont('helvetica','normal'); pdf.setFontSize(7.5); pdf.setTextColor(120);
+  pdf.text(`bang. — ${em.raisonSociale} · SIRET ${em.siret} · ${em.mentionTVA}`, mL, y); y += 7;
+
+  const med = em.mediateur || '[médiateur à désigner]';
+  CGV_FULL.forEach(([title, bodyRaw]) => {
+    const body = bodyRaw.replace(/\[À COMPLÉTER[^\]]*\]/g, med);
+    pdf.setFont('helvetica','bold'); pdf.setFontSize(9);
+    const titleLines = pdf.splitTextToSize(title, contentW);
+    pdf.setFont('helvetica','normal'); pdf.setFontSize(8);
+    const bodyLines = pdf.splitTextToSize(body, contentW);
+    const blockH = titleLines.length*4 + bodyLines.length*3.7 + 4;
+    if (y + blockH > pageH - mB) { pdf.addPage(); y = mT; }
+    pdf.setFont('helvetica','bold'); pdf.setFontSize(9); pdf.setTextColor(10);
+    pdf.text(titleLines, mL, y); y += titleLines.length*4 + 1;
+    pdf.setFont('helvetica','normal'); pdf.setFontSize(8); pdf.setTextColor(70);
+    pdf.text(bodyLines, mL, y); y += bodyLines.length*3.7 + 4;
+  });
+}
+
+async function exportPDF(type) {
+  type = type || 'devis';
+  let extra = {};
+  if (type === 'facture') {
+    extra = window.__lastFacture || {};
+    if (!extra.factureNumber) { toast("Convertis d'abord le devis en facture."); return; }
+  }
+  const payload = buildClientPayload(type, extra);
+  if (!payload.client && !payload.project) { toast("Renseignez au moins un client ou un projet."); return; }
+
+  showPdfProgress(true, type === 'facture' ? 'Génération de la facture…' : 'Génération du devis…');
+  let stage;
+  try {
+    await ensurePdfLibs();
+    renderDevisDoc(payload, type);
+    await documentFontsReady();
+
+    stage = document.createElement('div');
+    stage.id = 'pdf-stage';
+    const cap = document.getElementById('devis-capture').cloneNode(true);
+    cap.querySelectorAll('[id]').forEach(el => el.removeAttribute('id'));
+    cap.removeAttribute('id');
+    stage.appendChild(cap);
+    document.body.appendChild(stage);
+
+    // High-resolution capture (≈288 DPI) + lossless PNG for crisp text/lines
+    const canvas = await html2canvas(stage, { scale: 3, backgroundColor: '#ffffff', useCORS: true, logging: false });
+    document.body.removeChild(stage); stage = null;
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pageW = 210, pageH = 297;
+    const imgData = canvas.toDataURL('image/png');
+
+    // Fit the whole devis onto ONE A4 page (contain): never split the quote across pages.
+    const ratio = canvas.width / canvas.height;
+    let drawW = pageW;
+    let drawH = pageW / ratio;
+    if (drawH > pageH) {            // content taller than a page → scale down to fit height
+      drawH = pageH;
+      drawW = pageH * ratio;
+    }
+    const offsetX = (pageW - drawW) / 2;
+    pdf.addImage(imgData, 'PNG', offsetX, 0, drawW, drawH, undefined, 'FAST');
+
+    // CGV as crisp native text on the following pages
+    addCGVPages(pdf, payload);
+
+    const num = type === 'facture' ? payload.factureNumber : payload.devisNumber;
+    const safe = (num || 'document').replace(/[^A-Za-z0-9_-]/g, '_');
+    const label = type === 'facture' ? 'Facture' : 'Devis';
+    pdf.save(`${label}_${safe}.pdf`);
+    toast(`${label} exporté en PDF`);
+  } catch (e) {
+    console.error(e);
+    toast("Échec de génération du PDF — vérifie la connexion internet");
+  } finally {
+    if (stage && stage.parentNode) stage.parentNode.removeChild(stage);
+    showPdfProgress(false);
+  }
+}
+
+/* =========================================================
+   DEVIS → FACTURE (numérotation séquentielle Supabase)
+   ========================================================= */
+async function nextFactureNumber() {
+  const year = new Date().getFullYear();
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/factures?select=seq&order=seq.desc&limit=1`, { headers: sbHeaders() });
+  if (!res.ok) throw new Error(`HTTP ${res.status} — ${await res.text()}`);
+  const rows = await res.json();
+  const maxSeq = rows.length ? (rows[0].seq || 0) : 0;
+  const seq = maxSeq + 1;
+  return { numero: `FAC-${year}-${String(seq).padStart(3, '0')}`, seq };
+}
+function localFactureNumber() {
+  const year = new Date().getFullYear();
+  const key = 'bang.facture.seq.' + year;
+  const seq = parseInt(localStorage.getItem(key) || '0', 10) + 1;
+  localStorage.setItem(key, String(seq));
+  return { numero: `FAC-${year}-${String(seq).padStart(3, '0')}`, seq };
+}
+async function storeFacture(numero, seq, date, d) {
+  if (!hasSupabase()) return;
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/factures`, {
+    method: 'POST',
+    headers: { ...sbHeaders(), 'Prefer': 'return=minimal' },
+    body: JSON.stringify({ numero, seq, client: d.client || '', project: d.project || '', data: d, created_at: date + 'T00:00:00Z' }),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status} — ${await res.text()}`);
+}
+
+async function convertToFacture() {
+  const { d } = computeTotals();
+  if (!d.client && !d.project) { toast("Renseignez au moins un client ou un projet."); return; }
+  if (!confirm("Convertir ce devis en facture ?\n\nUn numéro de facture séquentiel sera attribué (action définitive, conforme à la numérotation comptable).")) return;
+
+  showPdfProgress(true, "Attribution du numéro de facture…");
+  const factureDate = new Date().toISOString().slice(0, 10);
+  let num;
+  try {
+    if (hasSupabase()) {
+      num = await nextFactureNumber();
+      await storeFacture(num.numero, num.seq, factureDate, d);
+    } else {
+      num = localFactureNumber();
+    }
+  } catch (e) {
+    console.error(e);
+    num = localFactureNumber();
+    toast("Numéro attribué en local (cloud injoignable)");
+  } finally {
+    showPdfProgress(false);
+  }
+
+  window.__lastFacture = { factureNumber: num.numero, seq: num.seq, factureDate };
+  document.getElementById('facture-num-display').textContent = num.numero;
+  openModal('modal-facture');
+}
+
+function emailFacture() {
+  const f = window.__lastFacture || {};
+  const d = getProjectData();
+  const subject = encodeURIComponent(`Votre facture ${f.factureNumber || ''} — bang.`);
+  const body = encodeURIComponent(
+    `Bonjour ${d.client || ''},\n\n` +
+    `Veuillez trouver ci-joint votre facture ${f.factureNumber || ''} pour votre montre sur-mesure${d.project ? ' « ' + d.project + ' »' : ''}.\n\n` +
+    `Merci de joindre à cet email le PDF que vous venez de télécharger.\n\n` +
+    `Bien cordialement,\n${EMETTEUR.nom} — ${EMETTEUR.raisonSociale}\n${EMETTEUR.email}${EMETTEUR.telephone ? '\n' + EMETTEUR.telephone : ''}`
+  );
+  window.location.href = `mailto:?subject=${subject}&body=${body}`;
+}
+
+/* =========================================================
+   CATALOG (Supabase pieces table)
+   ========================================================= */
+let CATALOG = [];           // full list
+let CATALOG_LOADED = false;
+
+async function openCatalog() {
+  openModal('modal-catalog');
+  if (!CATALOG_LOADED) {
+    await fetchCatalog();
+  } else {
+    filterCatalog();
+  }
+  // Auto-focus search
+  setTimeout(() => document.getElementById('catalog-search').focus(), 100);
+}
+
+async function fetchCatalog() {
+  const status = document.getElementById('catalog-status');
+  const list = document.getElementById('catalog-list');
+
+  if (!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY === 'COLLE_TA_ANON_KEY_ICI') {
+    list.innerHTML = `<div class="catalog-error">
+      <div>Clé Supabase manquante.</div>
+      <p style="margin-top:10px;font-size:12px;">Ouvre ce fichier dans un éditeur et colle ta clé <strong>anon public</strong> dans la constante <code>SUPABASE_ANON_KEY</code> en haut du script. Tu la trouves dans Supabase → Project Settings → API.</p>
+    </div>`;
+    status.textContent = 'Configuration requise';
+    return;
+  }
+
+  status.textContent = 'Chargement du catalogue…';
+  list.innerHTML = '';
+
+  try {
+    const url = `${SUPABASE_URL}/rest/v1/pieces?select=id,name,cat,description,img,url,cost,ship,sell,supplier&order=cat.asc,name.asc`;
+    const res = await fetch(url, { headers: sbHeaders() });
+    if (res.status === 401) throw new Error(sbKeyHint());
+    if (!res.ok) throw new Error(`HTTP ${res.status} — ${await res.text()}`);
+    CATALOG = await res.json();
+    CATALOG_LOADED = true;
+    populateCatalogCategories();
+    filterCatalog();
+  } catch (e) {
+    console.error(e);
+    list.innerHTML = `<div class="catalog-error">
+      <div>Impossible de charger le catalogue.</div>
+      <code>${escapeHtml(e.message)}</code>
+    </div>`;
+    status.textContent = 'Erreur';
+  }
+}
+
+function populateCatalogCategories() {
+  const cats = [...new Set(CATALOG.map(p => p.cat).filter(Boolean))].sort();
+  const sel = document.getElementById('catalog-cat');
+  // Preserve "Toutes catégories" option
+  sel.innerHTML = '<option value="">Toutes catégories</option>' +
+    cats.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+}
+
+function filterCatalog() {
+  const q = document.getElementById('catalog-search').value.trim().toLowerCase();
+  const cat = document.getElementById('catalog-cat').value;
+  const status = document.getElementById('catalog-status');
+  const list = document.getElementById('catalog-list');
+
+  let items = CATALOG;
+  if (cat) items = items.filter(p => p.cat === cat);
+  if (q) {
+    items = items.filter(p => {
+      const hay = [p.name, p.supplier, p.description, p.cat].filter(Boolean).join(' ').toLowerCase();
+      return hay.includes(q);
+    });
+  }
+
+  status.textContent = `${items.length} pièce${items.length > 1 ? 's' : ''} ${q || cat ? '— filtrées' : 'au catalogue'}`;
+
+  if (!items.length) {
+    list.innerHTML = '<div class="catalog-empty">Aucune pièce ne correspond.</div>';
+    return;
+  }
+
+  list.innerHTML = items.map(p => {
+    const cost = parseFloat(p.cost) || 0;
+    const sell = parseFloat(p.sell) || 0;
+    const imgStyle = p.img ? `background-image:url('${escapeHtml(p.img)}')` : '';
+    return `<div class="catalog-item" data-id="${escapeHtml(p.id)}">
+      <div class="img" style="${imgStyle}"></div>
+      <div class="meta">
+        <div class="name">${escapeHtml(p.name || '—')}</div>
+        <div class="sub">${escapeHtml(p.cat || '')}${p.supplier ? ' · ' + escapeHtml(p.supplier) : ''}</div>
+      </div>
+      <div class="prices">
+        <div class="cost">${cost.toFixed(2)} €</div>
+        ${sell ? `<div>vente ${sell.toFixed(0)} €</div>` : ''}
+      </div>
+      <button class="add-btn" onclick="addFromCatalog('${escapeHtml(p.id)}', this)">Ajouter</button>
+    </div>`;
+  }).join('');
+}
+
+function addFromCatalog(id, btn) {
+  const piece = CATALOG.find(p => String(p.id) === String(id));
+  if (!piece) return;
+
+  const cost = parseFloat(piece.cost) || 0;
+  const sell = parseFloat(piece.sell) || 0;
+  // Compute margin so that vente = sell when achat = cost
+  const margin = (cost > 0 && sell > 0) ? Math.round((sell / cost) * 100) / 100 : 1.5;
+
+  const newPart = {
+    cat: piece.cat || 'Autre',
+    name: piece.name || '',
+    supplier: piece.supplier || '',
+    achat: cost,
+    margin: margin,
+    img: piece.img || '',
+    description: piece.description || '',
+    url: piece.url || '',
+    hidden: false,
+  };
+
+  // Try to fill an empty default row of the same category
+  const idx = STATE.parts.findIndex(p =>
+    p.cat === newPart.cat && !p.name && !p.achat
+  );
+  if (idx >= 0) {
+    STATE.parts[idx] = newPart;
+  } else {
+    STATE.parts.push(newPart);
+  }
+
+  renderRows();
+  markDirty();
+  recalc();
+
+  // Visual feedback on button
+  if (btn) {
+    btn.textContent = '✓ Ajouté';
+    btn.classList.add('added');
+    setTimeout(() => {
+      btn.textContent = 'Ajouter';
+      btn.classList.remove('added');
+    }, 1400);
+  }
+}
+
+/* =========================================================
+   CLIENT SELECTIONS (Supabase selections table)
+   ========================================================= */
+let SELECTIONS = [];
+let SELECTIONS_LOADED = false;
+
+async function openSelections() {
+  openModal('modal-selections');
+  if (!SELECTIONS_LOADED) {
+    // Make sure catalog is also loaded (used as fallback if items_snapshot is empty)
+    if (!CATALOG_LOADED) await fetchCatalog();
+    await fetchSelections();
+  } else {
+    filterSelections();
+  }
+  setTimeout(() => document.getElementById('sel-search').focus(), 100);
+}
+
+async function fetchSelections() {
+  const status = document.getElementById('sel-status');
+  const list = document.getElementById('sel-list');
+
+  if (!SUPABASE_ANON_KEY || SUPABASE_ANON_KEY === 'COLLE_TA_ANON_KEY_ICI') {
+    list.innerHTML = `<div class="catalog-error">
+      <div>Clé Supabase manquante.</div>
+      <p style="margin-top:10px;font-size:12px;">Colle ta clé <strong>anon public</strong> dans <code>SUPABASE_ANON_KEY</code> en haut du script.</p>
+    </div>`;
+    status.textContent = 'Configuration requise';
+    return;
+  }
+
+  status.textContent = 'Chargement des sélections…';
+  list.innerHTML = '';
+
+  try {
+    const url = `${SUPABASE_URL}/rest/v1/selections?select=id,client_name,item_ids,items_snapshot,created_at&order=created_at.desc&limit=200`;
+    const res = await fetch(url, { headers: sbHeaders() });
+    if (res.status === 401) throw new Error(sbKeyHint());
+    if (!res.ok) throw new Error(`HTTP ${res.status} — ${await res.text()}`);
+    SELECTIONS = await res.json();
+    SELECTIONS_LOADED = true;
+    filterSelections();
+  } catch (e) {
+    console.error(e);
+    list.innerHTML = `<div class="catalog-error">
+      <div>Impossible de charger les sélections.</div>
+      <code>${escapeHtml(e.message)}</code>
+    </div>`;
+    status.textContent = 'Erreur';
+  }
+}
+
+// Parse a selection's pieces — first try items_snapshot (JSON), then item_ids + CATALOG lookup
+function parseSelectionPieces(sel) {
+  // Try items_snapshot
+  if (sel.items_snapshot) {
+    try {
+      const parsed = typeof sel.items_snapshot === 'string'
+        ? JSON.parse(sel.items_snapshot)
+        : sel.items_snapshot;
+      if (Array.isArray(parsed) && parsed.length) return parsed;
+    } catch {}
+  }
+  // Fallback: item_ids + CATALOG
+  if (sel.item_ids && CATALOG.length) {
+    let ids;
+    try {
+      ids = typeof sel.item_ids === 'string' ? JSON.parse(sel.item_ids) : sel.item_ids;
+    } catch {
+      ids = String(sel.item_ids).split(',').map(s => s.trim()).filter(Boolean);
+    }
+    if (Array.isArray(ids)) {
+      return ids
+        .map(id => CATALOG.find(p => String(p.id) === String(id).trim()))
+        .filter(Boolean);
+    }
+  }
+  return [];
+}
+
+function timeAgo(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  const diff = (Date.now() - d.getTime()) / 1000;
+  if (diff < 60) return "à l'instant";
+  if (diff < 3600) return `il y a ${Math.floor(diff/60)} min`;
+  if (diff < 86400) return `il y a ${Math.floor(diff/3600)} h`;
+  if (diff < 86400*7) return `il y a ${Math.floor(diff/86400)} j`;
+  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function filterSelections() {
+  const q = document.getElementById('sel-search').value.trim().toLowerCase();
+  const status = document.getElementById('sel-status');
+  const list = document.getElementById('sel-list');
+
+  let items = SELECTIONS;
+  if (q) items = items.filter(s => (s.client_name || '').toLowerCase().includes(q));
+
+  status.textContent = `${items.length} sélection${items.length > 1 ? 's' : ''} ${q ? '— filtrées' : ''}`;
+
+  if (!items.length) {
+    list.innerHTML = '<div class="catalog-empty">Aucune sélection client trouvée.</div>';
+    return;
+  }
+
+  list.innerHTML = items.map(s => {
+    const pieces = parseSelectionPieces(s);
+    const preview = pieces.slice(0, 6).map(p => p.name || p.cat || '?').join(' · ');
+    const more = pieces.length > 6 ? ` · +${pieces.length - 6}` : '';
+    return `<div class="selection-item">
+      <div class="top">
+        <div class="client">${escapeHtml(s.client_name || 'Sans nom')}</div>
+        <div class="meta">${timeAgo(s.created_at)} · ${pieces.length} pièce${pieces.length > 1 ? 's' : ''}</div>
+      </div>
+      ${preview ? `<div class="preview">${escapeHtml(preview)}${more}</div>` : ''}
+      <div class="actions">
+        <button class="add-btn" onclick="importSelection('${escapeHtml(s.id)}')">Importer cette sélection</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function importSelection(id) {
+  const sel = SELECTIONS.find(s => String(s.id) === String(id));
+  if (!sel) return;
+
+  const pieces = parseSelectionPieces(sel);
+  if (!pieces.length) {
+    toast("Sélection vide ou pièces introuvables");
+    return;
+  }
+
+  // Convert pieces to chiffrage parts format
+  const newParts = pieces.map(p => {
+    const cost = parseFloat(p.cost) || 0;
+    const sell = parseFloat(p.sell) || 0;
+    return {
+      cat: p.cat || 'Autre',
+      name: p.name || '',
+      supplier: p.supplier || '',
+      achat: cost,
+      margin: (cost > 0 && sell > 0) ? Math.round((sell / cost) * 100) / 100 : 1.5,
+      img: p.img || '',
+      description: p.description || '',
+      url: p.url || '',
+      hidden: false,
+    };
+  });
+
+  // If chiffrage already has user-entered data, confirm before replacing
+  const hasData = STATE.parts.some(p => (p.name && p.name.trim()) || (p.achat && p.achat > 0));
+  if (hasData) {
+    if (!confirm(`Importer la sélection de ${sel.client_name || 'ce client'} ? Les pièces actuelles seront remplacées.`)) return;
+  }
+
+  // Replace parts and pre-fill client name if empty
+  STATE.parts = newParts;
+  const clientField = document.getElementById('f-client');
+  if (!clientField.value && sel.client_name) clientField.value = sel.client_name;
+
+  renderRows();
+  markDirty();
+  recalc();
+  closeModal('modal-selections');
+  toast(`Sélection de ${sel.client_name || 'client'} importée — ${newParts.length} pièces`);
+}
+
+/* =========================================================
+   MODALS & TOAST
+   ========================================================= */
+function openModal(id) { document.getElementById(id).hidden = false; }
+function closeModal(id) { document.getElementById(id).hidden = true; }
+
+let toastTimer;
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// Close modals by clicking backdrop
+document.querySelectorAll('.modal-backdrop').forEach(b => {
+  b.addEventListener('click', e => { if (e.target === b) b.hidden = true; });
+});
+
+// Warn before navigating away with unsaved changes
+window.addEventListener('beforeunload', e => {
+  if (STATE.dirty) { e.preventDefault(); e.returnValue = ''; }
+});
+
+// Go!
+init();
+</script>
+</body>
+</html>
