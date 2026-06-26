@@ -1,0 +1,237 @@
+---
+import Base from '../layouts/Base.astro';
+import Timeline from '../components/Timeline.astro';
+import CtaPersistant from '../components/CtaPersistant.astro';
+---
+
+<Base
+  title="La Maison — bang. atelier de montres uniques"
+  description="L'histoire de bang., fondé à Dissay par Scott. Philosophie, méthode de fabrication en 7 points, garantie et passeport digital."
+>
+  <section class="page-hero">
+    <div class="container">
+      <p class="eyebrow">La Maison</p>
+      <h1>Dissay, Vienne (86).<br /><span class="text-gold">Un atelier, une signature.</span></h1>
+      <p class="page-desc">bang. n'est pas une marque. C'est un atelier — un espace de fabrication où chaque montre passe par les mêmes mains, du premier écrou à la livraison.</p>
+    </div>
+  </section>
+
+  <section class="section-fondateur section-padding">
+    <div class="container deux-cols">
+      <div class="col-texte">
+        <p class="eyebrow">Le fondateur</p>
+        <h2>Scott</h2>
+        <p>Responsable commercial de formation, Scott passe des heures sur les forums horlogers dès la vingtaine. La mécanique des montres — ses leviers, ses spiraux, ses engrenages — fascine autant que la physique qui la sous-tend.</p>
+        <p>L'atelier bang. naît de cette conviction : une montre sur mesure ne devrait pas être le privilège des très fortunés. Avec les calibres japonais modernes, les matières nobles et un savoir-faire d'assemblage rigoureux, il est possible de créer des pièces uniques à prix raisonnable.</p>
+        <p>La limite de 7 commandes par mois n'est pas un argument marketing. C'est la contrainte réelle d'un atelier qui refuse de déléguer l'assemblage.</p>
+      </div>
+      <div class="col-aside">
+        <div class="quote-card">
+          <p class="quote-text">« La montre est le seul bijou que l'homme occidental a le droit de porter sans explication. Autant qu'elle mérite d'en avoir une. »</p>
+          <p class="quote-attr">— Scott, fondateur de bang.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-philosophie section-padding">
+    <div class="container">
+      <p class="eyebrow">Philosophie</p>
+      <h2>Ce en quoi nous croyons</h2>
+      <div class="philosophie-grid">
+        <div class="philo-item">
+          <h3>La rareté vraie</h3>
+          <p>Pas de compteurs artificiels. 7 commandes par mois parce que l'atelier ne peut pas faire plus sans compromettre la qualité. C'est tout.</p>
+        </div>
+        <div class="philo-item">
+          <h3>La transparence des composants</h3>
+          <p>Vous savez exactement quel mouvement bat dans votre montre, d'où vient le verre saphir, pourquoi tel boîtier a été choisi. Pas de mystère.</p>
+        </div>
+        <div class="philo-item">
+          <h3>Le co-design</h3>
+          <p>Chaque montre commence par une conversation. Le configurateur est un point de départ, pas un formulaire à remplir.</p>
+        </div>
+        <div class="philo-item">
+          <h3>La durabilité réelle</h3>
+          <p>Un mouvement se révise. Un bracelet se change. Un boîtier se fait polir. Une montre mécanique n'est jamais vraiment finie — elle vieillit avec vous.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-methode section-padding">
+    <div class="container">
+      <p class="eyebrow">La méthode</p>
+      <h2>Le protocole en 7 points</h2>
+      <p class="section-desc">Chaque pièce bang. passe par ces 7 étapes, sans exception.</p>
+      <div class="methode-list">
+        {[
+          { n: '1', title: 'Écoute', desc: 'Brief client pour comprendre l\'usage, l\'esthétique visée, les contraintes (taille poignet, budget, port quotidien ou occasionnel).' },
+          { n: '2', title: 'Conception', desc: 'Sélection des composants cohérente avec le brief. Un cahier des charges écrit, partagé avec le client avant commande.' },
+          { n: '3', title: 'Sourcing', desc: 'Approvisionnement des composants auprès de fournisseurs qualifiés. Contrôle à réception de chaque pièce.' },
+          { n: '4', title: 'Assemblage', desc: 'Montage à la main dans l\'atelier de Dissay. Pas de sous-traitance de l\'assemblage.' },
+          { n: '5', title: 'Réglage', desc: 'Marche du mouvement mesurée sur timegrapher. Amplitude, déviation journalière, position couronne.' },
+          { n: '6', title: 'Contrôle', desc: 'Vérification finale : étanchéité, serrage des index, état de la lunette, signature de la gravure rotor.' },
+          { n: '7', title: 'Livraison', desc: 'Remise avec le Passeport digital bang. : fiche technique complète, numéro de série, historique de l\'assemblage.' },
+        ].map((step) => (
+          <div class="methode-step">
+            <span class="methode-num">{step.n}</span>
+            <div class="methode-content">
+              <h3>{step.title}</h3>
+              <p>{step.desc}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section-garantie section-padding">
+    <div class="container deux-cols">
+      <div>
+        <p class="eyebrow">Garantie</p>
+        <h2>Ce que nous garantissons</h2>
+        <p>Chaque montre bang. est garantie 2 ans sur le mouvement et les composants mécaniques à compter de la date de livraison. La garantie couvre les défauts d'assemblage et les dysfonctionnements mécaniques non imputables à l'usure normale ou aux chocs.</p>
+        <p>Le bracelet et le verre ne sont pas couverts — ce sont des consommables prévus pour être remplacés au fil du temps.</p>
+      </div>
+      <div>
+        <p class="eyebrow">Passeport digital</p>
+        <h2>L'identité de votre montre</h2>
+        <p>Chaque pièce livrée est accompagnée d'un Passeport digital : une fiche technique complète accessible en ligne via un code unique. Numéro de série, date d'assemblage, liste des composants, photos de la montre en cours de fabrication.</p>
+        <p>Ce passeport vous appartient. Il sert de preuve d'authenticité et simplifie toute intervention future (révision, vente).</p>
+        <a href="/passeport" class="btn-secondary" style="margin-top: 1rem; display: inline-flex;">Vérifier un passeport</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-timeline section-padding">
+    <div class="container">
+      <p class="eyebrow">Histoire</p>
+      <h2>De 2023 à aujourd'hui</h2>
+      <div style="margin-top: 3rem;">
+        <Timeline />
+      </div>
+    </div>
+  </section>
+
+  <CtaPersistant />
+</Base>
+
+<style>
+  .page-hero {
+    padding-block: 4rem;
+    border-bottom: 1px solid rgba(197, 165, 114, 0.15);
+    background: var(--noir-surface);
+  }
+
+  .eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0.75rem;
+    max-width: none;
+  }
+
+  .page-desc, .section-desc {
+    color: var(--gris-texte);
+    margin-top: 0.75rem;
+    max-width: 55ch;
+  }
+
+  .deux-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: start;
+  }
+
+  @media (max-width: 768px) {
+    .deux-cols { grid-template-columns: 1fr; gap: 2rem; }
+  }
+
+  .col-texte p { margin-bottom: 1rem; }
+
+  .quote-card {
+    background: var(--noir-card);
+    border: 1px solid rgba(197, 165, 114, 0.2);
+    border-left: 3px solid var(--gold);
+    border-radius: 8px;
+    padding: 2rem;
+  }
+
+  .quote-text {
+    font-style: italic;
+    font-size: 1.05rem;
+    color: var(--blanc);
+    line-height: 1.6;
+    margin-bottom: 1rem;
+    max-width: none;
+  }
+
+  .quote-attr {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--gris-muted);
+    max-width: none;
+  }
+
+  .philosophie-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-top: 2rem;
+  }
+
+  @media (max-width: 600px) {
+    .philosophie-grid { grid-template-columns: 1fr; }
+  }
+
+  .philo-item {
+    background: var(--noir-card);
+    border: 1px solid rgba(197, 165, 114, 0.15);
+    border-radius: 12px;
+    padding: 1.75rem;
+  }
+
+  .philo-item h3 { font-size: 1rem; margin-bottom: 0.5rem; }
+  .philo-item p { font-size: 0.9rem; color: var(--gris-texte); max-width: none; }
+
+  .methode-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin-top: 2rem;
+    border: 1px solid rgba(197, 165, 114, 0.15);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .methode-step {
+    display: grid;
+    grid-template-columns: 3rem 1fr;
+    gap: 1.5rem;
+    align-items: start;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid rgba(197, 165, 114, 0.1);
+    background: var(--noir-surface);
+  }
+
+  .methode-step:last-child { border-bottom: none; }
+  .methode-step:nth-child(even) { background: var(--noir-card); }
+
+  .methode-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.2rem;
+    color: var(--gold);
+    opacity: 0.5;
+    font-weight: 400;
+    padding-top: 0.1rem;
+  }
+
+  .methode-content h3 { font-size: 0.95rem; margin-bottom: 0.25rem; }
+  .methode-content p { font-size: 0.875rem; color: var(--gris-texte); max-width: none; }
+
+  .section-garantie .deux-cols p { margin-bottom: 0.75rem; }
+</style>

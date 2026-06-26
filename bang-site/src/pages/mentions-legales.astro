@@ -1,0 +1,38 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base
+  title="Mentions légales — bang."
+  description="Mentions légales de l'atelier bang., éditeur du site atelier-bang.com. SIRET, hébergement, propriété intellectuelle."
+>
+  <section class="page-hero">
+    <div class="container">
+      <h1 class="page-title">Mentions légales</h1>
+    </div>
+  </section>
+  <section class="section-padding">
+    <div class="container legal-content">
+      <h2>Éditeur du site</h2>
+      <p>Scott [Nom de famille à compléter] — Micro-entrepreneur<br />SIRET : [à compléter]<br />Dissay, 86130 Vienne, France<br />Email : <a href="mailto:contact@atelier-bang.com" class="text-gold">contact@atelier-bang.com</a></p>
+      <h2>Hébergement</h2>
+      <p>Vercel Inc., 340 Pine Street Suite 701, San Francisco CA 94104, États-Unis.</p>
+      <h2>Propriété intellectuelle</h2>
+      <p>L'ensemble des contenus (textes, images, logo) est la propriété exclusive de bang. Toute reproduction sans autorisation est interdite.</p>
+      <h2>Responsabilité</h2>
+      <p>bang. s'efforce d'assurer l'exactitude des informations présentes sur ce site mais ne peut être tenu responsable des erreurs ou omissions.</p>
+      <p class="legal-update">Dernière mise à jour : juin 2026</p>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .page-hero {
+    padding-block: 4rem;
+    border-bottom: 1px solid rgba(197, 165, 114, 0.15);
+    background: var(--noir-surface);
+  }
+  .page-title { text-transform: capitalize; }
+  .legal-content { max-width: 680px; }
+  .legal-content p { color: var(--gris-texte); margin-bottom: 1rem; }
+</style>

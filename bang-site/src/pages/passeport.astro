@@ -1,0 +1,154 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base
+  title="Passeport bang. — Vérification d'authenticité"
+  description="Vérifiez l'authenticité d'une montre bang. et accédez à sa fiche technique complète grâce au Passeport digital."
+>
+  <section class="page-hero">
+    <div class="container">
+      <p class="eyebrow">Passeport digital</p>
+      <h1>Vérification d'authenticité</h1>
+      <p class="page-desc">Chaque montre bang. est livrée avec un Passeport digital unique. Renseignez l'identifiant et le mot de passe fournis à la livraison.</p>
+    </div>
+  </section>
+
+  <section class="section-padding">
+    <div class="container passeport-wrapper">
+      <div class="passeport-form-col">
+        <form class="passeport-form" action="#" method="post" novalidate>
+          <div class="form-group">
+            <label for="pp-id">Identifiant du modèle</label>
+            <input
+              type="text"
+              id="pp-id"
+              name="model_id"
+              placeholder="ex. BNG-2024-ZNZ-01"
+              autocomplete="off"
+              class="mono-input"
+              required
+            />
+            <p class="field-hint">Visible sur la boîte de livraison et le certificat papier.</p>
+          </div>
+          <div class="form-group">
+            <label for="pp-pass">Mot de passe</label>
+            <input
+              type="password"
+              id="pp-pass"
+              name="password"
+              placeholder="••••••••"
+              autocomplete="current-password"
+              required
+            />
+            <p class="field-hint">Communiqué par email à la livraison.</p>
+          </div>
+          <button type="submit" class="btn-primary">Accéder au passeport</button>
+        </form>
+      </div>
+
+      <aside class="passeport-aside">
+        <div class="aside-info">
+          <h3>Qu'est-ce que le Passeport bang. ?</h3>
+          <p>C'est le certificat d'identité numérique de votre montre. Il contient :</p>
+          <ul>
+            <li>La fiche technique complète (mouvement, cadran, boîtier, bracelet)</li>
+            <li>Le numéro de série unique</li>
+            <li>La date d'assemblage</li>
+            <li>Les données de réglage (timegrapher)</li>
+            <li>Les photos d'atelier de votre pièce</li>
+          </ul>
+          <p>Il facilite toute intervention future (révision, vente, transmission).</p>
+        </div>
+        <div class="aside-help">
+          <p>Identifiant ou mot de passe perdu ?</p>
+          <a href="mailto:contact@atelier-bang.com" class="text-gold">contact@atelier-bang.com</a>
+        </div>
+      </aside>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .page-hero {
+    padding-block: 4rem;
+    border-bottom: 1px solid rgba(197, 165, 114, 0.15);
+    background: var(--noir-surface);
+  }
+
+  .eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0.75rem;
+    max-width: none;
+  }
+
+  .page-desc { color: var(--gris-texte); margin-top: 0.75rem; max-width: 55ch; }
+
+  .passeport-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 3rem;
+    align-items: start;
+  }
+
+  @media (max-width: 860px) {
+    .passeport-wrapper { grid-template-columns: 1fr; }
+  }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-bottom: 1.25rem;
+  }
+
+  label { font-size: 0.875rem; font-weight: 500; color: var(--blanc); }
+
+  input {
+    background: var(--noir-card);
+    border: 1px solid rgba(197, 165, 114, 0.2);
+    border-radius: 8px;
+    padding: 0.875rem 1rem;
+    color: var(--blanc);
+    font-size: 0.9375rem;
+    transition: border-color 0.2s ease;
+  }
+
+  .mono-input { font-family: 'DM Mono', monospace; letter-spacing: 0.05em; }
+
+  input:focus { outline: none; border-color: var(--gold); }
+  input::placeholder { color: var(--gris-muted); }
+
+  .field-hint {
+    font-size: 0.75rem;
+    color: var(--gris-muted);
+    max-width: none;
+    margin: 0;
+  }
+
+  .aside-info {
+    background: var(--noir-card);
+    border: 1px solid rgba(197, 165, 114, 0.15);
+    border-radius: 12px;
+    padding: 1.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .aside-info h3 { font-size: 0.95rem; margin-bottom: 0.75rem; }
+  .aside-info p { font-size: 0.875rem; color: var(--gris-texte); margin-bottom: 0.5rem; max-width: none; }
+  .aside-info ul { padding-left: 1.25rem; }
+  .aside-info li { font-size: 0.875rem; color: var(--gris-texte); margin-bottom: 0.3rem; list-style: disc; }
+
+  .aside-help {
+    background: var(--noir-surface);
+    border: 1px solid rgba(197, 165, 114, 0.1);
+    border-radius: 8px;
+    padding: 1.25rem;
+  }
+
+  .aside-help p { font-size: 0.85rem; color: var(--gris-muted); margin-bottom: 0.25rem; max-width: none; }
+</style>

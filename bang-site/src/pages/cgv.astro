@@ -1,0 +1,44 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base
+  title="Conditions Générales de Vente — bang."
+  description="CGV de l'atelier bang. : commandes, prix, délais (6–10 semaines), garantie 2 ans, droit de rétractation pour produits sur mesure."
+>
+  <section class="page-hero">
+    <div class="container">
+      <h1 class="page-title">Conditions Générales de Vente</h1>
+    </div>
+  </section>
+  <section class="section-padding">
+    <div class="container legal-content">
+      <h2>Objet</h2>
+      <p>Les présentes CGV régissent les relations entre bang. et tout client souhaitant commander une montre sur mesure. Toute commande implique l'acceptation sans réserve des présentes conditions.</p>
+      <h2>Prix</h2>
+      <p>La gamme Initiale démarre à partir de 320 €, la Signature à partir de 520 €. Le prix définitif est établi par devis signé après le brief de validation.</p>
+      <h2>Commandes et paiement</h2>
+      <p>Commande confirmée à réception d'un acompte de 50 %. Le solde est dû avant expédition. Paiement par virement bancaire ou moyen sécurisé.</p>
+      <h2>Délais de livraison</h2>
+      <p>6 à 10 semaines à compter de la validation du brief et de l'acompte. Le client est informé de tout délai supplémentaire.</p>
+      <h2>Garantie</h2>
+      <p>2 ans contre les défauts de fabrication. Service après-vente à vie pour les révisions. Le bracelet et le verre sont exclus (consommables).</p>
+      <h2>Droit de rétractation</h2>
+      <p>Conformément à l'article L221-28 du Code de la consommation, les montres bang. étant des produits personnalisés, elles sont exclues du droit de rétractation de 14 jours.</p>
+      <h2>Contact</h2>
+      <p><a href="mailto:contact@atelier-bang.com" class="text-gold">contact@atelier-bang.com</a></p>
+      <p class="legal-update">Dernière mise à jour : juin 2026</p>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .page-hero {
+    padding-block: 4rem;
+    border-bottom: 1px solid rgba(197, 165, 114, 0.15);
+    background: var(--noir-surface);
+  }
+  .page-title { text-transform: capitalize; }
+  .legal-content { max-width: 680px; }
+  .legal-content p { color: var(--gris-texte); margin-bottom: 1rem; }
+</style>

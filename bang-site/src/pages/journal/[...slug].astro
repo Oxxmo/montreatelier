@@ -1,0 +1,163 @@
+---
+import Base from '../../layouts/Base.astro';
+import CtaPersistant from '../../components/CtaPersistant.astro';
+import { getCollection, render } from 'astro:content';
+
+export async function getStaticPaths() {
+  const articles = await getCollection('journal');
+  return articles.map((a) => ({ params: { slug: a.id }, props: { article: a } }));
+}
+
+const { article } = Astro.props;
+const { Content } = await render(article);
+
+const dateFormatted = article.data.date.toLocaleDateString('fr-FR', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+});
+
+const categoryLabels: Record<string, string> = {
+  culture: 'Culture',
+  style: 'Style',
+  atelier: 'Atelier',
+  mecanique: 'Mécanique',
+};
+---
+
+<Base
+  title={`${article.data.title} — Le Journal bang.`}
+  description={article.data.description}
+  ogImage={article.data.image}
+>
+  <article class="article-page">
+    <header class="article-header">
+      <div class="container article-header-inner">
+        <div class="article-meta">
+          <span class="article-category">{categoryLabels[article.data.category] ?? article.data.category}</span>
+          <time datetime={article.data.date.toISOString()} class="article-date">{dateFormatted}</time>
+          <span class="article-reading">{article.data.readingTime} min de lecture</span>
+        </div>
+        <h1 class="article-title">{article.data.title}</h1>
+        <p class="article-desc">{article.data.description}</p>
+        <p class="article-author">Par {article.data.author}</p>
+      </div>
+    </header>
+
+    <div class="article-body section-padding">
+      <div class="container article-content">
+        <Content />
+      </div>
+    </div>
+
+    <footer class="article-footer section-padding">
+      <div class="container">
+        <a href="/journal" class="btn-secondary">← Retour au Journal</a>
+      </div>
+    </footer>
+  </article>
+
+  <CtaPersistant />
+</Base>
+
+<style>
+  .article-header {
+    padding-block: 4rem;
+    border-bottom: 1px solid rgba(197, 165, 114, 0.15);
+    background: var(--noir-surface);
+  }
+
+  .article-header-inner { max-width: 740px; }
+
+  .article-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+  }
+
+  .article-category {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--noir);
+    background: var(--gold);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+  }
+
+  .article-date, .article-reading {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--gris-muted);
+    letter-spacing: 0.03em;
+  }
+
+  .article-title {
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    margin-bottom: 1rem;
+    line-height: 1.15;
+  }
+
+  .article-desc {
+    font-size: 1.05rem;
+    color: var(--gris-texte);
+    line-height: 1.6;
+    margin-bottom: 1rem;
+    max-width: 60ch;
+  }
+
+  .article-author {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--gris-muted);
+    max-width: none;
+  }
+
+  .article-content {
+    max-width: 680px;
+    line-height: 1.8;
+  }
+
+  .article-content :global(h2) {
+    font-size: 1.4rem;
+    margin-top: 2.5rem;
+    margin-bottom: 0.75rem;
+    color: var(--blanc);
+  }
+
+  .article-content :global(h3) {
+    font-size: 1.1rem;
+    margin-top: 2rem;
+    margin-bottom: 0.5rem;
+    color: var(--blanc);
+  }
+
+  .article-content :global(p) {
+    color: var(--gris-texte);
+    margin-bottom: 1.25rem;
+    font-size: 1rem;
+    max-width: none;
+  }
+
+  .article-content :global(ul), .article-content :global(ol) {
+    padding-left: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .article-content :global(li) {
+    color: var(--gris-texte);
+    margin-bottom: 0.4rem;
+  }
+
+  .article-content :global(em) {
+    color: var(--blanc);
+    font-style: italic;
+  }
+
+  .article-footer {
+    border-top: 1px solid rgba(197, 165, 114, 0.1);
+  }
+</style>

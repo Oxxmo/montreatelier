@@ -1,0 +1,297 @@
+---
+import Base from '../layouts/Base.astro';
+import Hero from '../components/Hero.astro';
+import BarreRarete from '../components/BarreRarete.astro';
+import CarteMontre from '../components/CarteMontre.astro';
+import Temoignage from '../components/Temoignage.astro';
+import SectionJournal from '../components/SectionJournal.astro';
+import CtaPersistant from '../components/CtaPersistant.astro';
+import { getCollection } from 'astro:content';
+
+const realisations = await getCollection('realisations');
+const articles = await getCollection('journal');
+const latestArticles = articles.sort((a, b) => b.data.date.getTime() - a.data.date.getTime()).slice(0, 3);
+---
+
+<Base
+  title="bang. — Montres automatiques sur mesure | Dissay (86)"
+  description="bang. crée des montres automatiques sur mesure, assemblées à la main à Dissay. Gammes Initiale (dès 320 €) et Signature (dès 520 €). 7 commandes par mois."
+>
+  <Hero
+    eyebrow="Atelier de montres sur mesure · Dissay, France"
+    title="Une montre ne suit<br />pas la mode.<br /><span class='text-gold'>Elle accompagne une vie.</span>"
+    subtitle="bang. conçoit des montres automatiques uniques, assemblées à la main. Chaque pièce est un projet co-construit avec son futur propriétaire — de la configuration jusqu'à la livraison."
+    cta1={{ text: 'Configurer ma montre', href: '/configurer' }}
+    cta2={{ text: 'Voir les réalisations', href: '/realisations' }}
+  />
+
+  <section class="section-rarete section-padding">
+    <div class="container text-center">
+      <BarreRarete />
+    </div>
+  </section>
+
+  <section class="section-realisations section-padding">
+    <div class="container">
+      <header class="section-header">
+        <p class="section-eyebrow">Réalisations récentes</p>
+        <h2>Des montres qui ont une histoire</h2>
+        <p class="section-desc">Chaque pièce livrée est une conversation matérialisée. Voici quelques-unes d'entre elles.</p>
+      </header>
+      <div class="grid-3">
+        {realisations.slice(0, 3).map((r) => (
+          <CarteMontre
+            name={r.data.name}
+            ref={r.data.ref}
+            gamme={r.data.gamme}
+            image={r.data.images[0]}
+            mouvement={r.data.specs.mouvement}
+            href={`/realisations/${r.id}`}
+          />
+        ))}
+      </div>
+      <div class="section-cta">
+        <a href="/realisations" class="btn-secondary">Voir toutes les réalisations</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-process section-padding">
+    <div class="container">
+      <header class="section-header">
+        <p class="section-eyebrow">La méthode</p>
+        <h2>Comment ça marche</h2>
+      </header>
+      <div class="grid-3">
+        <div class="step-card">
+          <span class="step-num">01</span>
+          <h3>Configurez en ligne</h3>
+          <p>Choisissez cadran, boîtier, mouvement, bracelet et gravure via le configurateur. Un prix indicatif s'affiche en temps réel.</p>
+        </div>
+        <div class="step-card">
+          <span class="step-num">02</span>
+          <h3>Brief & validation</h3>
+          <p>Un échange de 30 minutes pour affiner votre projet, confirmer les specs et valider le devis. Pas de surprise.</p>
+        </div>
+        <div class="step-card">
+          <span class="step-num">03</span>
+          <h3>Fabrication & livraison</h3>
+          <p>Assemblage à la main dans l'atelier de Dissay. Livraison sous 4 à 8 semaines, avec le Passeport digital bang.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-chiffres section-padding">
+    <div class="container">
+      <div class="chiffres-grid">
+        <div class="chiffre">
+          <span class="chiffre-val">77+</span>
+          <span class="chiffre-label">créations livrées</span>
+        </div>
+        <div class="chiffre">
+          <span class="chiffre-val">4.7/5</span>
+          <span class="chiffre-label">satisfaction client</span>
+        </div>
+        <div class="chiffre">
+          <span class="chiffre-val">2.1K+</span>
+          <span class="chiffre-label">lecteurs du journal</span>
+        </div>
+        <div class="chiffre">
+          <span class="chiffre-val">7</span>
+          <span class="chiffre-label">commandes par mois maximum</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-temoignages section-padding">
+    <div class="container">
+      <header class="section-header">
+        <p class="section-eyebrow">Témoignages</p>
+        <h2>Ce que disent les propriétaires</h2>
+      </header>
+      <div class="grid-3">
+        <Temoignage
+          stars={5}
+          quote="Superbe réalisation jusque dans les moindres détails. Une pièce que je porte chaque jour."
+          name="Paul C."
+          watchCount={2}
+        />
+        <Temoignage
+          stars={5}
+          quote="De l'écoute, des échanges productifs, et une montre qui correspond exactement à ce que j'avais en tête."
+          name="Nicolas H."
+          watchCount={2}
+        />
+        <Temoignage
+          stars={5}
+          quote="Les meilleures montres que j'ai pu acheter. Le rapport qualité-singularité est imbattable."
+          name="Fred L."
+          watchCount={2}
+        />
+      </div>
+    </div>
+  </section>
+
+  <section class="section-journal section-padding">
+    <div class="container">
+      <header class="section-header">
+        <p class="section-eyebrow">Le Journal</p>
+        <h2>Horlogerie, culture, atelier</h2>
+        <p class="section-desc">Réflexions sur la montre, le temps, et le faire à la main.</p>
+      </header>
+      <div class="grid-3">
+        {latestArticles.map((a) => (
+          <SectionJournal
+            image={a.data.image}
+            category={a.data.category}
+            title={a.data.title}
+            excerpt={a.data.description}
+            date={a.data.date}
+            readingTime={a.data.readingTime}
+            href={`/journal/${a.id}`}
+          />
+        ))}
+      </div>
+      <div class="section-cta">
+        <a href="/journal" class="btn-secondary">Lire le journal</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-final-cta section-padding">
+    <div class="container text-center">
+      <p class="section-eyebrow">Prêt à commencer ?</p>
+      <h2>Votre montre n'attend que vous.</h2>
+      <p class="section-desc" style="margin-inline: auto;">Configurez en 10 minutes. Discutez en 30. Portez pour une vie.</p>
+      <div class="hero-ctas" style="justify-content: center; margin-top: 2rem;">
+        <a href="/configurer" class="btn-primary">Configurer ma montre</a>
+        <a href="/contact" class="btn-secondary">Parler à Scott</a>
+      </div>
+    </div>
+  </section>
+
+  <CtaPersistant />
+</Base>
+
+<style>
+  .section-header {
+    margin-bottom: 3rem;
+  }
+
+  .section-eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0.75rem;
+    max-width: none;
+  }
+
+  .section-desc {
+    color: var(--gris-texte);
+    margin-top: 0.75rem;
+    font-size: 1rem;
+  }
+
+  .section-cta {
+    margin-top: 2.5rem;
+    text-align: center;
+  }
+
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 900px) {
+    .grid-3 { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 600px) {
+    .grid-3 { grid-template-columns: 1fr; }
+  }
+
+  .step-card {
+    background: var(--noir-surface);
+    border: 1px solid rgba(197, 165, 114, 0.15);
+    border-radius: 12px;
+    padding: 2rem;
+  }
+
+  .step-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 2rem;
+    font-weight: 400;
+    color: rgba(197, 165, 114, 0.25);
+    display: block;
+    margin-bottom: 1rem;
+    line-height: 1;
+  }
+
+  .step-card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    color: var(--blanc);
+  }
+
+  .step-card p {
+    font-size: 0.9rem;
+    color: var(--gris-texte);
+    max-width: none;
+  }
+
+  .chiffres-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: rgba(197, 165, 114, 0.15);
+    border: 1px solid rgba(197, 165, 114, 0.15);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  @media (max-width: 768px) {
+    .chiffres-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .chiffre {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 2.5rem 1.5rem;
+    background: var(--noir-surface);
+    text-align: center;
+  }
+
+  .chiffre-val {
+    font-family: 'League Spartan', sans-serif;
+    font-size: clamp(1.8rem, 3vw, 2.8rem);
+    font-weight: 700;
+    color: var(--gold);
+  }
+
+  .chiffre-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--gris-muted);
+  }
+
+  .section-final-cta {
+    background: var(--noir-surface);
+    border-top: 1px solid rgba(197, 165, 114, 0.15);
+  }
+
+  .hero-ctas {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+</style>
