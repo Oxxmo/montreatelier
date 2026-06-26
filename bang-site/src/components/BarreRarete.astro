@@ -1,0 +1,66 @@
+---
+// SOURCE DE VÉRITÉ UNIQUE pour la rareté — ne jamais hardcoder ce chiffre ailleurs
+const creneauxRestants = import.meta.env.PUBLIC_CRENEAUX_RESTANTS ?? '5';
+const creneauxMois = import.meta.env.PUBLIC_CRENEAUX_MOIS ?? '7';
+---
+
+<div class="barre-rarete" role="status" aria-live="polite">
+  <span class="barre-rarete__dot" aria-hidden="true"></span>
+  <p>
+    <strong class="barre-rarete__count">{creneauxRestants}</strong>
+    {' '}créneaux restants ce mois-ci
+    <span class="barre-rarete__total">(sur {creneauxMois} disponibles)</span>
+  </p>
+</div>
+
+<style>
+  .barre-rarete {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    padding: 0.6rem 1.5rem;
+    background: rgba(197, 165, 114, 0.08);
+    border: 1px solid rgba(197, 165, 114, 0.2);
+    border-radius: 8px;
+    width: fit-content;
+    margin-inline: auto;
+  }
+
+  .barre-rarete p {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--gold);
+    max-width: none;
+    margin: 0;
+  }
+
+  .barre-rarete__count {
+    font-size: 1rem;
+    color: var(--gold-light);
+  }
+
+  .barre-rarete__total {
+    color: var(--gris-muted);
+  }
+
+  .barre-rarete__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--gold);
+    animation: pulse 2s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .barre-rarete__dot { animation: none; }
+  }
+</style>

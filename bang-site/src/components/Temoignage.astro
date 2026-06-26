@@ -1,0 +1,90 @@
+---
+interface Props {
+  stars: number;
+  quote: string;
+  name: string;
+  mention?: string;
+  watchCount?: number;
+}
+
+const { stars, quote, name, mention = 'Client vérifié', watchCount } = Astro.props;
+---
+
+<figure class="temoignage">
+  <div class="temoignage-stars" aria-label={`${stars} étoiles sur 5`}>
+    {Array.from({ length: 5 }).map((_, i) => (
+      <span class={`star ${i < stars ? 'star-filled' : 'star-empty'}`} aria-hidden="true">★</span>
+    ))}
+  </div>
+  <blockquote class="temoignage-quote">
+    <p>« {quote} »</p>
+  </blockquote>
+  <figcaption class="temoignage-author">
+    <strong class="temoignage-name">{name}</strong>
+    <span class="temoignage-badge">{mention}</span>
+    {watchCount && <span class="temoignage-count">{watchCount} montres</span>}
+  </figcaption>
+</figure>
+
+<style>
+  .temoignage {
+    background: var(--noir-card);
+    border: 1px solid rgba(197, 165, 114, 0.15);
+    border-radius: 12px;
+    padding: 1.75rem;
+  }
+
+  .temoignage-stars {
+    display: flex;
+    gap: 0.15rem;
+    margin-bottom: 1rem;
+  }
+
+  .star {
+    font-size: 1rem;
+  }
+
+  .star-filled { color: var(--gold); }
+  .star-empty { color: var(--gris-muted); }
+
+  .temoignage-quote p {
+    font-size: 0.95rem;
+    font-style: italic;
+    color: var(--blanc);
+    line-height: 1.6;
+    margin-bottom: 1.25rem;
+    max-width: none;
+  }
+
+  .temoignage-author {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .temoignage-name {
+    font-family: 'League Spartan', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--blanc);
+  }
+
+  .temoignage-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent-success);
+    background: rgba(29, 158, 117, 0.12);
+    border: 1px solid rgba(29, 158, 117, 0.3);
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+  }
+
+  .temoignage-count {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--gris-muted);
+  }
+</style>
