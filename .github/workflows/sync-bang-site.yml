@@ -1,0 +1,49 @@
+name: Sync bang-site to main repo
+
+on:
+  push:
+    branches: [claude/bang-site-dev]
+    paths:
+      - 'bang-site/**'
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout montreatelier (source)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Clone bang-site repo
+        run: |
+          git clone https://Oxxmo:${{ secrets.BANG_SITE_TOKEN }}@github.com/Oxxmo/bang-site.git bang-site-repo
+          cd bang-site-repo
+          git config user.name "Claude Code Bot"
+          git config user.email "claude@anthropic.com"
+
+      - name: Sync bang-site content
+        run: |
+          # Copy source to destination
+          rm -rf bang-site-repo/*
+          cp -r bang-site/* bang-site-repo/
+
+          # Keep .git out
+          rm -rf bang-site-repo/.git
+
+          cd bang-site-repo
+          git add .
+
+          # Check if there are changes
+          if git diff --cached --quiet; then
+            echo "No changes to sync"
+          else
+            git commit -m "sync: automated sync from montreatelier/claude/bang-site-dev [skip ci]"
+            git push origin main
+            echo "✅ Synced to bang-site"
+          fi
+
+      - name: Notify on failure
+        if: failure()
+        run: echo "❌ Sync failed - check logs"
