@@ -1,91 +1,390 @@
 ---
 import Base from '../layouts/Base.astro';
 import BarreRarete from '../components/BarreRarete.astro';
+
+const SUPABASE_URL = 'https://fybbiyghjnjsnigjzatv.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_177KiLL6i-E3SxxRckZpVQ_5oZFD7KF';
+
+const steps = [
+  { num: '01', label: 'Cadran',    desc: "Choisissez le cadran qui définira l'identité visuelle de votre montre." },
+  { num: '02', label: 'Aiguilles', desc: 'Sélectionnez les aiguilles. Style, luminosité, couleur.' },
+  { num: '03', label: 'Boîtier',   desc: 'Le boîtier détermine la taille, le poids et la finition.' },
+  { num: '04', label: 'Mouvement', desc: 'Le cœur de votre montre. Précision, réserve de marche, fonctions.' },
+  { num: '05', label: 'Bracelet',  desc: 'Cuir, acier, caoutchouc — le bracelet change le caractère au poignet.' },
+  { num: '06', label: 'Signature', desc: 'La touche finale : gravure personnalisée et rotor sur mesure.' },
+];
 ---
 
 <Base
   title="Configurer ma montre — bang."
-  description="Créez votre montre sur mesure en 6 étapes : cadran, aiguilles, boîtier, mouvement, bracelet et signature. Prix indicatif en temps réel."
+  description="Créez votre montre sur mesure en 6 étapes : cadran, aiguilles, boîtier, mouvement, bracelet et signature. Choisissez parmi les pièces disponibles en atelier."
 >
   <div class="configurateur-page">
+
     <header class="conf-header">
       <div class="container">
         <p class="conf-eyebrow">Le configurateur</p>
         <h1>Créez votre montre</h1>
-        <p class="conf-subtitle">Choisissez chaque composant, visualisez le prix indicatif en temps réel. Aucune obligation d'achat.</p>
-        <div style="margin-top: 1.5rem;">
+        <p class="conf-subtitle">Choisissez chaque composant parmi les pièces disponibles en atelier. Le prix s'affiche en temps réel. Aucune obligation d'achat.</p>
+        <div style="margin-top:1.5rem">
           <BarreRarete />
         </div>
       </div>
     </header>
 
-    <div class="conf-steps">
+    <div class="conf-body">
       <div class="container">
-        <div class="steps-nav" role="tablist" aria-label="Étapes du configurateur">
-          {[
-            { num: '01', label: 'Cadran' },
-            { num: '02', label: 'Aiguilles' },
-            { num: '03', label: 'Boîtier' },
-            { num: '04', label: 'Mouvement' },
-            { num: '05', label: 'Bracelet' },
-            { num: '06', label: 'Signature' },
-          ].map((step, i) => (
+
+        <div class="steps-nav" role="tablist" aria-label="Étapes du configurateur" id="steps-nav">
+          {steps.map((step, i) => (
             <button
-              class={`step-btn ${i === 0 ? 'step-btn--active' : ''}`}
+              class={`step-btn${i === 0 ? ' step-btn--active' : ''}`}
               role="tab"
               aria-selected={i === 0 ? 'true' : 'false'}
+              data-step={i}
             >
-              <span class="step-btn-num">{step.num}</span>
-              <span class="step-btn-label">{step.label}</span>
+              <span class="step-num">{step.num}</span>
+              <span class="step-label">{step.label}</span>
+              <span class="step-check" data-check={i}></span>
             </button>
           ))}
         </div>
 
         <div class="conf-workspace">
-          <div class="conf-options">
-            <div class="conf-placeholder">
-              <p class="conf-placeholder-text">
-                Le configurateur interactif est en cours de développement.<br />
-                En attendant, <a href="/contact">contactez-nous directement</a> pour démarrer votre projet.
-              </p>
-              <a href="/contact" class="btn-primary" style="margin-top: 1.5rem;">Démarrer mon projet</a>
+
+          <div class="conf-main">
+            <div class="conf-step-header">
+              <h2 id="step-heading">Cadran</h2>
+              <p id="step-desc" class="step-desc">{steps[0].desc}</p>
+            </div>
+
+            <div class="search-bar" id="search-bar">
+              <input type="text" id="search-input" class="search-input" placeholder="Rechercher une pièce…" autocomplete="off" />
+            </div>
+
+            <div id="pieces-grid" class="pieces-grid">
+              <div class="loading-state">
+                <span class="loading-dot"></span>
+                <span class="loading-dot"></span>
+                <span class="loading-dot"></span>
+              </div>
+            </div>
+
+            <div id="signature-step" class="signature-step" style="display:none">
+              <div class="sig-group">
+                <label class="sig-label" for="sig-gravure">Gravure personnalisée (rotor ou fond)</label>
+                <input type="text" id="sig-gravure" class="sig-input" placeholder="Ex : Carpe Diem, initiales, date…" maxlength="40" />
+                <p class="sig-hint">40 caractères max · Optionnel</p>
+              </div>
+              <div class="sig-group">
+                <p class="sig-label">Rotor</p>
+                <div class="rotor-options" id="rotor-options">
+                  <button class="rotor-btn rotor-btn--active" data-rotor="standard">Standard</button>
+                  <button class="rotor-btn" data-rotor="squelette">Squelette</button>
+                  <button class="rotor-btn" data-rotor="gravure">Gravure custom</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="step-nav-btns">
+              <button class="btn-step btn-prev" id="btn-prev" style="visibility:hidden">← Précédent</button>
+              <button class="btn-step btn-next" id="btn-next">Suivant →</button>
             </div>
           </div>
 
           <aside class="conf-summary">
             <div class="summary-card">
               <h2 class="summary-title">Votre configuration</h2>
-              <div class="summary-badge">
-                <span class="badge badge-initiale">Gamme Initiale</span>
+              <div class="summary-gamme">
+                <span class="badge badge-initiale" id="gamme-badge">Gamme Initiale</span>
               </div>
+              <ul class="summary-list">
+                {steps.map((s, i) => (
+                  <li class="summary-item">
+                    <span class="sum-step">{s.label}</span>
+                    <span class="sum-value" id={`sum-val-${i}`}>—</span>
+                  </li>
+                ))}
+              </ul>
               <div class="summary-price">
                 <span class="price-label">Estimation indicative</span>
-                <span class="price-val">à partir de 320 €</span>
+                <span class="price-val" id="price-display">à partir de 320 €</span>
               </div>
-              <p class="summary-note">Prix indicatif, hors frais de livraison. Le devis définitif est établi lors du brief.</p>
+              <p class="summary-note">Prix indicatif, hors livraison. Le devis définitif est établi lors du brief.</p>
               <div class="summary-actions">
-                <button class="btn-secondary" style="width: 100%;" disabled>Sauvegarder ma config</button>
-                <a href="https://calendly.com/bang-atelier" target="_blank" rel="noopener noreferrer" class="btn-primary" style="width: 100%; text-align: center; margin-top: 0.5rem;">Réserver un brief</a>
+                <button class="btn-secondary" id="btn-save" style="width:100%">Sauvegarder ma config</button>
+                <a href="https://calendly.com/bang-atelier" target="_blank" rel="noopener noreferrer" class="btn-primary" style="width:100%;text-align:center;margin-top:0.5rem;display:inline-flex;justify-content:center">
+                  Réserver un brief
+                </a>
               </div>
             </div>
           </aside>
+
         </div>
       </div>
     </div>
   </div>
+
+  <div class="modal-overlay" id="save-modal" role="dialog" aria-modal="true" style="display:none">
+    <div class="modal-box">
+      <button class="modal-close" id="modal-close" aria-label="Fermer">×</button>
+      <h2 class="modal-title">Sauvegarder ma config</h2>
+      <p class="modal-desc">Recevez un récapitulatif par email et gardez votre configuration accessible.</p>
+      <input type="email" id="save-email" class="modal-input" placeholder="Votre email…" />
+      <div id="save-status" class="save-status"></div>
+      <button class="btn-primary" id="btn-save-confirm" style="width:100%;margin-top:0.75rem">Enregistrer</button>
+    </div>
+  </div>
 </Base>
 
-<style>
-  .configurateur-page {
-    min-height: 80vh;
+<script define:vars={{ SUPABASE_URL, SUPABASE_KEY }}>
+const STEPS = [
+  { label: 'Cadran',    cats: ['Cadran'],    desc: "Choisissez le cadran qui définira l'identité visuelle de votre montre." },
+  { label: 'Aiguilles', cats: ['Aiguilles'], desc: 'Sélectionnez les aiguilles. Style, luminosité, couleur.' },
+  { label: 'Boîtier',   cats: ['Boîtier'],  desc: 'Le boîtier détermine la taille, le poids et la finition.' },
+  { label: 'Mouvement', cats: ['Mouvement'], desc: 'Le cœur de votre montre. Précision, réserve de marche, fonctions.' },
+  { label: 'Bracelet',  cats: ['Bracelet'],  desc: 'Cuir, acier, caoutchouc — le bracelet change le caractère au poignet.' },
+  { label: 'Signature', cats: [],            desc: 'La touche finale : gravure personnalisée et rotor sur mesure.' },
+];
+
+let allPieces = [];
+let currentStep = 0;
+let selection = new Array(6).fill(null);
+let searchQuery = '';
+
+async function loadPieces() {
+  try {
+    let all = [], from = 0;
+    while (true) {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/pieces?order=ts.desc`, {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Range-Unit': 'items',
+          'Range': `${from}-${from + 999}`,
+        },
+      });
+      if (!r.ok) break;
+      const batch = await r.json();
+      all = all.concat(batch);
+      if (batch.length < 1000) break;
+      from += 1000;
+    }
+    return all;
+  } catch { return []; }
+}
+
+function getPiecesForStep(idx) {
+  const cats = STEPS[idx].cats;
+  if (!cats.length) return [];
+  const q = searchQuery.toLowerCase().trim();
+  return allPieces.filter(p => {
+    if (!cats.includes(p.cat)) return false;
+    if (p.hidden) return false;
+    if (q) return `${p.name||''} ${p.description||''} ${p.cat||''}`.toLowerCase().includes(q);
+    return true;
+  });
+}
+
+function fmt(price) {
+  if (!price || price <= 0) return null;
+  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(price);
+}
+
+function renderGrid() {
+  const grid = document.getElementById('pieces-grid');
+  const sigStep = document.getElementById('signature-step');
+  const searchBar = document.getElementById('search-bar');
+  if (!grid) return;
+
+  if (currentStep === 5) {
+    grid.style.display = 'none';
+    sigStep.style.display = 'block';
+    searchBar.style.display = 'none';
+    return;
   }
+  grid.style.display = '';
+  sigStep.style.display = 'none';
+  searchBar.style.display = '';
+
+  const pieces = getPiecesForStep(currentStep);
+
+  if (!allPieces.length) {
+    grid.innerHTML = `<div class="loading-state"><span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span></div>`;
+    return;
+  }
+  if (!pieces.length) {
+    grid.innerHTML = `<p class="empty-state">Aucune pièce disponible pour cette étape pour le moment.<br><a href="/contact" style="color:var(--gold)">Contactez-nous</a> pour en discuter.</p>`;
+    return;
+  }
+
+  grid.innerHTML = pieces.map(piece => {
+    const sel = selection[currentStep] && String(selection[currentStep].id) === String(piece.id);
+    const price = piece.sell > 0 ? piece.sell : (piece.cost > 0 ? piece.cost : 0);
+    const ref = String(piece.id || '').slice(-4).toUpperCase();
+    return `
+      <article class="piece-card${sel ? ' piece-card--selected' : ''}" data-id="${piece.id}" tabindex="0" role="button" aria-pressed="${sel}">
+        <div class="piece-img">
+          ${piece.img
+            ? `<img src="${piece.img}" alt="${piece.name || ''}" loading="lazy" onerror="this.parentElement.innerHTML='<span class=\\'piece-ph\\'>—</span>'">`
+            : `<span class="piece-ph">—</span>`}
+          ${sel ? '<span class="piece-check-badge">✓</span>' : ''}
+        </div>
+        <div class="piece-body">
+          <p class="piece-ref">réf. ${ref}</p>
+          <p class="piece-name">${piece.name || '—'}</p>
+          ${piece.description ? `<p class="piece-desc">${piece.description}</p>` : ''}
+          <div class="piece-foot">
+            ${fmt(price) ? `<span class="piece-price">${fmt(price)}</span>` : '<span></span>'}
+            <button class="piece-btn${sel ? ' piece-btn--on' : ''}">${sel ? '✓ Sélectionné' : '+ Choisir'}</button>
+          </div>
+        </div>
+      </article>`;
+  }).join('');
+
+  grid.querySelectorAll('.piece-card').forEach(card => {
+    const id = card.dataset.id;
+    const toggle = () => {
+      const piece = allPieces.find(p => String(p.id) === String(id));
+      if (!piece) return;
+      if (selection[currentStep] && String(selection[currentStep].id) === String(id)) {
+        selection[currentStep] = null;
+      } else {
+        const price = piece.sell > 0 ? piece.sell : (piece.cost > 0 ? piece.cost : 0);
+        selection[currentStep] = { id: piece.id, name: piece.name, cat: piece.cat, price };
+      }
+      renderGrid();
+      updateSummary();
+    };
+    card.addEventListener('click', toggle);
+    card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
+  });
+}
+
+function updateSummary() {
+  STEPS.forEach((s, i) => {
+    const el = document.getElementById(`sum-val-${i}`);
+    if (!el) return;
+    if (i === 5) {
+      const gravure = document.getElementById('sig-gravure')?.value?.trim();
+      const rotor = document.querySelector('.rotor-btn--active')?.dataset.rotor || 'standard';
+      el.textContent = gravure ? `${gravure} · rotor ${rotor}` : `Rotor ${rotor}`;
+      el.classList.add('sum-value--set');
+    } else {
+      el.textContent = selection[i] ? selection[i].name : '—';
+      el.classList.toggle('sum-value--set', !!selection[i]);
+    }
+  });
+
+  let total = 320;
+  selection.forEach(s => { if (s && s.price > 0) total += s.price; });
+  const priceEl = document.getElementById('price-display');
+  if (priceEl) priceEl.textContent = `à partir de ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(total)}`;
+
+  const badge = document.getElementById('gamme-badge');
+  if (badge) {
+    const sig = selection.some(s => s && s.price > 150);
+    badge.textContent = sig ? 'Gamme Signature' : 'Gamme Initiale';
+    badge.className = `badge ${sig ? 'badge-signature' : 'badge-initiale'}`;
+  }
+
+  STEPS.forEach((_, i) => {
+    const check = document.querySelector(`[data-check="${i}"]`);
+    if (!check) return;
+    const done = i === 5 ? true : !!selection[i];
+    check.textContent = done ? '✓' : '';
+    check.style.color = done ? 'var(--gold)' : '';
+  });
+}
+
+function goToStep(idx) {
+  currentStep = idx;
+  searchQuery = '';
+  const input = document.getElementById('search-input');
+  if (input) input.value = '';
+
+  document.querySelectorAll('.step-btn').forEach((btn, i) => {
+    btn.classList.toggle('step-btn--active', i === idx);
+    btn.setAttribute('aria-selected', i === idx ? 'true' : 'false');
+  });
+
+  const heading = document.getElementById('step-heading');
+  const descEl = document.getElementById('step-desc');
+  if (heading) heading.textContent = STEPS[idx].label;
+  if (descEl) descEl.textContent = STEPS[idx].desc;
+
+  const prev = document.getElementById('btn-prev');
+  const next = document.getElementById('btn-next');
+  if (prev) prev.style.visibility = idx === 0 ? 'hidden' : 'visible';
+  if (next) next.textContent = idx === 5 ? 'Terminer ✓' : 'Suivant →';
+
+  renderGrid();
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  allPieces = await loadPieces();
+  renderGrid();
+  updateSummary();
+
+  document.getElementById('steps-nav')?.addEventListener('click', e => {
+    const btn = e.target.closest('.step-btn');
+    if (btn) goToStep(parseInt(btn.dataset.step));
+  });
+  document.getElementById('btn-prev')?.addEventListener('click', () => { if (currentStep > 0) goToStep(currentStep - 1); });
+  document.getElementById('btn-next')?.addEventListener('click', () => {
+    if (currentStep < 5) goToStep(currentStep + 1);
+    else document.getElementById('save-modal').style.display = 'flex';
+  });
+  document.getElementById('search-input')?.addEventListener('input', e => { searchQuery = e.target.value; renderGrid(); });
+
+  document.getElementById('rotor-options')?.addEventListener('click', e => {
+    const btn = e.target.closest('.rotor-btn');
+    if (!btn) return;
+    document.querySelectorAll('.rotor-btn').forEach(b => b.classList.remove('rotor-btn--active'));
+    btn.classList.add('rotor-btn--active');
+    updateSummary();
+  });
+  document.getElementById('sig-gravure')?.addEventListener('input', updateSummary);
+
+  document.getElementById('btn-save')?.addEventListener('click', () => { document.getElementById('save-modal').style.display = 'flex'; });
+  document.getElementById('modal-close')?.addEventListener('click', () => { document.getElementById('save-modal').style.display = 'none'; });
+  document.getElementById('save-modal')?.addEventListener('click', e => { if (e.target.id === 'save-modal') document.getElementById('save-modal').style.display = 'none'; });
+
+  document.getElementById('btn-save-confirm')?.addEventListener('click', async () => {
+    const email = document.getElementById('save-email')?.value?.trim();
+    const status = document.getElementById('save-status');
+    if (!email || !email.includes('@')) {
+      status.textContent = 'Adresse email invalide.'; status.className = 'save-status save-status--err'; return;
+    }
+    const btn = document.getElementById('btn-save-confirm');
+    btn.disabled = true; btn.textContent = 'Enregistrement…';
+    const config = Object.fromEntries(STEPS.map((s, i) => [s.label.toLowerCase(), selection[i]?.name || null]));
+    try {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/selections`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Prefer': 'return=minimal' },
+        body: JSON.stringify([{ name: email, pieces_ids: JSON.stringify(config), created_at: new Date().toISOString() }]),
+      });
+      if (r.ok || r.status === 201) {
+        status.textContent = '✓ Configuration sauvegardée !'; status.className = 'save-status save-status--ok';
+        btn.textContent = '✓ Enregistré';
+      } else throw new Error();
+    } catch {
+      status.textContent = 'Erreur — réessayez ou contactez-nous.'; status.className = 'save-status save-status--err';
+      btn.disabled = false; btn.textContent = 'Enregistrer';
+    }
+  });
+});
+</script>
+
+<style>
+  .configurateur-page { min-height: 80vh; }
 
   .conf-header {
     padding-block: 3rem;
     border-bottom: 1px solid rgba(197, 165, 114, 0.15);
     background: var(--noir-surface);
   }
-
   .conf-eyebrow {
     font-family: 'DM Mono', monospace;
     font-size: 0.75rem;
@@ -95,14 +394,9 @@ import BarreRarete from '../components/BarreRarete.astro';
     margin-bottom: 0.5rem;
     max-width: none;
   }
+  .conf-subtitle { color: var(--gris-texte); margin-top: 0.5rem; max-width: 55ch; }
 
-  .conf-subtitle {
-    color: var(--gris-texte);
-    margin-top: 0.5rem;
-    max-width: 55ch;
-  }
-
-  .conf-steps { padding-block: 2rem; }
+  .conf-body { padding-block: 2rem; }
 
   .steps-nav {
     display: flex;
@@ -111,122 +405,197 @@ import BarreRarete from '../components/BarreRarete.astro';
     padding-bottom: 1.5rem;
     border-bottom: 1px solid rgba(197, 165, 114, 0.1);
     margin-bottom: 2rem;
+    scrollbar-width: none;
   }
+  .steps-nav::-webkit-scrollbar { display: none; }
 
   .step-btn {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.25rem;
+    gap: 0.15rem;
     padding: 0.75rem 1rem;
     background: var(--noir-card);
     border: 1px solid rgba(197, 165, 114, 0.15);
     border-radius: 8px;
     cursor: pointer;
     white-space: nowrap;
-    transition: border-color 0.2s ease;
+    transition: border-color 0.2s, background 0.2s;
     flex-shrink: 0;
+    min-width: 78px;
   }
-
-  .step-btn--active {
-    border-color: var(--gold);
-  }
-
-  .step-btn-num {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.65rem;
-    color: var(--gris-muted);
-    letter-spacing: 0.08em;
-  }
-
-  .step-btn-label {
-    font-family: 'League Spartan', sans-serif;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--blanc);
-  }
-
-  .step-btn--active .step-btn-num { color: var(--gold); }
+  .step-btn--active { border-color: var(--gold); background: rgba(197, 165, 114, 0.06); }
+  .step-btn:hover:not(.step-btn--active) { border-color: rgba(197, 165, 114, 0.35); }
+  .step-num { font-family: 'DM Mono', monospace; font-size: 0.65rem; color: var(--gris-muted); letter-spacing: 0.08em; }
+  .step-btn--active .step-num { color: var(--gold); }
+  .step-label { font-family: 'League Spartan', sans-serif; font-size: 0.85rem; font-weight: 600; color: var(--blanc); }
+  .step-check { font-size: 0.7rem; height: 0.75rem; line-height: 1; }
 
   .conf-workspace {
     display: grid;
-    grid-template-columns: 1fr 320px;
+    grid-template-columns: 1fr 300px;
     gap: 2rem;
     align-items: start;
   }
-
   @media (max-width: 900px) {
     .conf-workspace { grid-template-columns: 1fr; }
     .conf-summary { order: -1; }
   }
 
-  .conf-placeholder {
-    background: var(--noir-surface);
-    border: 1px dashed rgba(197, 165, 114, 0.3);
-    border-radius: 12px;
-    padding: 3rem 2rem;
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+  .conf-step-header { margin-bottom: 1.25rem; }
+  .conf-step-header h2 { font-size: 1.3rem; margin-bottom: 0.25rem; }
+  .step-desc { font-size: 0.875rem; color: var(--gris-texte); max-width: 55ch; }
+
+  .search-bar { margin-bottom: 1.25rem; }
+  .search-input {
+    width: 100%;
+    background: var(--noir-card);
+    border: 1px solid rgba(197, 165, 114, 0.2);
+    border-radius: 8px;
+    color: var(--blanc);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.875rem;
+    padding: 0.625rem 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-input:focus { border-color: var(--gold); }
+  .search-input::placeholder { color: var(--gris-muted); }
+
+  .pieces-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
+    gap: 1rem;
+    min-height: 200px;
   }
 
-  .conf-placeholder-text {
-    color: var(--gris-texte);
-    line-height: 1.7;
-    max-width: 40ch;
-  }
-
-  .conf-placeholder-text a { color: var(--gold); }
-
-  .summary-card {
+  .piece-card {
     background: var(--noir-card);
     border: 1px solid rgba(197, 165, 114, 0.15);
-    border-radius: 12px;
-    padding: 1.5rem;
-    position: sticky;
-    top: 80px;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.15s;
+    outline: none;
   }
+  .piece-card:hover, .piece-card:focus-visible { border-color: rgba(197, 165, 114, 0.4); }
+  .piece-card--selected { border-color: var(--gold); background: rgba(197, 165, 114, 0.05); }
+  .piece-card:active { transform: scale(0.99); }
 
-  .summary-title {
-    font-size: 1rem;
-    margin-bottom: 1rem;
-    color: var(--blanc);
-  }
-
-  .summary-badge { margin-bottom: 1rem; }
-
-  .summary-price {
+  .piece-img {
+    position: relative;
+    aspect-ratio: 1;
+    background: var(--noir-surface);
     display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    padding: 1rem 0;
-    border-top: 1px solid rgba(197, 165, 114, 0.1);
-    border-bottom: 1px solid rgba(197, 165, 114, 0.1);
-    margin-bottom: 1rem;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .piece-img img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
+  .piece-card:hover .piece-img img { transform: scale(1.04); }
+  .piece-ph { font-family: 'DM Mono', monospace; font-size: 1.5rem; color: var(--gris-muted); }
+  .piece-check-badge {
+    position: absolute;
+    top: 0.5rem; right: 0.5rem;
+    background: var(--gold); color: var(--noir);
+    font-size: 0.7rem; font-weight: 700;
+    width: 1.4rem; height: 1.4rem;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
   }
 
-  .price-label {
-    font-family: 'DM Mono', monospace;
-    font-size: 0.65rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--gris-muted);
+  .piece-body { padding: 0.875rem; }
+  .piece-ref { font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 0.1em; color: var(--gris-muted); margin-bottom: 0.2rem; max-width: none; }
+  .piece-name { font-family: 'League Spartan', sans-serif; font-size: 0.9rem; font-weight: 600; color: var(--blanc); margin-bottom: 0.3rem; line-height: 1.3; }
+  .piece-desc {
+    font-size: 0.78rem; color: var(--gris-texte); margin-bottom: 0.6rem; max-width: none;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
   }
-
-  .price-val {
-    font-family: 'League Spartan', sans-serif;
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: var(--gold);
+  .piece-foot { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; }
+  .piece-price { font-family: 'DM Mono', monospace; font-size: 0.8rem; color: var(--gold); }
+  .piece-btn {
+    font-family: 'League Spartan', sans-serif; font-size: 0.75rem; font-weight: 600;
+    color: var(--gold); background: transparent;
+    border: 1px solid rgba(197, 165, 114, 0.3);
+    border-radius: 4px; padding: 0.25rem 0.6rem;
+    cursor: pointer; transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
   }
+  .piece-btn:hover { background: rgba(197, 165, 114, 0.1); }
+  .piece-btn--on { background: var(--gold); color: var(--noir); border-color: var(--gold); }
+  .piece-btn--on:hover { background: var(--gold-dark); border-color: var(--gold-dark); }
 
-  .summary-note {
-    font-size: 0.75rem;
-    color: var(--gris-muted);
-    margin-bottom: 1.5rem;
-    max-width: none;
+  .loading-state { grid-column: 1/-1; display: flex; justify-content: center; gap: 0.5rem; padding: 3rem; }
+  .loading-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); animation: blink 1.2s ease-in-out infinite; }
+  .loading-dot:nth-child(2) { animation-delay: 0.2s; }
+  .loading-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes blink { 0%, 100% { opacity: 0.2; } 50% { opacity: 1; } }
+
+  .empty-state { grid-column: 1/-1; text-align: center; color: var(--gris-muted); font-size: 0.9rem; padding: 3rem; line-height: 1.8; }
+
+  .signature-step { padding-top: 0.5rem; }
+  .sig-group { margin-bottom: 2rem; }
+  .sig-label { display: block; font-family: 'League Spartan', sans-serif; font-size: 0.9rem; font-weight: 600; color: var(--blanc); margin-bottom: 0.75rem; }
+  .sig-input {
+    width: 100%; max-width: 420px;
+    background: var(--noir-card); border: 1px solid rgba(197, 165, 114, 0.2);
+    border-radius: 8px; color: var(--blanc);
+    font-family: 'Inter', sans-serif; font-size: 0.9rem;
+    padding: 0.75rem 1rem; outline: none; transition: border-color 0.2s;
   }
+  .sig-input:focus { border-color: var(--gold); }
+  .sig-input::placeholder { color: var(--gris-muted); }
+  .sig-hint { font-size: 0.75rem; color: var(--gris-muted); margin-top: 0.375rem; }
+  .rotor-options { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .rotor-btn {
+    padding: 0.5rem 1.25rem;
+    background: var(--noir-card); border: 1px solid rgba(197, 165, 114, 0.2);
+    border-radius: 8px; color: var(--gris-texte);
+    font-family: 'League Spartan', sans-serif; font-size: 0.875rem; font-weight: 600;
+    cursor: pointer; transition: border-color 0.2s, color 0.2s;
+  }
+  .rotor-btn:hover { border-color: rgba(197, 165, 114, 0.4); color: var(--blanc); }
+  .rotor-btn--active { border-color: var(--gold); color: var(--gold); }
 
+  .step-nav-btns { display: flex; justify-content: space-between; margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid rgba(197, 165, 114, 0.1); }
+  .btn-step { font-family: 'League Spartan', sans-serif; font-size: 0.875rem; font-weight: 600; letter-spacing: 0.04em; padding: 0.625rem 1.5rem; border-radius: 8px; cursor: pointer; transition: background 0.2s, color 0.2s; }
+  .btn-prev { background: transparent; border: 1px solid rgba(197, 165, 114, 0.25); color: var(--gris-texte); }
+  .btn-prev:hover { border-color: var(--gold); color: var(--gold); }
+  .btn-next { background: var(--gold); border: 2px solid var(--gold); color: var(--noir); }
+  .btn-next:hover { background: var(--gold-dark); border-color: var(--gold-dark); }
+
+  .summary-card {
+    background: var(--noir-card); border: 1px solid rgba(197, 165, 114, 0.2);
+    border-radius: 12px; padding: 1.5rem; position: sticky; top: 80px;
+  }
+  .summary-title { font-size: 1rem; margin-bottom: 1rem; color: var(--blanc); }
+  .summary-gamme { margin-bottom: 1rem; }
+  .badge-signature { display: inline-block; font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; background: var(--gold-dark); color: var(--blanc); padding: 0.2rem 0.6rem; border-radius: 4px; }
+
+  .summary-list { margin-bottom: 1rem; display: flex; flex-direction: column; }
+  .summary-item { display: flex; justify-content: space-between; align-items: baseline; gap: 0.5rem; padding: 0.45rem 0; border-bottom: 1px solid rgba(197, 165, 114, 0.08); }
+  .sum-step { font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gris-muted); flex-shrink: 0; }
+  .sum-value { color: var(--gris-muted); text-align: right; font-size: 0.78rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 140px; }
+  .sum-value--set { color: var(--blanc); }
+
+  .summary-price { display: flex; flex-direction: column; gap: 0.25rem; padding: 1rem 0; border-top: 1px solid rgba(197, 165, 114, 0.1); border-bottom: 1px solid rgba(197, 165, 114, 0.1); margin-bottom: 1rem; }
+  .price-label { font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--gris-muted); }
+  .price-val { font-family: 'League Spartan', sans-serif; font-size: 1.6rem; font-weight: 700; color: var(--gold); }
+  .summary-note { font-size: 0.72rem; color: var(--gris-muted); margin-bottom: 1.25rem; max-width: none; line-height: 1.5; }
   .summary-actions { display: flex; flex-direction: column; }
+
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(4px); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 1.5rem; }
+  .modal-box { background: var(--noir-surface); border: 1px solid rgba(197, 165, 114, 0.25); border-radius: 12px; padding: 2rem; width: 100%; max-width: 420px; position: relative; }
+  .modal-close { position: absolute; top: 1rem; right: 1rem; background: none; border: none; color: var(--gris-muted); font-size: 1.5rem; cursor: pointer; line-height: 1; padding: 0.25rem; }
+  .modal-close:hover { color: var(--blanc); }
+  .modal-title { font-size: 1.15rem; margin-bottom: 0.5rem; color: var(--blanc); }
+  .modal-desc { font-size: 0.875rem; color: var(--gris-texte); margin-bottom: 1.25rem; max-width: none; }
+  .modal-input { width: 100%; background: var(--noir-card); border: 1px solid rgba(197, 165, 114, 0.2); border-radius: 8px; color: var(--blanc); font-family: 'Inter', sans-serif; font-size: 0.9rem; padding: 0.75rem 1rem; outline: none; transition: border-color 0.2s; }
+  .modal-input:focus { border-color: var(--gold); }
+  .modal-input::placeholder { color: var(--gris-muted); }
+  .save-status { font-size: 0.8rem; margin-top: 0.5rem; min-height: 1.2rem; }
+  .save-status--ok { color: var(--accent-success); }
+  .save-status--err { color: var(--accent-error); }
+
+  @media (prefers-reduced-motion: reduce) { .loading-dot { animation: none; opacity: 0.6; } }
 </style>
