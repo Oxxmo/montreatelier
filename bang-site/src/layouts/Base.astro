@@ -1,0 +1,84 @@
+---
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description: string;
+  ogImage?: string;
+}
+
+const { title, description, ogImage } = Astro.props;
+const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+const ogImageURL = ogImage
+  ? new URL(ogImage, Astro.site).toString()
+  : new URL('/images/ui/og-default.jpg', Astro.site).toString();
+
+const isHomepage = Astro.url.pathname === '/';
+
+const localBusinessSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'LocalBusiness',
+  name: 'bang.',
+  description: 'Atelier de montres automatiques sur mesure',
+  url: 'https://atelier-bang.com',
+  image: ogImageURL,
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: 'Dissay',
+    addressLocality: 'Dissay',
+    postalCode: '86130',
+    addressRegion: 'Vienne',
+    addressCountry: 'FR',
+  },
+  priceRange: '320€ - 1500€+',
+  openingHours: ['Mo-Fr'],
+};
+---
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+
+    <!-- Canonical -->
+    <link rel="canonical" href={canonicalURL.toString()} />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={ogImageURL} />
+    <meta property="og:url" content={canonicalURL.toString()} />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="bang." />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageURL} />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!-- Google Fonts Preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <!-- JSON-LD LocalBusiness (homepage only) -->
+    {isHomepage && (
+      <script type="application/ld+json" set:html={JSON.stringify(localBusinessSchema)} />
+    )}
+  </head>
+  <body>
+    <Header />
+    <main>
+      <slot />
+    </main>
+    <Footer />
+  </body>
+</html>

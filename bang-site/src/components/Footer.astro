@@ -1,0 +1,155 @@
+---
+---
+
+<footer class="site-footer">
+  <div class="container footer-inner">
+    <div class="footer-col footer-brand">
+      <a href="/" class="footer-logo" aria-label="bang. — retour à l'accueil">bang.</a>
+      <p class="footer-baseline">Montres automatiques sur mesure.<br />Assemblées à la main, à Dissay (86).</p>
+      <a
+        href="https://instagram.com/atelier.bang"
+        class="footer-instagram"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="bang. sur Instagram"
+      >
+        @atelier.bang
+      </a>
+    </div>
+
+    <div class="footer-col">
+      <h3 class="footer-heading">Explorer</h3>
+      <ul class="footer-links">
+        <li><a href="/passeport">Passeport</a></li>
+        <li><a href="/faq">FAQ</a></li>
+        <li><a href="/realisations">Réalisations</a></li>
+        <li><a href="/journal">Le Journal</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-col">
+      <h3 class="footer-heading">Contact</h3>
+      <ul class="footer-links">
+        <li><a href="mailto:contact@atelier-bang.com">contact@atelier-bang.com</a></li>
+        <li><span>Dissay, Vienne (86), France</span></li>
+        <li>
+          <a href="https://calendly.com/bang-atelier" target="_blank" rel="noopener noreferrer">
+            Réserver un brief
+          </a>
+        </li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer-legal">
+    <div class="container footer-legal-inner">
+      <span>© 2024–2026 bang. Tous droits réservés.</span>
+      <nav aria-label="Liens légaux">
+        <a href="/mentions-legales">Mentions légales</a>
+        <a href="/cgv">CGV</a>
+        <a href="/confidentialite">Confidentialité</a>
+      </nav>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    border-top: 1px solid rgba(197, 165, 114, 0.15);
+    background-color: var(--noir-surface);
+    margin-top: auto;
+  }
+
+  .footer-inner {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 3rem;
+    padding-block: 3rem;
+  }
+
+  @media (max-width: 768px) {
+    .footer-inner {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+  }
+
+  .footer-logo {
+    font-family: 'League Spartan', sans-serif;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: -0.02em;
+    display: inline-block;
+    margin-bottom: 0.75rem;
+  }
+
+  .footer-baseline {
+    font-size: 0.875rem;
+    color: var(--gris-texte);
+    line-height: 1.5;
+    margin-bottom: 1rem;
+    max-width: none;
+  }
+
+  .footer-instagram {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--gold);
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+  }
+
+  .footer-instagram:hover { opacity: 1; }
+
+  .footer-heading {
+    font-family: 'League Spartan', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--gris-muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+
+  .footer-links {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .footer-links a,
+  .footer-links span {
+    font-size: 0.875rem;
+    color: var(--gris-texte);
+    transition: color 0.2s ease;
+  }
+
+  .footer-links a:hover { color: var(--gold); }
+
+  .footer-legal {
+    border-top: 1px solid rgba(197, 165, 114, 0.1);
+    padding-block: 1.25rem;
+  }
+
+  .footer-legal-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .footer-legal span,
+  .footer-legal a {
+    font-size: 0.8rem;
+    color: var(--gris-muted);
+  }
+
+  .footer-legal nav {
+    display: flex;
+    gap: 1.5rem;
+  }
+
+  .footer-legal a:hover { color: var(--gold); }
+</style>

@@ -1,0 +1,130 @@
+---
+import Base from '../../layouts/Base.astro';
+import SectionJournal from '../../components/SectionJournal.astro';
+import CtaPersistant from '../../components/CtaPersistant.astro';
+import { getCollection } from 'astro:content';
+
+const allArticles = await getCollection('journal');
+const sorted = allArticles.sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
+
+const catParam = Astro.url.searchParams.get('cat');
+const filtered = catParam ? sorted.filter((a) => a.data.category === catParam) : sorted;
+
+const categories = [
+  { slug: 'culture', label: 'Culture' },
+  { slug: 'style', label: 'Style' },
+  { slug: 'atelier', label: 'Atelier' },
+  { slug: 'mecanique', label: 'Mécanique' },
+];
+---
+
+<Base
+  title="Le Journal — bang. atelier de montres uniques"
+  description="Horlogerie, culture, style et vie d'atelier. Le journal de bang. pour les passionnés de montres et de belles choses."
+>
+  <section class="page-hero">
+    <div class="container">
+      <p class="eyebrow">2.1K+ lecteurs mensuels</p>
+      <h1>Le Journal</h1>
+      <p class="page-desc">Horlogerie, culture, style, vie d'atelier. Des textes lents pour un monde qui va vite.</p>
+    </div>
+  </section>
+
+  <section class="section-padding">
+    <div class="container">
+      <nav class="cat-filters" aria-label="Filtrer par catégorie">
+        <a href="/journal" class={`cat-btn ${!catParam ? 'cat-btn--active' : ''}`}>Tous</a>
+        {categories.map((c) => (
+          <a href={`/journal?cat=${c.slug}`} class={`cat-btn ${catParam === c.slug ? 'cat-btn--active' : ''}`}>{c.label}</a>
+        ))}
+      </nav>
+
+      {filtered.length > 0 ? (
+        <div class="journal-grid">
+          {filtered.map((a) => (
+            <SectionJournal
+              image={a.data.image}
+              category={a.data.category}
+              title={a.data.title}
+              excerpt={a.data.description}
+              date={a.data.date}
+              readingTime={a.data.readingTime}
+              href={`/journal/${a.id}`}
+            />
+          ))}
+        </div>
+      ) : (
+        <p class="empty-state">Aucun article dans cette catégorie pour le moment.</p>
+      )}
+    </div>
+  </section>
+
+  <CtaPersistant />
+</Base>
+
+<style>
+  .page-hero {
+    padding-block: 4rem;
+    border-bottom: 1px solid rgba(197, 165, 114, 0.15);
+    background: var(--noir-surface);
+  }
+
+  .eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0.75rem;
+    max-width: none;
+  }
+
+  .page-desc {
+    color: var(--gris-texte);
+    margin-top: 0.75rem;
+    max-width: 55ch;
+  }
+
+  .cat-filters {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 2.5rem;
+  }
+
+  .cat-btn {
+    padding: 0.4rem 1rem;
+    border-radius: 999px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border: 1px solid rgba(197, 165, 114, 0.2);
+    color: var(--gris-texte);
+    background: transparent;
+    transition: all 0.2s ease;
+    text-decoration: none;
+  }
+
+  .cat-btn:hover, .cat-btn--active {
+    border-color: var(--gold);
+    color: var(--gold);
+    background: rgba(197, 165, 114, 0.08);
+  }
+
+  .journal-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+  }
+
+  @media (max-width: 900px) { .journal-grid { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 580px) { .journal-grid { grid-template-columns: 1fr; } }
+
+  .empty-state {
+    color: var(--gris-muted);
+    text-align: center;
+    padding: 3rem;
+    max-width: none;
+  }
+</style>

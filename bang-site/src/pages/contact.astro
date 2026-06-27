@@ -1,0 +1,164 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base
+  title="Contact — bang. atelier de montres uniques"
+  description="Démarrez votre projet montre avec bang. Formulaire de brief ou réservation d'un créneau Calendly de 30 minutes avec Scott."
+>
+  <section class="page-hero">
+    <div class="container">
+      <p class="eyebrow">Parlons-nous</p>
+      <h1>Contact</h1>
+      <p class="page-desc">Un projet, une question, une envie de pièce unique ? Décrivez-nous votre idée — on s'occupe du reste.</p>
+    </div>
+  </section>
+
+  <section class="section-padding">
+    <div class="container contact-wrapper">
+      <div class="contact-form-col">
+        <h2>Formulaire de brief</h2>
+        <p>Décrivez votre projet en quelques lignes. Plus vous êtes précis, mieux nous pourrons préparer notre échange.</p>
+        <form class="contact-form" action="#" method="post" novalidate>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="c-nom">Nom</label>
+              <input type="text" id="c-nom" name="nom" placeholder="Votre nom" autocomplete="family-name" required />
+            </div>
+            <div class="form-group">
+              <label for="c-prenom">Prénom</label>
+              <input type="text" id="c-prenom" name="prenom" placeholder="Votre prénom" autocomplete="given-name" required />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="c-email">Email</label>
+            <input type="email" id="c-email" name="email" placeholder="votre@email.com" autocomplete="email" required />
+          </div>
+          <div class="form-group">
+            <label for="c-projet">Type de projet</label>
+            <select id="c-projet" name="projet" required>
+              <option value="" disabled selected>Choisissez un type</option>
+              <option value="initiale">Gamme Initiale (à partir de 320 €)</option>
+              <option value="signature">Gamme Signature (à partir de 520 €)</option>
+              <option value="cadeau">Cadeau / occasion spéciale</option>
+              <option value="autre">Autre / je ne sais pas encore</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="c-vision">Votre vision</label>
+            <textarea id="c-vision" name="vision" rows="5" placeholder="Décrivez votre idée, vos inspirations, l'occasion, ce que vous voulez ressentir en portant cette montre…" required></textarea>
+          </div>
+          <button type="submit" class="btn-primary">Envoyer mon brief</button>
+        </form>
+      </div>
+
+      <aside class="contact-aside">
+        <div class="aside-card">
+          <h3>Réserver un brief direct</h3>
+          <p>Préférez un échange en 30 minutes ? Choisissez un créneau qui vous convient.</p>
+          <a href="https://calendly.com/bang-atelier" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="width: 100%; justify-content: center; margin-top: 1rem;">Réserver sur Calendly</a>
+        </div>
+        <div class="aside-card">
+          <h3>Email direct</h3>
+          <p><a href="mailto:contact@atelier-bang.com" class="text-gold">contact@atelier-bang.com</a></p>
+        </div>
+        <div class="aside-card">
+          <h3>Atelier</h3>
+          <p>Dissay, Vienne (86), France</p>
+          <p class="text-muted" style="font-size: 0.8rem; margin-top: 0.25rem;">Visites sur rendez-vous uniquement.</p>
+        </div>
+      </aside>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .page-hero {
+    padding-block: 4rem;
+    border-bottom: 1px solid rgba(197, 165, 114, 0.15);
+    background: var(--noir-surface);
+  }
+
+  .eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0.75rem;
+    max-width: none;
+  }
+
+  .page-desc { color: var(--gris-texte); margin-top: 0.75rem; max-width: 55ch; }
+
+  .contact-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 3rem;
+    align-items: start;
+  }
+
+  @media (max-width: 900px) {
+    .contact-wrapper { grid-template-columns: 1fr; }
+    .contact-aside { order: -1; }
+  }
+
+  .contact-form-col h2 { margin-bottom: 0.5rem; }
+  .contact-form-col > p { color: var(--gris-texte); margin-bottom: 2rem; }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  @media (max-width: 500px) { .form-row { grid-template-columns: 1fr; } }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-bottom: 1rem;
+  }
+
+  label { font-size: 0.875rem; font-weight: 500; color: var(--blanc); }
+
+  input, select, textarea {
+    background: var(--noir-card);
+    border: 1px solid rgba(197, 165, 114, 0.2);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    color: var(--blanc);
+    font-size: 0.9375rem;
+    transition: border-color 0.2s ease;
+    width: 100%;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--gold);
+  }
+
+  input::placeholder, textarea::placeholder { color: var(--gris-muted); }
+  select option { background: var(--noir-card); }
+
+  textarea { resize: vertical; min-height: 120px; }
+
+  .contact-aside {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    position: sticky;
+    top: 80px;
+  }
+
+  .aside-card {
+    background: var(--noir-card);
+    border: 1px solid rgba(197, 165, 114, 0.15);
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+
+  .aside-card h3 { font-size: 0.95rem; margin-bottom: 0.5rem; }
+  .aside-card p { font-size: 0.875rem; color: var(--gris-texte); max-width: none; }
+</style>

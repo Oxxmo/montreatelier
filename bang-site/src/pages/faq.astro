@@ -1,0 +1,87 @@
+---
+import Base from '../layouts/Base.astro';
+import Accordeon from '../components/Accordeon.astro';
+import CtaPersistant from '../components/CtaPersistant.astro';
+
+const faqs = [
+  {
+    question: "Quel est le délai de fabrication d'une montre bang. ?",
+    answer: "Entre 4 et 8 semaines à compter de la validation du brief et du règlement de l'acompte. Ce délai inclut l'approvisionnement des composants, l'assemblage et les contrôles qualité. Nous préférons prendre le temps nécessaire plutôt que de livrer une pièce précipitée.",
+  },
+  {
+    question: "Quelle est la différence entre la gamme Initiale et la gamme Signature ?",
+    answer: "La gamme <strong>Initiale</strong> (à partir de 320 €) propose des mouvements Seiko NH3x, des cadrans en mat ou texturés, et un niveau de personnalisation complet sur la gravure du rotor. La gamme <strong>Signature</strong> (à partir de 520 €) ouvre l'accès aux matières nobles : cadrans météorite ou pierres semi-précieuses, boîtiers en carbone forgé, finitions plus complexes. Les deux gammes offrent une qualité d'assemblage identique.",
+  },
+  {
+    question: "Puis-je porter ma montre tous les jours ?",
+    answer: "Oui. Les calibres Seiko NH35/NH34 sont conçus pour l'usage quotidien. L'étanchéité minimum est de 5 ATM (50m), suffisante pour une utilisation sous la douche ou en natation. Les montres Signature peuvent atteindre 10 ATM ou plus selon la configuration. Il est conseillé d'éviter les sports nautiques intensifs avec un bracelet cuir.",
+  },
+  {
+    question: "Qu'est-ce que le Passeport digital bang. ?",
+    answer: "C'est le certificat d'identité numérique de votre montre : fiche technique complète, numéro de série unique, date d'assemblage, données de réglage timegrapher et photos d'atelier. Il prouve l'authenticité et la traçabilité de la pièce, et simplifie toute révision ou transmission future.",
+  },
+  {
+    question: "Proposez-vous des révisions ou réparations après-vente ?",
+    answer: "Oui. Toute montre bang. peut être renvoyée à l'atelier pour révision (nettoyage et huilage du mouvement) tous les 5 à 7 ans. Les révisions sont facturées au coût réel. La garantie de 2 ans couvre les défauts d'assemblage — pas l'usure normale, les chocs ou les dommages par immersion au-delà des limites d'étanchéité.",
+  },
+  {
+    question: "Puis-je offrir une montre bang. en cadeau ?",
+    answer: "Absolument. Nous proposons une option cadeau : le brief se fait avec l'acheteur, la livraison se fait au destinataire avec un message personnalisé. Le Passeport digital est établi au nom du destinataire. Contactez-nous pour organiser la surprise.",
+  },
+  {
+    question: "Quels matériaux utilisez-vous pour les boîtiers ?",
+    answer: "Principalement de l'acier inoxydable 316L, reconnu pour sa résistance à la corrosion et sa durabilité. La gamme Signature peut également inclure du carbone forgé (léger et unique visuellement) ou des finitions PVD noir. Nous ne divulguons pas la liste de nos fournisseurs.",
+  },
+  {
+    question: "Comment fonctionne le Club bang. ?",
+    answer: "Le Club est un programme d'inscription gratuit. Les membres reçoivent un accès prioritaire aux nouveaux créneaux de commande (avant le grand public), un tarif membre de 5 % sur les nouvelles commandes, et des contenus exclusifs sur la vie de l'atelier. L'inscription se fait via la page <a href='/club'>Le Club</a>.",
+  },
+  {
+    question: "Puis-je visiter l'atelier ?",
+    answer: "Les visites sont possibles sur rendez-vous uniquement, pour les clients en cours de fabrication. L'atelier est un espace de travail actif, pas une boutique ouverte au public. Contactez-nous par email pour en discuter.",
+  },
+];
+---
+
+<Base
+  title="FAQ — bang. atelier de montres uniques"
+  description="Toutes vos questions sur les montres bang. : délais, gammes, garantie, passeport digital, Club, matériaux et tarifs."
+>
+  <section class="page-hero">
+    <div class="container">
+      <p class="eyebrow">Questions fréquentes</p>
+      <h1>FAQ</h1>
+      <p class="page-desc">Les réponses aux questions que nous recevons le plus souvent. Si la vôtre n'est pas là, <a href="/contact" class="text-gold">écrivez-nous</a>.</p>
+    </div>
+  </section>
+
+  <section class="section-padding">
+    <div class="container faq-wrapper">
+      <Accordeon items={faqs} />
+    </div>
+  </section>
+
+  <CtaPersistant />
+</Base>
+
+<style>
+  .page-hero {
+    padding-block: 4rem;
+    border-bottom: 1px solid rgba(197, 165, 114, 0.15);
+    background: var(--noir-surface);
+  }
+
+  .eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0.75rem;
+    max-width: none;
+  }
+
+  .page-desc { color: var(--gris-texte); margin-top: 0.75rem; max-width: 55ch; }
+
+  .faq-wrapper { max-width: 780px; }
+</style>

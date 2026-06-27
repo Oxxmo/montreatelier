@@ -1,0 +1,103 @@
+---
+import Base from '../layouts/Base.astro';
+import CarteMontre from '../components/CarteMontre.astro';
+import CtaPersistant from '../components/CtaPersistant.astro';
+import { getCollection } from 'astro:content';
+
+const realisations = await getCollection('realisations');
+---
+
+<Base
+  title="Réalisations — bang. atelier de montres uniques"
+  description="Portfolio des montres sur mesure livrées par bang. Chaque pièce raconte une histoire. Découvrez le Trio Zanzibar, La Plongeuse, L'Œil du Tigre et d'autres créations."
+>
+  <section class="page-hero">
+    <div class="container">
+      <p class="eyebrow">77+ créations livrées</p>
+      <h1>Réalisations</h1>
+      <p class="page-desc">Chaque montre ici a été portée pour la première fois par son propriétaire. Ce n'est pas un catalogue — c'est un palmarès.</p>
+    </div>
+  </section>
+
+  <section class="section-padding">
+    <div class="container">
+      <div class="realisations-grid">
+        {realisations.map((r) => (
+          <CarteMontre
+            name={r.data.name}
+            ref={r.data.ref}
+            gamme={r.data.gamme}
+            image={r.data.images[0]}
+            mouvement={r.data.specs.mouvement}
+            href={`/realisations/${r.id}`}
+          />
+        ))}
+      </div>
+
+      <div class="callout">
+        <p>Ces fiches ne représentent qu'une partie des créations livrées. Chaque commande donne naissance à une pièce unique — non reproduite, jamais revendue.</p>
+        <a href="/configurer" class="btn-primary">Configurer la vôtre</a>
+      </div>
+    </div>
+  </section>
+
+  <CtaPersistant />
+</Base>
+
+<style>
+  .page-hero {
+    padding-block: 4rem;
+    border-bottom: 1px solid rgba(197, 165, 114, 0.15);
+    background: var(--noir-surface);
+  }
+
+  .eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0.75rem;
+    max-width: none;
+  }
+
+  .page-desc {
+    color: var(--gris-texte);
+    margin-top: 0.75rem;
+    max-width: 55ch;
+  }
+
+  .realisations-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+  }
+
+  @media (max-width: 900px) {
+    .realisations-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 580px) {
+    .realisations-grid { grid-template-columns: 1fr; }
+  }
+
+  .callout {
+    background: var(--noir-surface);
+    border: 1px solid rgba(197, 165, 114, 0.15);
+    border-radius: 12px;
+    padding: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .callout p {
+    color: var(--gris-texte);
+    font-size: 0.9375rem;
+    max-width: 55ch;
+    margin: 0;
+  }
+</style>

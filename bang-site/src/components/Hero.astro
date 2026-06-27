@@ -1,0 +1,69 @@
+---
+interface Props {
+  title: string;
+  subtitle?: string;
+  cta1?: { text: string; href: string };
+  cta2?: { text: string; href: string };
+  eyebrow?: string;
+}
+
+const { title, subtitle, cta1, cta2, eyebrow } = Astro.props;
+---
+
+<section class="hero">
+  <div class="container hero-inner">
+    {eyebrow && <p class="hero-eyebrow">{eyebrow}</p>}
+    <h1 class="hero-title" set:html={title} />
+    {subtitle && <p class="hero-subtitle">{subtitle}</p>}
+    {(cta1 || cta2) && (
+      <div class="hero-ctas">
+        {cta1 && <a href={cta1.href} class="btn-primary">{cta1.text}</a>}
+        {cta2 && <a href={cta2.href} class="btn-secondary">{cta2.text}</a>}
+      </div>
+    )}
+  </div>
+</section>
+
+<style>
+  .hero {
+    padding-block: clamp(4rem, 12vw, 8rem);
+    background-color: var(--noir);
+    border-bottom: 1px solid rgba(197, 165, 114, 0.1);
+  }
+
+  .hero-inner {
+    max-width: 800px;
+  }
+
+  .hero-eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 1.5rem;
+    max-width: none;
+  }
+
+  .hero-title {
+    font-size: clamp(2.4rem, 6vw, 4.5rem);
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--blanc);
+    margin-bottom: 1.5rem;
+  }
+
+  .hero-subtitle {
+    font-size: clamp(1rem, 2vw, 1.2rem);
+    color: var(--gris-texte);
+    line-height: 1.7;
+    margin-bottom: 2.5rem;
+    max-width: 55ch;
+  }
+
+  .hero-ctas {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+</style>

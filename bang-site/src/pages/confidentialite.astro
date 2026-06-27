@@ -1,0 +1,44 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base
+  title="Politique de confidentialité — bang."
+  description="Politique de confidentialité et protection des données personnelles de l'atelier bang. Conforme au RGPD."
+>
+  <section class="page-hero">
+    <div class="container">
+      <h1 class="page-title">Politique de confidentialité</h1>
+    </div>
+  </section>
+  <section class="section-padding">
+    <div class="container legal-content">
+      <h2>Responsable du traitement</h2>
+      <p>Scott [Nom à compléter] — Dissay 86130 France. Contact DPO : <a href="mailto:contact@atelier-bang.com" class="text-gold">contact@atelier-bang.com</a></p>
+      <h2>Données collectées</h2>
+      <p>Nom, prénom, email — transmis volontairement via nos formulaires. Aucune donnée bancaire stockée sur nos serveurs.</p>
+      <h2>Base légale</h2>
+      <p>Exécution d'un contrat, consentement explicite (Club/newsletter), intérêt légitime (amélioration du service).</p>
+      <h2>Conservation</h2>
+      <p>Données de commande : 10 ans (obligation légale). Données de contact : 3 ans. Données Club : jusqu'à désinscription.</p>
+      <h2>Vos droits</h2>
+      <p>Accès, rectification, effacement, portabilité, opposition. Exercez vos droits via <a href="mailto:contact@atelier-bang.com" class="text-gold">contact@atelier-bang.com</a>. Réclamation possible auprès de la <a href="https://www.cnil.fr" target="_blank" rel="noopener noreferrer" class="text-gold">CNIL</a>.</p>
+      <h2>Hébergement et transfert hors UE</h2>
+      <p>Site hébergé par Vercel Inc. (USA, Data Privacy Framework EU–US). Base de données Supabase hébergée en Europe (eu-west).</p>
+      <h2>Cookies</h2>
+      <p>Ce site n'utilise pas de cookies de traçage tiers. Seuls des cookies techniques strictement nécessaires peuvent être déposés.</p>
+      <p class="legal-update">Dernière mise à jour : juin 2026</p>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .page-hero {
+    padding-block: 4rem;
+    border-bottom: 1px solid rgba(197, 165, 114, 0.15);
+    background: var(--noir-surface);
+  }
+  .page-title { text-transform: capitalize; }
+  .legal-content { max-width: 680px; }
+  .legal-content p { color: var(--gris-texte); margin-bottom: 1rem; }
+</style>

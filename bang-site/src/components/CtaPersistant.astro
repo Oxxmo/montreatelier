@@ -1,0 +1,78 @@
+---
+const pathname = Astro.url.pathname;
+const hidden = pathname === '/configurer' || pathname === '/configurer/';
+---
+
+{!hidden && (
+  <div class="cta-persistant" id="cta-persistant" aria-label="Actions rapides">
+    <div class="container cta-inner">
+      <a href="/configurer" class="btn-primary">Configurer ma montre</a>
+      <a
+        href="https://calendly.com/bang-atelier"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="btn-secondary"
+      >
+        Réserver un brief
+      </a>
+    </div>
+  </div>
+)}
+
+<script>
+  const cta = document.getElementById('cta-persistant');
+  if (cta) {
+    let lastScrollY = window.scrollY;
+
+    window.addEventListener('scroll', () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY < 200) {
+        cta.classList.remove('cta-visible');
+      } else if (currentScrollY > lastScrollY) {
+        cta.classList.add('cta-visible');
+      } else {
+        cta.classList.remove('cta-visible');
+      }
+      lastScrollY = currentScrollY;
+    }, { passive: true });
+  }
+</script>
+
+<style>
+  .cta-persistant {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 90;
+    background: rgba(10, 10, 10, 0.95);
+    border-top: 1px solid rgba(197, 165, 114, 0.2);
+    backdrop-filter: blur(8px);
+    transform: translateY(100%);
+    transition: transform 0.3s ease;
+  }
+
+  .cta-persistant.cta-visible {
+    transform: translateY(0);
+  }
+
+  .cta-inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding-block: 0.875rem;
+  }
+
+  @media (max-width: 480px) {
+    .cta-inner {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .btn-primary, .btn-secondary {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+</style>

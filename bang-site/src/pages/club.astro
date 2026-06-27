@@ -1,0 +1,172 @@
+---
+import Base from '../layouts/Base.astro';
+import CtaPersistant from '../components/CtaPersistant.astro';
+---
+
+<Base
+  title="Le Club — bang. atelier de montres uniques"
+  description="Rejoignez le Club bang. : accès prioritaire aux créneaux, tarifs membres, contenus exclusifs sur l'atelier et les nouvelles pièces en cours."
+>
+  <section class="page-hero">
+    <div class="container">
+      <p class="eyebrow">Programme fidélité</p>
+      <h1>Le Club bang.</h1>
+      <p class="page-desc">Pour ceux qui reviennent. Et pour ceux qui veulent toujours être les premiers informés.</p>
+    </div>
+  </section>
+
+  <section class="section-avantages section-padding">
+    <div class="container">
+      <h2>Pourquoi rejoindre le Club</h2>
+      <div class="avantages-grid">
+        <div class="avantage-card">
+          <span class="avantage-icon">◆</span>
+          <h3>Accès prioritaire</h3>
+          <p>Les membres Club sont prévenus en premier quand de nouveaux créneaux s'ouvrent. Avant le site, avant les réseaux.</p>
+        </div>
+        <div class="avantage-card">
+          <span class="avantage-icon">◆</span>
+          <h3>Tarif membre</h3>
+          <p>Réduction de 5 % sur toute nouvelle commande pour les membres actifs. Non cumulable avec d'autres offres.</p>
+        </div>
+        <div class="avantage-card">
+          <span class="avantage-icon">◆</span>
+          <h3>Coulisses de l'atelier</h3>
+          <p>Photos d'assemblage, explications techniques, pièces en cours — un contenu exclusif envoyé chaque mois par email.</p>
+        </div>
+        <div class="avantage-card">
+          <span class="avantage-icon">◆</span>
+          <h3>Passeport+</h3>
+          <p>Les membres Club reçoivent une version étendue du Passeport digital, avec l'historique complet des réglages et photos d'atelier.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-inscription section-padding">
+    <div class="container">
+      <div class="inscription-wrapper">
+        <div class="inscription-texte">
+          <h2>Rejoindre le Club</h2>
+          <p>L'inscription est gratuite. Votre email n'est jamais revendu ni utilisé à d'autres fins que les communications bang.</p>
+          <p>Vous pouvez vous désinscrire à tout moment.</p>
+        </div>
+        <form class="inscription-form" action="#" method="post" novalidate>
+          <div class="form-group">
+            <label for="club-prenom">Prénom</label>
+            <input type="text" id="club-prenom" name="prenom" placeholder="Votre prénom" autocomplete="given-name" required />
+          </div>
+          <div class="form-group">
+            <label for="club-email">Adresse email</label>
+            <input type="email" id="club-email" name="email" placeholder="votre@email.com" autocomplete="email" required />
+          </div>
+          <button type="submit" class="btn-primary" style="width: 100%; justify-content: center;">Rejoindre le Club</button>
+          <p class="form-legal">En vous inscrivant, vous acceptez de recevoir des emails de bang. Aucun spam, désabonnement en un clic.</p>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <CtaPersistant />
+</Base>
+
+<style>
+  .page-hero {
+    padding-block: 4rem;
+    border-bottom: 1px solid rgba(197, 165, 114, 0.15);
+    background: var(--noir-surface);
+  }
+
+  .eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 0.75rem;
+    max-width: none;
+  }
+
+  .page-desc { color: var(--gris-texte); margin-top: 0.75rem; max-width: 55ch; }
+
+  .avantages-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-top: 2rem;
+  }
+
+  @media (max-width: 640px) { .avantages-grid { grid-template-columns: 1fr; } }
+
+  .avantage-card {
+    background: var(--noir-card);
+    border: 1px solid rgba(197, 165, 114, 0.15);
+    border-radius: 12px;
+    padding: 2rem;
+  }
+
+  .avantage-icon {
+    display: block;
+    font-size: 1rem;
+    color: var(--gold);
+    margin-bottom: 0.75rem;
+  }
+
+  .avantage-card h3 { font-size: 1rem; margin-bottom: 0.5rem; }
+  .avantage-card p { font-size: 0.9rem; color: var(--gris-texte); max-width: none; }
+
+  .inscription-wrapper {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: start;
+    background: var(--noir-surface);
+    border: 1px solid rgba(197, 165, 114, 0.15);
+    border-radius: 12px;
+    padding: 3rem;
+  }
+
+  @media (max-width: 768px) {
+    .inscription-wrapper { grid-template-columns: 1fr; gap: 2rem; padding: 2rem; }
+  }
+
+  .inscription-texte h2 { margin-bottom: 1rem; }
+  .inscription-texte p { color: var(--gris-texte); margin-bottom: 0.75rem; }
+
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-bottom: 1rem;
+  }
+
+  label {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--blanc);
+  }
+
+  input {
+    background: var(--noir-card);
+    border: 1px solid rgba(197, 165, 114, 0.2);
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    color: var(--blanc);
+    font-size: 0.9375rem;
+    transition: border-color 0.2s ease;
+  }
+
+  input:focus {
+    outline: none;
+    border-color: var(--gold);
+  }
+
+  input::placeholder { color: var(--gris-muted); }
+
+  .form-legal {
+    font-size: 0.75rem;
+    color: var(--gris-muted);
+    margin-top: 0.75rem;
+    max-width: none;
+  }
+</style>
