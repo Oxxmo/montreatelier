@@ -533,6 +533,17 @@ body{background:radial-gradient(1200px 620px at 50% -12%,#fbfaf8,#f0ede7) fixed}
 .cfg-step-group{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-d);font-weight:600;margin-bottom:.5rem}
 .cfg-step-title{font-size:24px;font-weight:300;color:var(--ink);margin-bottom:.4rem}
 .cfg-step-hint{font-size:13px;color:#8a8378;line-height:1.6}
+/* Mini-tutoriel */
+.howto{display:flex;align-items:center;gap:8px 16px;flex-wrap:wrap;background:#fff;border:1px solid var(--line);border-radius:12px;padding:.7rem 2.2rem .7rem 1rem;margin-bottom:1.25rem;position:relative}
+.howto-intro{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold-d);font-weight:600}
+.howto-step{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:#6a655d;line-height:1.4}
+.howto-step b{width:19px;height:19px;border-radius:50%;background:var(--ink);color:#fff;font-size:10px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-weight:600}
+.howto-x{position:absolute;top:7px;right:9px;background:none;border:none;color:#bbb;cursor:pointer;font-size:15px;line-height:1;padding:2px}
+.howto-x:hover{color:var(--ink)}
+/* Recherche dans le configurateur */
+.cfg-search-wrap{margin-bottom:1rem}
+.cfg-search-in{width:100%;max-width:380px;border-radius:10px}
+.cfg-empty{text-align:center;padding:2rem;color:#b3ada3;font-size:12px}
 .cfg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:1rem}
 .cfg-tile{text-align:left;background:#fff;border:1.5px solid var(--line);border-radius:14px;overflow:hidden;cursor:pointer;transition:transform .25s,box-shadow .25s,border-color .25s;font-family:inherit;padding:0}
 .cfg-tile:hover{transform:translateY(-4px);box-shadow:0 16px 32px -18px rgba(26,26,26,.28);border-color:#e3dbcb}
@@ -1023,7 +1034,7 @@ Max 20 produits. Commence directement par [.`,
 let items=[], basket=new Set(), scanRes=[], scanChecked=new Set();
 let filterCat='Tout', activeTab='client', isAdmin=false, scanMode='shopify';
 let searchQuery='', codeInput='', currentSelectionId=null;
-let clientView='choice', cfgStep=0, cfgChoices={};
+let clientView='choice', cfgStep=0, cfgChoices={}, cfgSearch='';
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
 function isConfigured(){ return CONFIG.supabase_url!=='VOTRE_SUPABASE_URL'; }
 
@@ -1100,7 +1111,19 @@ function renderClientArea(){
   if(clientView==='browse') return renderClient();
   return renderChoice();
 }
-function chooseMode(m){ clientView=m; if(m==='config'){ cfgStep=0; } render(); notifyHeight(); }
+function chooseMode(m){ clientView=m; if(m==='config'){ cfgStep=0; cfgSearch=''; } render(); notifyHeight(); }
+
+// Petit bandeau explicatif réutilisable (masquable, mémorisé pour la session)
+function howtoBanner(key, intro, steps){
+  if(sessionStorage.getItem('hide_howto_'+key)==='1') return '';
+  var body=steps.map(function(s,i){ return '<span class="howto-step"><b>'+(i+1)+'</b>'+s+'</span>'; }).join('');
+  return '<div class="howto" id="howto-'+key+'">'
+    +(intro?'<span class="howto-intro">'+intro+'</span>':'')
+    +body
+    +'<button class="howto-x" onclick="dismissHowto(\''+key+'\')" title="Masquer ce rappel">&times;</button>'
+    +'</div>';
+}
+function dismissHowto(key){ try{ sessionStorage.setItem('hide_howto_'+key,'1'); }catch(e){} var el=document.getElementById('howto-'+key); if(el) el.remove(); notifyHeight(); }
 
 /* ══ ÉCRAN DE CHOIX ══ */
 function renderChoice(){
@@ -1173,7 +1196,8 @@ function renderConfigurator(){
     const tiles=s.pieces.map(function(p){
       const sel=chosenId===p.id;
       const img=p.img?'<img src="'+(p.img||'').replace(/"/g,'&quot;')+'" alt="" loading="lazy" onerror="this.style.display=\'none\'">':'<span class="cfg-noimg">Aucune photo</span>';
-      return '<button class="cfg-tile'+(sel?' sel':'')+'" onclick="cfgSelect(\''+s.key+'\',\''+p.id+'\')">'
+      const searchData=((p.name||'')+' '+(p.description||'')+' '+(p.cat||'')).toLowerCase().replace(/"/g,'');
+      return '<button class="cfg-tile'+(sel?' sel':'')+'" data-search="'+searchData+'" onclick="cfgSelect(\''+s.key+'\',\''+p.id+'\')">'
         +'<div class="cfg-tile-img">'+img+(sel?'<span class="cfg-check">&#10003;</span>':'')+'</div>'
         +'<div class="cfg-tile-name">'+(p.name||'')+'</div>'
         +'</button>';
@@ -1183,7 +1207,9 @@ function renderConfigurator(){
       +'<h2 class="cfg-step-title">Choisissez '+s.label+'</h2>'
       +'<p class="cfg-step-hint">Sélectionnez une pièce, ou passez si vous préférez en discuter avec nous.</p>'
       +'</div>'
-      +'<div class="cfg-grid">'+tiles+'</div>';
+      +'<div class="cfg-search-wrap"><input class="s-in cfg-search-in" id="cfg-search" placeholder="Filtrer par couleur, texture, style…" value="'+cfgSearch.replace(/"/g,'&quot;')+'"></div>'
+      +'<div class="cfg-grid">'+tiles+'</div>'
+      +'<div class="cfg-empty" id="cfg-empty" style="display:none">Aucune pièce ne correspond — essayez un autre mot, ou passez l\'étape.</div>';
   }
 
   // Récap latéral (pièces choisies)
@@ -1213,21 +1239,34 @@ function renderConfigurator(){
       <div class="cfg-brand">Configurateur — <b>votre montre sur-mesure</b></div>
       <button class="btn-xs" onclick="chooseMode('browse')">Explorer le catalogue ↗</button>
     </div>
+    ${howtoBanner('cfg','Comment ça marche :',['Choisissez vos pièces, étape par étape','Pas sûr ? Passez l’étape, on en discute','Laissez vos coordonnées : on vous recontacte'])}
     ${stepper}
     <div class="cfg-layout">
       <div class="cfg-main">${body}${cfgStep<total?nav:''}</div>
       ${recap}
     </div>`;
+  const se=document.getElementById('cfg-search');
+  if(se){ se.oninput=function(){ cfgSearch=this.value; cfgApplySearch(); }; }
+  if(cfgSearch) cfgApplySearch();
   window.scrollTo({top:0,behavior:'instant'});
   window.parent.postMessage({type:'mwa-scroll-top'},'*');
   notifyHeight();
 }
 
+// Filtre les tuiles du configurateur (couleur/texture/style) sans reconstruire le DOM
+function cfgApplySearch(){
+  var q=(cfgSearch||'').toLowerCase().trim();
+  var tiles=document.querySelectorAll('.cfg-grid .cfg-tile[data-search]');
+  var visible=0;
+  tiles.forEach(function(t){ var m=!q||t.getAttribute('data-search').indexOf(q)!==-1; t.style.display=m?'':'none'; if(m) visible++; });
+  var emp=document.getElementById('cfg-empty'); if(emp) emp.style.display=(visible===0&&tiles.length)?'':'none';
+}
+
 function cfgSelect(key,id){ cfgChoices[key]=(cfgChoices[key]===id?undefined:id); if(!cfgChoices[key]) delete cfgChoices[key]; renderConfigurator(); }
-function cfgNext(){ const t=cfgAllSteps().length; if(cfgStep<t) cfgStep++; renderConfigurator(); }
-function cfgPrev(){ if(cfgStep===0){ chooseMode('choice'); return; } cfgStep--; renderConfigurator(); }
+function cfgNext(){ const t=cfgAllSteps().length; if(cfgStep<t) cfgStep++; cfgSearch=''; renderConfigurator(); }
+function cfgPrev(){ if(cfgStep===0){ chooseMode('choice'); return; } cfgStep--; cfgSearch=''; renderConfigurator(); }
 function cfgSkip(){ const s=cfgAllSteps()[cfgStep]; if(s) delete cfgChoices[s.key]; cfgNext(); }
-function cfgGoStep(n){ cfgStep=n; renderConfigurator(); }
+function cfgGoStep(n){ cfgStep=n; cfgSearch=''; renderConfigurator(); }
 
 function cfgContactStep(){
   const chosen=cfgPieces();
@@ -1334,6 +1373,7 @@ function renderClient(){
         <button class="hero-config-cta" onclick="chooseMode('config')">&#9881; Plutôt configurer ma montre étape par étape &#8594;</button>
       </div>
     </div>
+    ${howtoBanner('catalogue','Comment ça marche :',['Cliquez une pièce pour la découvrir et voir les assortiments','Ajoutez vos favorites à votre sélection','Enregistrez-la pour recevoir votre code et votre devis'])}
     <div id="code-status" style="font-size:12px;margin-bottom:.85rem;min-height:18px;letter-spacing:.02em"></div>
     <div class="bbar">
       <div class="bbar-info">Sélection : <strong id="bn">${basket.size}</strong> <span id="bn-label">pièce${basket.size>1?'s':''}</span></div>
