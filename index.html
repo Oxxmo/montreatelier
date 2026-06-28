@@ -497,6 +497,101 @@ body{background:radial-gradient(1200px 620px at 50% -12%,#fbfaf8,#f0ede7) fixed}
 .supplier-total{font-weight:600;color:#1a1a1a;font-size:12.5px}
 @media(max-width:600px){.buy-thumb{display:none}.purchase-totals{gap:10px}}
 
+/* ════════ CHOIX + CONFIGURATEUR ════════ */
+.choice-wrap{max-width:920px;margin:0 auto;padding:1rem 0 1.5rem}
+.choice-intro{text-align:center;margin-bottom:2rem}
+.choice-eyebrow{font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold-d);font-weight:600;margin-bottom:.85rem}
+.choice-title{font-size:30px;font-weight:300;color:var(--ink);line-height:1.12;margin-bottom:.7rem}
+.choice-sub{font-size:14px;color:#6a655d;line-height:1.7;max-width:540px;margin:0 auto;font-weight:300}
+.choice-cards{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
+.choice-card{text-align:left;background:#fff;border:1px solid var(--line);border-radius:18px;padding:1.75rem 1.6rem;cursor:pointer;transition:transform .3s cubic-bezier(.2,.8,.2,1),box-shadow .3s,border-color .3s;font-family:inherit;display:flex;flex-direction:column;gap:.5rem}
+.choice-card:hover{transform:translateY(-6px);box-shadow:0 26px 50px -24px rgba(26,26,26,.32);border-color:#e3dbcb}
+.choice-card-primary{background:linear-gradient(135deg,#211e1b,#2d2825);border-color:#2d2825}
+.choice-ic{font-size:30px;margin-bottom:.4rem;color:var(--gold)}
+.choice-card-title{font-size:19px;font-weight:600;color:var(--ink)}
+.choice-card-desc{font-size:13px;color:#6a655d;line-height:1.65;flex:1}
+.choice-cta{font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;color:var(--ink);margin-top:.7rem}
+.choice-card-primary .choice-card-title{color:#fff}
+.choice-card-primary .choice-card-desc{color:#c6c0b6}
+.choice-card-primary .choice-cta{color:var(--gold)}
+.hero-config-cta{margin-top:1.1rem;background:transparent;border:1px solid rgba(201,169,110,.5);color:var(--gold);font-family:inherit;font-size:11.5px;letter-spacing:.04em;padding:10px 16px;border-radius:30px;cursor:pointer;transition:.2s}
+.hero-config-cta:hover{background:rgba(201,169,110,.14);border-color:var(--gold)}
+
+.cfg-top{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:1.1rem}
+.cfg-brand{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#999}
+.cfg-brand b{color:var(--ink);font-weight:600}
+.cfg-stepper{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:1.5rem;padding-bottom:.25rem}
+.cfg-dot{width:32px;height:32px;border-radius:50%;border:1px solid var(--line);background:#fff;color:#b3ada3;font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.18s;font-family:inherit;flex-shrink:0}
+.cfg-dot:hover{border-color:var(--gold)}
+.cfg-dot.cur{background:var(--ink);border-color:var(--ink);color:#fff;transform:scale(1.08)}
+.cfg-dot.done{border-color:var(--ink);color:var(--ink)}
+.cfg-dot.picked{border-color:#2a6a2a;color:#2a6a2a}
+.cfg-dot.cur.picked{background:var(--ink);color:#fff}
+.cfg-layout{display:grid;grid-template-columns:1fr 280px;gap:1.5rem;align-items:start}
+.cfg-main{min-width:0}
+.cfg-step-head{margin-bottom:1.25rem}
+.cfg-step-group{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold-d);font-weight:600;margin-bottom:.5rem}
+.cfg-step-title{font-size:24px;font-weight:300;color:var(--ink);margin-bottom:.4rem}
+.cfg-step-hint{font-size:13px;color:#8a8378;line-height:1.6}
+.cfg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:1rem}
+.cfg-tile{text-align:left;background:#fff;border:1.5px solid var(--line);border-radius:14px;overflow:hidden;cursor:pointer;transition:transform .25s,box-shadow .25s,border-color .25s;font-family:inherit;padding:0}
+.cfg-tile:hover{transform:translateY(-4px);box-shadow:0 16px 32px -18px rgba(26,26,26,.28);border-color:#e3dbcb}
+.cfg-tile.sel{border-color:var(--ink);box-shadow:0 0 0 2px var(--ink)}
+.cfg-tile-img{position:relative;height:130px;background:linear-gradient(135deg,#f8f6f2,#efebe4);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.cfg-tile-img img{width:100%;height:100%;object-fit:contain;padding:12px}
+.cfg-noimg{font-size:9px;color:#c4bdb2;text-transform:uppercase;letter-spacing:.06em}
+.cfg-check{position:absolute;top:8px;right:8px;width:24px;height:24px;border-radius:50%;background:var(--ink);color:#fff;font-size:13px;display:flex;align-items:center;justify-content:center}
+.cfg-tile-name{font-size:12px;font-weight:500;color:var(--ink);padding:10px 11px 12px;line-height:1.4}
+.cfg-grid-recap{margin-bottom:1.5rem}
+.cfg-nav{display:flex;align-items:center;gap:10px;margin-top:1.75rem;flex-wrap:wrap}
+.cfg-nav .btn-p{margin-left:auto}
+.cfg-skip{border:none;background:transparent;color:#9a948b;text-decoration:underline;text-underline-offset:3px}
+.cfg-skip:hover{color:var(--ink)}
+.cfg-recap{background:#fff;border:1px solid var(--line);border-radius:14px;padding:1.1rem;position:sticky;top:1rem}
+.cfg-recap-title{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#999;font-weight:600;margin-bottom:.85rem}
+.cfg-recap-list{display:flex;flex-direction:column;gap:.6rem;margin-bottom:.85rem}
+.cfg-recap-item{display:flex;align-items:center;gap:9px}
+.cfg-recap-img{width:42px;height:42px;border-radius:8px;background:#f6f4f0;border:1px solid #eee;overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.cfg-recap-img img{width:100%;height:100%;object-fit:contain;padding:3px}
+.cfg-recap-info{min-width:0}
+.cfg-recap-cat{font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold-d);font-weight:600}
+.cfg-recap-name{font-size:11.5px;color:var(--ink);line-height:1.35;font-weight:500}
+.cfg-recap-empty{font-size:11.5px;color:#b3ada3;line-height:1.6;margin-bottom:.85rem}
+.cfg-recap-count{font-size:10px;letter-spacing:.05em;text-transform:uppercase;color:#999;border-top:1px solid #f0ede8;padding-top:.75rem}
+.cfg-form{background:#fff;border:1px solid var(--line);border-radius:14px;padding:1.25rem;margin-top:.5rem}
+.cfg-form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cfg-form-note{font-size:10.5px;color:#a8a298;margin-top:.7rem;text-align:center}
+.cfg-done{max-width:480px;margin:1.5rem auto;text-align:center;background:#fff;border:1px solid var(--line);border-radius:18px;padding:2.5rem 1.75rem}
+.cfg-done-ic{width:56px;height:56px;border-radius:50%;background:#eef7ee;color:#2a6a2a;font-size:26px;display:flex;align-items:center;justify-content:center;margin:0 auto 1.1rem}
+.cfg-done-title{font-size:23px;font-weight:300;color:var(--ink);margin-bottom:.5rem}
+.cfg-done-sub{font-size:13.5px;color:#6a655d;line-height:1.65;margin-bottom:1.4rem}
+.cfg-done-code{background:#f8f7f4;border:1px solid var(--line);border-radius:12px;padding:1rem;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#999;line-height:1.8}
+.cfg-done-code strong{font-size:22px;font-family:monospace;letter-spacing:.12em;color:var(--ink)}
+.cfg-done-note{font-size:11.5px;color:#a8a298;margin:.85rem 0 1.5rem}
+.cfg-done-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.cfg-badge{font-size:9px;background:linear-gradient(135deg,var(--gold),#e2c98f);color:#fff;padding:2px 8px;border-radius:20px;letter-spacing:.05em;vertical-align:middle;font-weight:600}
+.sel-contact{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px;align-items:center}
+.sel-contact a{font-size:11px;color:#2a5a8a;border:1px solid #d6e2f0;background:#f3f8fd;border-radius:20px;padding:3px 10px;transition:.15s}
+.sel-contact a:hover{border-color:#2a5a8a;background:#eaf2fb}
+.sel-msg{font-size:11px;color:#777;font-style:italic;flex-basis:100%;line-height:1.5}
+
+@media(max-width:760px){
+  .choice-cards{grid-template-columns:1fr}
+  .cfg-layout{grid-template-columns:1fr}
+  .cfg-recap{position:static;order:-1}
+  .cfg-recap-list{flex-direction:row;flex-wrap:wrap;gap:.5rem}
+  .cfg-recap-item{width:calc(50% - .25rem)}
+}
+@media(max-width:600px){
+  .choice-title{font-size:25px}
+  .cfg-step-title{font-size:21px}
+  .cfg-grid{grid-template-columns:repeat(2,1fr);gap:.7rem}
+  .cfg-tile-img{height:110px}
+  .cfg-form-row{grid-template-columns:1fr}
+  .cfg-nav .btn{flex:1}
+  .cfg-recap-item{width:100%}
+}
+
 /* ── RESPONSIVE REDESIGN ── */
 @media(max-width:760px){
   .detail{grid-template-columns:1fr;gap:1.25rem}
@@ -928,6 +1023,7 @@ Max 20 produits. Commence directement par [.`,
 let items=[], basket=new Set(), scanRes=[], scanChecked=new Set();
 let filterCat='Tout', activeTab='client', isAdmin=false, scanMode='shopify';
 let searchQuery='', codeInput='', currentSelectionId=null;
+let clientView='choice', cfgStep=0, cfgChoices={};
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,5); }
 function isConfigured(){ return CONFIG.supabase_url!=='VOTRE_SUPABASE_URL'; }
 
@@ -966,7 +1062,7 @@ function render(){
       ${!isConfigured()&&isAdmin ? '<div class="alert alert-warn">⚠ Supabase non configuré — données non sauvegardées.</div>' : ''}
       <div id="view"></div>
     </div>`;
-  if(activeTab==='client') renderClient();
+  if(activeTab==='client') renderClientArea();
   else if(activeTab==='scan') renderScan();
   else if(activeTab==='admin') renderAdmin();
   else if(activeTab==='selections') renderSelections();
@@ -997,6 +1093,204 @@ function logout(){ isAdmin=false; sessionStorage.removeItem('mwa_admin'); go('cl
 
 /* ══ CLIENT ══ */
 function cats(){ return ['Tout',...new Set(items.filter(i=>isAdmin||!i.hidden).map(i=>i.cat).filter(Boolean))]; }
+
+// Aiguillage de la vue client : écran de choix, catalogue, ou configurateur
+function renderClientArea(){
+  if(clientView==='config') return renderConfigurator();
+  if(clientView==='browse') return renderClient();
+  return renderChoice();
+}
+function chooseMode(m){ clientView=m; if(m==='config'){ cfgStep=0; } render(); notifyHeight(); }
+
+/* ══ ÉCRAN DE CHOIX ══ */
+function renderChoice(){
+  document.getElementById('view').innerHTML=`
+    <div class="choice-wrap">
+      <div class="choice-intro">
+        <div class="choice-eyebrow">Atelier bang. — montres custom</div>
+        <h1 class="choice-title">Par où souhaitez-vous commencer&nbsp;?</h1>
+        <p class="choice-sub">Composez votre montre sur-mesure étape par étape, ou explorez librement notre catalogue de pièces.</p>
+      </div>
+      <div class="choice-cards">
+        <button class="choice-card choice-card-primary" onclick="chooseMode('config')">
+          <div class="choice-ic">&#9881;</div>
+          <div class="choice-card-title">Configurer ma montre</div>
+          <div class="choice-card-desc">On vous guide pièce par pièce — cadran, boîtier, aiguilles, bracelet… — puis on vous recontacte pour finaliser votre projet.</div>
+          <span class="choice-cta">Commencer la configuration &#8594;</span>
+        </button>
+        <button class="choice-card" onclick="chooseMode('browse')">
+          <div class="choice-ic">&#9788;</div>
+          <div class="choice-card-title">Explorer le catalogue</div>
+          <div class="choice-card-desc">Parcourez toutes nos pièces, ajoutez vos favorites à une sélection et générez votre devis avec un code.</div>
+          <span class="choice-cta">Voir le catalogue &#8594;</span>
+        </button>
+      </div>
+    </div>`;
+}
+
+/* ══ CONFIGURATEUR (tunnel de vente) ══ */
+// Étapes : pièces principales puis secondaires. On n'affiche que les catégories qui ont des pièces.
+function cfgAllSteps(){
+  const defs=[
+    {key:'Cadran',label:'le cadran',group:'Pièce principale'},
+    {key:'Boîtier',label:'le boîtier',group:'Pièce principale'},
+    {key:'Aiguilles',label:'les aiguilles',group:'Pièce principale'},
+    {key:'Bracelet',label:'le bracelet',group:'Pièce principale'},
+    {key:'Anneau',label:'le réhaut',group:'Finition'},
+    {key:'Lunette',label:'la lunette',group:'Finition'},
+    {key:'Insert lunette',label:"l'insert de lunette",group:'Finition'},
+    {key:'Verre',label:'le verre',group:'Finition'},
+    {key:'Couronne',label:'la couronne',group:'Finition'}
+  ];
+  return defs.map(function(d){
+    d.pieces=items.filter(function(i){ return !i.hidden && canonCat(i.cat)===d.key; });
+    return d;
+  }).filter(function(d){ return d.pieces.length>0; });
+}
+function cfgPieces(){ return cfgAllSteps().reduce(function(a,s){ var id=cfgChoices[s.key]; if(id){ var p=items.find(function(i){return i.id===id;}); if(p) a.push(p); } return a; },[]); }
+
+function renderConfigurator(){
+  const steps=cfgAllSteps();
+  const total=steps.length;
+  if(!total){ document.getElementById('view').innerHTML='<div class="alert alert-info">Le catalogue est encore vide — revenez bientôt pour configurer votre montre.</div>'; return; }
+  if(cfgStep>total) cfgStep=total;
+  // Barre de progression (étapes + contact)
+  let stepper='<div class="cfg-stepper">';
+  steps.forEach(function(s,idx){
+    const done=!!cfgChoices[s.key];
+    const cls=idx===cfgStep?'cur':(idx<cfgStep?'done':'');
+    stepper+='<button class="cfg-dot '+cls+(done?' picked':'')+'" onclick="cfgGoStep('+idx+')" title="'+s.key+'"><span>'+(idx+1)+'</span></button>';
+  });
+  stepper+='<button class="cfg-dot '+(cfgStep>=total?'cur':'')+'" onclick="cfgGoStep('+total+')" title="Contact"><span>&#9993;</span></button>';
+  stepper+='</div>';
+
+  let body;
+  if(cfgStep>=total){
+    body=cfgContactStep();
+  } else {
+    const s=steps[cfgStep];
+    const chosenId=cfgChoices[s.key];
+    const tiles=s.pieces.map(function(p){
+      const sel=chosenId===p.id;
+      const img=p.img?'<img src="'+(p.img||'').replace(/"/g,'&quot;')+'" alt="" loading="lazy" onerror="this.style.display=\'none\'">':'<span class="cfg-noimg">Aucune photo</span>';
+      return '<button class="cfg-tile'+(sel?' sel':'')+'" onclick="cfgSelect(\''+s.key+'\',\''+p.id+'\')">'
+        +'<div class="cfg-tile-img">'+img+(sel?'<span class="cfg-check">&#10003;</span>':'')+'</div>'
+        +'<div class="cfg-tile-name">'+(p.name||'')+'</div>'
+        +'</button>';
+    }).join('');
+    body='<div class="cfg-step-head">'
+      +'<div class="cfg-step-group">'+s.group+' · étape '+(cfgStep+1)+'/'+total+'</div>'
+      +'<h2 class="cfg-step-title">Choisissez '+s.label+'</h2>'
+      +'<p class="cfg-step-hint">Sélectionnez une pièce, ou passez si vous préférez en discuter avec nous.</p>'
+      +'</div>'
+      +'<div class="cfg-grid">'+tiles+'</div>';
+  }
+
+  // Récap latéral (pièces choisies)
+  const chosen=cfgPieces();
+  let recap='<div class="cfg-recap"><div class="cfg-recap-title">Votre montre</div>';
+  if(chosen.length){
+    recap+='<div class="cfg-recap-list">'+chosen.map(function(p){
+      return '<div class="cfg-recap-item"><div class="cfg-recap-img">'+(p.img?'<img src="'+(p.img||'').replace(/"/g,'&quot;')+'" alt="">':'')+'</div>'
+        +'<div class="cfg-recap-info"><div class="cfg-recap-cat">'+canonCat(p.cat)+'</div><div class="cfg-recap-name">'+(p.name||'')+'</div></div></div>';
+    }).join('')+'</div>';
+  } else {
+    recap+='<div class="cfg-recap-empty">Vos pièces apparaîtront ici au fur et à mesure.</div>';
+  }
+  recap+='<div class="cfg-recap-count">'+chosen.length+' pièce'+(chosen.length>1?'s':'')+' sélectionnée'+(chosen.length>1?'s':'')+'</div></div>';
+
+  // Navigation
+  let nav='<div class="cfg-nav">';
+  nav+='<button class="btn btn-s" onclick="cfgPrev()">'+(cfgStep===0?'← Choix':'← Précédent')+'</button>';
+  if(cfgStep<total){
+    nav+='<button class="btn-xs cfg-skip" onclick="cfgSkip()">Passer cette étape</button>';
+    nav+='<button class="btn btn-p" onclick="cfgNext()">Continuer →</button>';
+  }
+  nav+='</div>';
+
+  document.getElementById('view').innerHTML=`
+    <div class="cfg-top">
+      <div class="cfg-brand">Configurateur — <b>votre montre sur-mesure</b></div>
+      <button class="btn-xs" onclick="chooseMode('browse')">Explorer le catalogue ↗</button>
+    </div>
+    ${stepper}
+    <div class="cfg-layout">
+      <div class="cfg-main">${body}${cfgStep<total?nav:''}</div>
+      ${recap}
+    </div>`;
+  window.scrollTo({top:0,behavior:'instant'});
+  window.parent.postMessage({type:'mwa-scroll-top'},'*');
+  notifyHeight();
+}
+
+function cfgSelect(key,id){ cfgChoices[key]=(cfgChoices[key]===id?undefined:id); if(!cfgChoices[key]) delete cfgChoices[key]; renderConfigurator(); }
+function cfgNext(){ const t=cfgAllSteps().length; if(cfgStep<t) cfgStep++; renderConfigurator(); }
+function cfgPrev(){ if(cfgStep===0){ chooseMode('choice'); return; } cfgStep--; renderConfigurator(); }
+function cfgSkip(){ const s=cfgAllSteps()[cfgStep]; if(s) delete cfgChoices[s.key]; cfgNext(); }
+function cfgGoStep(n){ cfgStep=n; renderConfigurator(); }
+
+function cfgContactStep(){
+  const chosen=cfgPieces();
+  const recap=chosen.length
+    ? '<div class="cfg-grid cfg-grid-recap">'+chosen.map(function(p){
+        return '<div class="cfg-tile sel" style="cursor:default"><div class="cfg-tile-img">'+(p.img?'<img src="'+(p.img||'').replace(/"/g,'&quot;')+'" alt="">':'<span class="cfg-noimg">—</span>')+'</div><div class="cfg-tile-name">'+(p.name||'')+'</div></div>';
+      }).join('')+'</div>'
+    : '<p class="cfg-step-hint">Aucune pièce sélectionnée — pas de souci, nous en discuterons ensemble.</p>';
+  return '<div class="cfg-step-head">'
+    +'<div class="cfg-step-group">Dernière étape</div>'
+    +'<h2 class="cfg-step-title">Recevez votre projet par l\'atelier</h2>'
+    +'<p class="cfg-step-hint">Laissez vos coordonnées : nous revenons vers vous pour affiner votre montre, le devis et les délais.</p>'
+    +'</div>'
+    +recap
+    +'<div class="cfg-form">'
+      +'<div class="cfg-form-row"><div class="field"><label>Prénom / Nom *</label><input id="cfg-name" type="text" placeholder="Votre nom"></div>'
+      +'<div class="field"><label>Email</label><input id="cfg-email" type="email" placeholder="vous@email.com"></div></div>'
+      +'<div class="cfg-form-row"><div class="field"><label>Téléphone</label><input id="cfg-phone" type="tel" placeholder="06 12 34 56 78"></div>'
+      +'<div class="field"><label>Budget indicatif (optionnel)</label><input id="cfg-budget" type="text" placeholder="ex. 350 €"></div></div>'
+      +'<div class="field"><label>Votre message (optionnel)</label><textarea id="cfg-message" rows="3" placeholder="Style recherché, inspiration, occasion…"></textarea></div>'
+      +'<div id="cfg-send-st" style="font-size:12px;min-height:18px;margin:.25rem 0 .5rem"></div>'
+      +'<button class="btn btn-p" id="cfg-send-btn" style="width:100%" onclick="submitConfig()">Envoyer ma configuration</button>'
+      +'<div class="cfg-form-note">* Renseignez au moins un email ou un téléphone pour qu\'on puisse vous recontacter.</div>'
+    +'</div>';
+}
+
+async function submitConfig(){
+  const v=function(id){ var e=document.getElementById(id); return e?(e.value||'').trim():''; };
+  const name=v('cfg-name'), email=v('cfg-email'), phone=v('cfg-phone'), budget=v('cfg-budget'), message=v('cfg-message');
+  const st=document.getElementById('cfg-send-st');
+  if(!name){ if(st) st.innerHTML='<span style="color:#c06060">Indiquez votre nom.</span>'; return; }
+  if(!email && !phone){ if(st) st.innerHTML='<span style="color:#c06060">Indiquez un email ou un téléphone.</span>'; return; }
+  const btn=document.getElementById('cfg-send-btn'); if(btn){ btn.disabled=true; btn.textContent='Envoi…'; }
+  const chosen=cfgPieces();
+  const snap=chosen.map(function(p){ return {id:p.id,name:p.name,cat:p.cat,img:p.img,description:p.description,cost:Number(p.cost||0),ship:Number(p.ship||0),url:p.url||''}; });
+  const code=generateClientCode();
+  const fullMessage=(budget?('Budget indiqué : '+budget+(message?' — ':'')):'')+message;
+  const base={ client_name:name, client_code:code, item_ids:JSON.stringify(chosen.map(function(p){return p.id;})), items_snapshot:JSON.stringify(snap) };
+  const full=Object.assign({}, base, { email:email, phone:phone, message:fullMessage, kind:'config' });
+  let ok=false;
+  if(isConfigured()){
+    ok=await SB.selInsert(full);
+    if(!ok) ok=await SB.selInsert(base); // repli si colonnes contact absentes
+  }
+  if(ok || !isConfigured()){
+    document.getElementById('view').innerHTML=`
+      <div class="cfg-done">
+        <div class="cfg-done-ic">&#10003;</div>
+        <h2 class="cfg-done-title">Configuration envoyée&nbsp;!</h2>
+        <p class="cfg-done-sub">Merci ${name}. L'atelier bang. revient vers vous très vite pour finaliser votre montre.</p>
+        <div class="cfg-done-code">Votre code de suivi<br><strong>${code}</strong></div>
+        <p class="cfg-done-note">Notez-le : il vous permettra de retrouver votre configuration.</p>
+        <div class="cfg-done-actions">
+          <button class="btn btn-s" onclick="chooseMode('browse')">Explorer le catalogue</button>
+          <button class="btn btn-p" onclick="cfgChoices={};cfgStep=0;chooseMode('config')">Nouvelle configuration</button>
+        </div>
+      </div>`;
+    window.scrollTo({top:0,behavior:'instant'}); window.parent.postMessage({type:'mwa-scroll-top'},'*'); notifyHeight();
+  } else {
+    if(st) st.innerHTML='<span style="color:#c06060">Erreur d\'envoi. Réessayez dans un instant.</span>';
+    if(btn){ btn.disabled=false; btn.textContent='Envoyer ma configuration'; }
+  }
+}
 
 function buildStatsBar(){
   const visibleItems = items.filter(function(i){ return isAdmin || !i.hidden; });
@@ -1037,6 +1331,7 @@ function renderClient(){
             <button class="btn btn-p" onclick="loadByCode()">Charger</button>
           </div>
         </div>
+        <button class="hero-config-cta" onclick="chooseMode('config')">&#9881; Plutôt configurer ma montre étape par étape &#8594;</button>
       </div>
     </div>
     <div id="code-status" style="font-size:12px;margin-bottom:.85rem;min-height:18px;letter-spacing:.02em"></div>
@@ -2441,8 +2736,10 @@ async function renderSelections(){
         +'<div class="sel-card-head">'
         +'<div style="display:flex;align-items:center;gap:11px">'
         +'<div class="sel-pick" data-pid="'+s.id+'" onclick="togglePurchaseSel(\''+s.id+'\',this)" title="Cocher pour grouper les achats"></div>'
-        +'<div><div class="sel-card-name">'+s.client_name+'</div>'
-        +'<div class="sel-card-date">'+date+' · '+snap.length+' pièce'+(snap.length>1?'s':'')+(totalCost>0?' · Coût pièces : '+totalCost.toLocaleString('fr-FR')+' €':'')+(s.client_code?' · <strong style="color:#c9a96e;font-family:monospace;letter-spacing:.05em">'+s.client_code+'</strong>':'')+'</div></div>'
+        +'<div><div class="sel-card-name">'+s.client_name+(s.kind==='config'?' <span class="cfg-badge">⚙ Configuration</span>':'')+'</div>'
+        +'<div class="sel-card-date">'+date+' · '+snap.length+' pièce'+(snap.length>1?'s':'')+(totalCost>0?' · Coût pièces : '+totalCost.toLocaleString('fr-FR')+' €':'')+(s.client_code?' · <strong style="color:#c9a96e;font-family:monospace;letter-spacing:.05em">'+s.client_code+'</strong>':'')+'</div>'
+        +((s.email||s.phone||s.message)?'<div class="sel-contact">'+(s.email?'<a href="mailto:'+(s.email||'').replace(/"/g,'')+'">✉ '+s.email+'</a>':'')+(s.phone?'<a href="tel:'+(s.phone||'').replace(/"/g,'')+'">✆ '+s.phone+'</a>':'')+(s.message?'<div class="sel-msg">« '+s.message+' »</div>':'')+'</div>':'')
+        +'</div>'
         +'</div>'
         +'<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'
         +"<button class=\"btn-xs\" data-id='"+s.id+"' data-action='edit-sel'>Modifier</button>"
