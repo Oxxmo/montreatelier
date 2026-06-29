@@ -1,0 +1,136 @@
+<!-- ============================================================
+     bang. — BLOC 1 : HERO
+     À coller dans un bloc HTML personnalisé WPBakery.
+     Police + tokens chargés globalement (voir homepage/README.md).
+     ============================================================ -->
+<style>
+  .bang-hero-wp {
+      position: relative;
+      height: 98vh;
+      width: 100vw;
+      left: 50%; right: 50%;
+      margin-left: -50vw; margin-right: -50vw;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      background-color: var(--bang-bg-deep, #050505);
+      font-family: var(--bang-font, 'League Spartan', Impact, sans-serif);
+      overflow: hidden;
+      color: #ffffff;
+      box-sizing: border-box;
+  }
+
+  /* HEADER (PC) */
+  .bang-nav {
+      position: absolute; top: 0; left: 0;
+      width: 100%;
+      padding: 30px 5%;
+      z-index: 10;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      box-sizing: border-box;
+      height: 0;
+  }
+
+  /* LOGO FLOTTANT */
+  .bang-logo-link { position: absolute; top: 30px; left: 5%; z-index: 20; display: block; line-height: 0; }
+  .bang-logo-img { height: 350px; width: auto; display: block; object-fit: contain; }
+
+  .bang-menu { display: flex; gap: 30px; margin-top: 60px; }
+  .bang-menu-link {
+      font-size: 13px; font-weight: 600; text-transform: uppercase;
+      text-decoration: none; color: #ffffff; letter-spacing: 1px;
+      transition: color 0.3s ease; opacity: 0.8;
+  }
+  .bang-menu-link:hover { color: var(--bang-gold, #c9a96e); opacity: 1; }
+
+  /* CARROUSEL */
+  .bang-carousel { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
+  .bang-carousel-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-size: cover; background-position: center center; opacity: 0; animation: carouselFade 24s infinite ease-in-out; }
+
+  .bang-image-1 { background-image: url('https://atelier-bang.com/wp-content/uploads/2026/01/Untitled-design-3.png'); animation-delay: 0s; }
+  .bang-image-2 { background-image: url('https://atelier-bang.com/wp-content/uploads/2026/01/IMG_4483-1.png'); animation-delay: 6s; }
+  .bang-image-3 { background-image: url('https://atelier-bang.com/wp-content/uploads/2026/01/IMG_4484-1.png'); animation-delay: 12s; }
+  .bang-image-4 { background-image: url('https://atelier-bang.com/wp-content/uploads/2026/01/IMG_4521-1.png'); animation-delay: 18s; }
+
+  .bang-vignette { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; background: radial-gradient(circle at 40% center, rgba(5,5,5,0) 10%, rgba(5,5,5,0.4) 50%, #050505 95%); pointer-events: none; }
+
+  .bang-content { position: relative; z-index: 3; width: 100%; max-width: var(--bang-maxw, 1280px); margin: 0 auto; padding: 0 var(--bang-gutter, 40px); }
+
+  .bang-eyebrow { font-size: 13px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; color: var(--bang-gold, #c9a96e); margin-bottom: 15px; display: flex; align-items: center; gap: 12px; }
+  .bang-eyebrow::before { content: ''; display: block; width: 25px; height: 2px; background-color: var(--bang-gold, #c9a96e); }
+
+  .bang-title { font-size: clamp(40px, 5vw, 90px); font-weight: 800; line-height: 1; text-transform: uppercase; margin-bottom: 25px; word-wrap: break-word; }
+  .text-outline { -webkit-text-stroke: 1.5px #ffffff; color: transparent; display: block; }
+
+  .bang-subtitle { font-size: 22px; font-weight: 400; color: #e0e0e0; max-width: 500px; line-height: 1.5; margin-bottom: 35px; border-left: 3px solid rgba(255,255,255,0.3); padding-left: 20px; }
+
+  /* CTA principal (simulateur) */
+  .bang-btn { display: inline-block; padding: 16px 36px; background-color: var(--bang-gold, #c9a96e); color: #050505; font-weight: 800; text-transform: uppercase; text-decoration: none; font-size: 14px; letter-spacing: 2px; border: 2px solid var(--bang-gold, #c9a96e); transition: all 0.3s ease; }
+  .bang-btn:hover { background-color: transparent; color: var(--bang-gold, #c9a96e); letter-spacing: 3px; }
+
+  /* CTA secondaire (réserver) — discret */
+  .bang-cta-row { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; }
+  .bang-btn-secondary { color: #e0e0e0; font-size: 13px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; text-decoration: none; border-bottom: 1px solid rgba(255,255,255,0.4); padding-bottom: 3px; transition: color 0.3s ease, border-color 0.3s ease; }
+  .bang-btn-secondary:hover { color: var(--bang-gold, #c9a96e); border-color: var(--bang-gold, #c9a96e); }
+
+  @keyframes carouselFade { 0% { opacity: 0; transform: scale(1); } 5% { opacity: 1; } 25% { opacity: 1; } 30% { opacity: 0; transform: scale(1.05); } 100% { opacity: 0; } }
+
+  /* RESPONSIVE MOBILE */
+  @media (max-width: 768px) {
+      .bang-hero-wp { justify-content: center; text-align: center; height: auto; padding: 300px 0 20px 0; }
+      .bang-vignette { background: radial-gradient(circle at center, rgba(5,5,5,0) 0%, rgba(5,5,5,0.6) 50%, #050505 100%); }
+      .bang-eyebrow { justify-content: center; }
+      .bang-eyebrow::before { display: none; }
+      .bang-subtitle { margin: 0 auto 35px auto; border-left: none; padding-left: 0; font-size: 18px; }
+      .bang-cta-row { justify-content: center; }
+      .bang-nav { position: absolute; height: auto; flex-direction: column; padding: 20px; justify-content: flex-start; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent); }
+      .bang-logo-link { position: relative; top: auto; left: auto; margin-bottom: 20px; }
+      .bang-logo-img { height: 180px; }
+      .bang-menu { margin-top: 0; display: flex; gap: 15px; justify-content: flex-start; flex-wrap: nowrap; overflow-x: auto; width: 100%; padding: 0 15px 5px 15px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+      .bang-menu::-webkit-scrollbar { display: none; }
+      .bang-menu-link { font-size: 11px; letter-spacing: 1px; white-space: nowrap; flex-shrink: 0; }
+  }
+</style>
+
+<div class="bang-hero-wp">
+    <nav class="bang-nav">
+        <a href="https://atelier-bang.com/" class="bang-logo-link">
+            <img src="https://atelier-bang.com/wp-content/uploads/2025/10/LOGO-FRENG-2-1.png" alt="bang. — atelier de montres automatiques sur mesure" class="bang-logo-img">
+        </a>
+        <div class="bang-menu">
+            <a href="https://atelier-bang.com/notre-histoire/" class="bang-menu-link">Notre histoire</a>
+            <a href="https://atelier-bang.com/catalogue/" class="bang-menu-link">Catalogue</a>
+            <a href="https://atelier-bang.com/simulateur/" class="bang-menu-link">Simulateur de prix</a>
+            <a href="https://atelier-bang.com/verify" class="bang-menu-link">Le Club</a>
+            <a href="https://atelier-bang.com/atelier/" class="bang-menu-link">L'Atelier</a>
+            <a href="https://atelier-bang.com/lejournalbang/" class="bang-menu-link">Le journal bang.</a>
+        </div>
+    </nav>
+
+    <div class="bang-carousel">
+        <div class="bang-carousel-image bang-image-1"></div>
+        <div class="bang-carousel-image bang-image-2"></div>
+        <div class="bang-carousel-image bang-image-3"></div>
+        <div class="bang-carousel-image bang-image-4"></div>
+    </div>
+
+    <div class="bang-vignette"></div>
+
+    <div class="bang-content">
+        <div class="bang-eyebrow">Atelier Français — Dissay (86), près de Poitiers</div>
+        <h1 class="bang-title">
+            Montres Automatiques<br>
+            <span class="text-outline">Sur Mesure.</span>
+        </h1>
+        <p class="bang-subtitle">
+            Nous ne produisons pas de série. Nous créons votre pièce unique.<br>
+            Conception personnalisée, mécanique fiable et assemblage à la main.
+        </p>
+        <div class="bang-cta-row">
+            <a href="https://atelier-bang.com/simulateur/" class="bang-btn">Configurer ma montre</a>
+            <a href="https://calendly.com/atelierbang/30min" class="bang-btn-secondary">Déjà décidé ? Réserver un échange</a>
+        </div>
+    </div>
+</div>

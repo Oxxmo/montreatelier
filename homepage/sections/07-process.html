@@ -1,0 +1,78 @@
+<!-- ============================================================
+     bang. — BLOC 7 : PROCESS « Du rêve au poignet »
+     Bloc HTML personnalisé WPBakery.
+     ============================================================ -->
+<style>
+.process-section {
+    font-family: var(--bang-font, 'League Spartan', sans-serif);
+    background-color: var(--bang-bg-panel, #13161B);
+    color: #f0f0f0;
+    padding: 100px 0;
+    width: 100vw; position: relative; left: 50%; right: 50%; margin-left: -50vw; margin-right: -50vw;
+    box-sizing: border-box;
+    border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+.process-header { text-align: center; max-width: 800px; margin: 0 auto 80px auto; padding: 0 5%; }
+.process-header h2 { font-size: clamp(30px, 4vw, 55px); font-weight: 800; text-transform: uppercase; margin-bottom: 20px; letter-spacing: 2px; }
+.process-header p { font-size: 18px; color: #aaaaaa; font-weight: 300; }
+
+.process-grid { display: flex; justify-content: space-around; max-width: var(--bang-maxw, 1280px); margin: 0 auto; padding: 0 5%; gap: 40px; }
+.process-step { flex: 1; text-align: center; position: relative; }
+
+.step-number { font-size: 120px; font-weight: 900; color: rgba(255,255,255,0.03); line-height: 1; position: absolute; top: -40px; left: 50%; transform: translateX(-50%); z-index: 0; }
+.step-content { position: relative; z-index: 1; }
+.step-icon { font-size: 40px; margin-bottom: 20px; display: inline-block; color: #ffffff; }
+.step-title { font-size: 24px; font-weight: 700; text-transform: uppercase; margin-bottom: 15px; color: #ffffff; letter-spacing: 1px; }
+.step-desc { font-size: 16px; color: #aaaaaa; line-height: 1.6; font-weight: 300; }
+
+.process-cta { text-align: center; margin-top: 80px; }
+.process-btn { display: inline-block; padding: 16px 40px; background-color: var(--bang-gold, #c9a96e); color: var(--bang-bg-panel, #13161B); font-weight: 800; text-transform: uppercase; text-decoration: none; font-size: 14px; letter-spacing: 2px; border: 2px solid var(--bang-gold, #c9a96e); transition: all 0.3s ease; }
+.process-btn:hover { background-color: transparent; color: var(--bang-gold, #c9a96e); letter-spacing: 3px; }
+
+@media (max-width: 768px) {
+    .process-grid { flex-direction: column; gap: 60px; }
+    .step-number { font-size: 100px; top: -30px; }
+    .process-cta { margin-top: 60px; }
+}
+</style>
+
+<section class="process-section">
+    <div class="process-header">
+        <h2>Du rêve au poignet.</h2>
+        <p>Pas de complexité inutile. Nous avons simplifié la création de votre pièce unique en un parcours fluide et transparent.</p>
+    </div>
+
+    <div class="process-grid">
+        <div class="process-step">
+            <div class="step-number">01</div>
+            <div class="step-content">
+                <div class="step-icon">💬</div>
+                <h3 class="step-title">Le Brief</h3>
+                <p class="step-desc">Tout commence par un échange. Vous nous partagez vos inspirations ou choisissez une base. Nous validons ensemble la faisabilité technique et le design.</p>
+            </div>
+        </div>
+
+        <div class="process-step">
+            <div class="step-number">02</div>
+            <div class="step-content">
+                <div class="step-icon">🛠️</div>
+                <h3 class="step-title">L'Assemblage</h3>
+                <p class="step-desc">Une fois les composants reçus, votre montre est assemblée à la main à Dissay, près de Poitiers. Mouvement régulé, joints graissés, étanchéité testée.</p>
+            </div>
+        </div>
+
+        <div class="process-step">
+            <div class="step-number">03</div>
+            <div class="step-content">
+                <div class="step-icon">📦</div>
+                <h3 class="step-title">La Livraison</h3>
+                <p class="step-desc">Expédition sécurisée et suivie. Vous recevez votre pièce unique dans son écrin, prête à être portée et à raconter votre histoire.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="process-cta">
+        <a href="https://atelier-bang.com/simulateur/" class="process-btn">Configurer ma montre</a>
+    </div>
+</section>

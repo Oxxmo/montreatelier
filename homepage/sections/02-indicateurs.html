@@ -1,0 +1,191 @@
+<!-- ============================================================
+     bang. — BLOC 2 : INDICATEURS DE MANUFACTURE (compteurs)
+     Bloc HTML personnalisé WPBakery.
+     ============================================================ -->
+<style>
+    .trust-bar-section {
+        font-family: var(--bang-font, 'League Spartan', sans-serif);
+        background: transparent;
+        padding: 80px 0;
+        color: #E8E8E8;
+        position: relative;
+        width: 100%;
+        margin: 0 auto;
+        overflow: hidden;
+    }
+
+    .trust-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: stretch;
+        max-width: var(--bang-maxw, 1280px);
+        margin: 0 auto;
+        padding: 0 4%;
+        position: relative;
+        z-index: 1;
+    }
+
+    .trust-item {
+        flex: 1;
+        padding: 0 25px;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        opacity: 0;
+        transform: translateY(30px);
+        animation: trustFadeInUp 0.8s ease forwards;
+    }
+
+    @keyframes trustFadeInUp { to { opacity: 1; transform: translateY(0); } }
+
+    .trust-item:nth-child(1) { animation-delay: 0.1s; }
+    .trust-item:nth-child(2) { animation-delay: 0.2s; }
+    .trust-item:nth-child(3) { animation-delay: 0.3s; }
+    .trust-item:nth-child(4) { animation-delay: 0.4s; }
+    .trust-item:nth-child(5) { animation-delay: 0.5s; }
+
+    .trust-item:not(:last-child)::after {
+        content: '';
+        position: absolute; right: 0; top: 15%; bottom: 15%;
+        width: 1px;
+        background: linear-gradient(to bottom, transparent, rgba(var(--bang-gold-rgb, 201,169,110), 0.2) 20%, rgba(var(--bang-gold-rgb, 201,169,110), 0.2) 80%, transparent);
+    }
+
+    .trust-item .icon { margin-bottom: 18px; display: block; line-height: 1; transition: all 0.5s ease; }
+    .trust-item .icon svg { width: 32px; height: 32px; color: var(--bang-gold, #c9a96e); opacity: 0.9; transition: all 0.5s ease; }
+
+    @keyframes trustIconPulse { 0%,100% { transform: scale(1) rotate(0deg); } 50% { transform: scale(1.15) rotate(5deg); } }
+    .trust-item:hover .icon svg { animation: trustIconPulse 1.2s ease; color: var(--bang-gold-light, #e8c98a); opacity: 1; filter: drop-shadow(0 0 8px rgba(var(--bang-gold-rgb, 201,169,110), 0.4)); }
+
+    .counter-value { font-size: 42px; font-weight: 600; color: #FFFFFF; margin-bottom: 12px; line-height: 1; letter-spacing: -0.5px; transition: all 0.4s ease; position: relative; }
+
+    @keyframes trustShimmer { 0% { background-position: -200% center; } 100% { background-position: 200% center; } }
+    .trust-item:hover .counter-value {
+        background: linear-gradient(90deg, #FFFFFF 30%, var(--bang-gold-light, #e8c98a) 50%, #FFFFFF 70%);
+        background-size: 200% auto;
+        -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+        animation: trustShimmer 2s linear infinite;
+    }
+
+    .trust-item .label { font-size: 11px; font-weight: 500; color: #9B9B9B; letter-spacing: 1.8px; text-transform: uppercase; line-height: 1.5; max-width: 180px; margin-top: 8px; transition: color 0.4s ease; }
+    .trust-item:hover .label { color: var(--bang-gold, #c9a96e); }
+
+    .trust-item::before { content: ''; position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 0; height: 2px; background: linear-gradient(90deg, transparent, var(--bang-gold, #c9a96e), transparent); transition: width 0.6s ease; }
+    .trust-item:hover::before { width: 80%; }
+
+    @media (max-width: 968px) {
+        .trust-bar-section { padding: 60px 0; }
+        .trust-container { flex-direction: column; gap: 0; }
+        .trust-item { width: 100%; padding: 32px 20px; border-bottom: 1px solid rgba(var(--bang-gold-rgb, 201,169,110), 0.12); }
+        .trust-item:last-child { border-bottom: none; }
+        .trust-item:not(:last-child)::after { display: none; }
+        .counter-value { font-size: 38px; }
+        .trust-item .label { font-size: 10px; letter-spacing: 1.5px; }
+        .trust-item .icon { margin-bottom: 14px; }
+        .trust-item .icon svg { width: 28px; height: 28px; }
+    }
+    @media (max-width: 480px) { .counter-value { font-size: 34px; } }
+</style>
+
+<section class="trust-bar-section">
+    <div class="trust-container">
+        <div class="trust-item">
+            <div class="icon">
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="16" cy="16" r="14" stroke="currentColor" stroke-width="1.5"/>
+                    <circle cx="16" cy="16" r="10" stroke="currentColor" stroke-width="1"/>
+                    <circle cx="16" cy="16" r="2" fill="currentColor"/>
+                    <line x1="16" y1="6" x2="16" y2="10" stroke="currentColor" stroke-width="1.5"/>
+                    <line x1="16" y1="22" x2="16" y2="26" stroke="currentColor" stroke-width="1.5"/>
+                    <line x1="26" y1="16" x2="22" y2="16" stroke="currentColor" stroke-width="1.5"/>
+                    <line x1="10" y1="16" x2="6" y2="16" stroke="currentColor" stroke-width="1.5"/>
+                </svg>
+            </div>
+            <div class="counter-value" data-target="77">0</div>
+            <div class="label">Garde-Temps Uniques</div>
+        </div>
+
+        <div class="trust-item">
+            <div class="icon">
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="6" y="6" width="20" height="20" rx="2" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="M6 12H26M12 6V26M20 6V26M6 20H26" stroke="currentColor" stroke-width="1"/>
+                    <circle cx="16" cy="16" r="3" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="M16 13V16L18 18" stroke="currentColor" stroke-width="1"/>
+                </svg>
+            </div>
+            <div class="counter-value" data-target="12">0</div>
+            <div class="label">Composants Personnalisables</div>
+        </div>
+
+        <div class="trust-item">
+            <div class="icon">
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="16" cy="16" r="13" stroke="currentColor" stroke-width="1.5"/>
+                    <path d="M16 8V16L22 19" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    <circle cx="16" cy="16" r="1.5" fill="currentColor"/>
+                    <path d="M16 3V5M16 27V29M29 16H27M5 16H3" stroke="currentColor" stroke-width="1"/>
+                </svg>
+            </div>
+            <div class="counter-value" data-target="41">0</div>
+            <div class="label">Réserve de Marche</div>
+        </div>
+
+        <div class="trust-item">
+            <div class="icon">
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M16 3L19 13L29 16L19 19L16 29L13 19L3 16L13 13L16 3Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    <circle cx="16" cy="16" r="4" stroke="currentColor" stroke-width="1"/>
+                </svg>
+            </div>
+            <div class="counter-value" data-target="2">0</div>
+            <div class="label">Garantie Manufacture</div>
+        </div>
+
+        <div class="trust-item">
+            <div class="icon">
+                <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M16 4L18.5 11.5L26 14L18.5 16.5L16 24L13.5 16.5L6 14L13.5 11.5L16 4Z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                    <path d="M24 8L25 10L27 11L25 12L24 14L23 12L21 11L23 10L24 8Z" stroke="currentColor" stroke-width="1"/>
+                    <path d="M8 20L9 22L11 23L9 24L8 26L7 24L5 23L7 22L8 20Z" stroke="currentColor" stroke-width="1"/>
+                </svg>
+            </div>
+            <div class="counter-value" data-target="4.7">0</div>
+            <div class="label">Satisfaction Clientèle</div>
+        </div>
+    </div>
+</section>
+
+<script>
+    (function () {
+        function animateCounter(element) {
+            var target = parseFloat(element.getAttribute('data-target'));
+            var duration = 2000;
+            var increment = target / (duration / 16);
+            var current = 0;
+            var isDecimal = target % 1 !== 0;
+            var labelText = element.closest('.trust-item').querySelector('.label').textContent;
+            var suffix = labelText.includes('Réserve') ? 'H'
+                       : labelText.includes('Garantie') ? ' ANS'
+                       : labelText.includes('Satisfaction') ? '/5' : '+';
+            var timer = setInterval(function () {
+                current += increment;
+                if (current >= target) { current = target; clearInterval(timer); }
+                element.textContent = (isDecimal ? current.toFixed(1) : Math.floor(current)) + suffix;
+            }, 16);
+        }
+        var observer = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                if (entry.isIntersecting) {
+                    entry.target.querySelectorAll('.counter-value').forEach(function (c) {
+                        if (c.textContent === '0') animateCounter(c);
+                    });
+                }
+            });
+        }, { threshold: 0.5 });
+        var sec = document.querySelector('.trust-bar-section');
+        if (sec) observer.observe(sec);
+    })();
+</script>

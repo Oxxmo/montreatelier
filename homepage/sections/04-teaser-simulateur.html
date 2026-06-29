@@ -1,0 +1,270 @@
+<!-- ============================================================
+     bang. — BLOC 4 : TEASER SIMULATEUR
+     Bloc HTML personnalisé WPBakery.
+     Placement : après le bloc « Gammes ».
+     NB : le compteur de créneaux est alimenté par shared/bang-creneaux.js
+          (chargé une seule fois pour toute la page).
+     ============================================================ -->
+<section class="bang-sim-teaser">
+  <div class="bst-rule"></div>
+
+  <div class="bst-inner">
+    <!-- GAUCHE : texte -->
+    <div class="bst-left">
+      <span class="bst-overtitle">Nouveau</span>
+      <h2 class="bst-title">Combien coûte<br><em>votre montre ?</em></h2>
+      <p class="bst-body">
+        Cadran, boîtier, bracelet, options… Configurez chaque détail et obtenez une estimation de prix en temps réel — sans engagement, en 2 minutes.
+      </p>
+
+      <div class="bst-features">
+        <div class="bst-feat"><span class="bst-feat-icon">◈</span><span>15+ composants configurables</span></div>
+        <div class="bst-feat"><span class="bst-feat-icon">◈</span><span>Prix mis à jour en direct</span></div>
+        <div class="bst-feat"><span class="bst-feat-icon">◈</span><span>Sans inscription ni engagement</span></div>
+      </div>
+
+      <a class="bst-cta" href="https://atelier-bang.com/simulateur/">
+        Estimer mon projet
+        <span class="bst-arrow">→</span>
+      </a>
+      <p class="bst-sub">Puis réservez votre créneau en un clic.</p>
+    </div>
+
+    <!-- DROITE : mini-aperçu du simulateur -->
+    <div class="bst-right">
+      <div class="bst-preview-card">
+        <div class="bst-preview-header">
+          <span class="bst-preview-dot red"></span>
+          <span class="bst-preview-dot amber"></span>
+          <span class="bst-preview-dot green"></span>
+          <span class="bst-preview-title">Simulateur de prix — bang.</span>
+        </div>
+
+        <div class="bst-preview-body">
+          <div class="bst-mock-label">Configuration de base</div>
+          <div class="bst-mock-pills" id="bst-pills-config">
+            <div class="bst-mock-pill active" data-price="405">Initiale <span>320–490€</span></div>
+            <div class="bst-mock-pill" data-price="735">Signature <span>520–950€</span></div>
+          </div>
+
+          <div class="bst-mock-label" style="margin-top:12px">Cadran</div>
+          <div class="bst-mock-pills" id="bst-pills-cadran">
+            <div class="bst-mock-pill active" data-price="0">Standard</div>
+            <div class="bst-mock-pill" data-price="60">Galvanique</div>
+            <div class="bst-mock-pill" data-price="90">Texturé</div>
+            <div class="bst-mock-pill" data-price="180">Squelette</div>
+          </div>
+
+          <div class="bst-mock-label" style="margin-top:12px">Boîtier</div>
+          <div class="bst-mock-pills" id="bst-pills-boitier">
+            <div class="bst-mock-pill active" data-price="0">Acier brossé</div>
+            <div class="bst-mock-pill" data-price="75">PVD Noir</div>
+            <div class="bst-mock-pill" data-price="90">PVD Or</div>
+            <div class="bst-mock-pill" data-price="160">Carbone</div>
+          </div>
+
+          <div class="bst-mock-divider"></div>
+
+          <div class="bst-mock-price-row">
+            <div>
+              <div class="bst-mock-price-label">Estimation indicative</div>
+              <div class="bst-mock-price" id="bst-animated-price">405 €</div>
+            </div>
+            <div class="bst-mock-badge"><span class="bst-mock-pulse"></span>En direct</div>
+          </div>
+
+          <div class="bst-price-bar-track"><div class="bst-price-bar-fill" id="bst-price-bar"></div></div>
+          <div class="bst-price-bar-labels"><span>320 €</span><span>950 €+</span></div>
+
+          <div class="bst-mock-btn">Réserver mon créneau →</div>
+        </div>
+      </div>
+
+      <!-- Badge créneaux — alimenté par shared/bang-creneaux.js -->
+      <div class="bst-urgency-badge" id="bst-urgency">
+        <span class="bst-ub-dot"></span>
+        <span id="bst-slots-text"><strong>3</strong> créneaux restants ce mois</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="bst-rule"></div>
+</section>
+
+<style>
+.bang-sim-teaser {
+  --gold:       var(--bang-gold, #c9a96e);
+  --gold-light: var(--bang-gold-light, #e8c98a);
+  --bg-card:    var(--bang-card, #111111);
+  --bg-deep:    #0d0d0d;
+  --border:     #1e1e1e;
+  --text:       var(--bang-text, #f0ede8);
+  --text-muted: var(--bang-text-muted, #888880);
+  --text-dim:   #444440;
+  --red:        #e05a5a;
+  --green:      #4caf80;
+  --font:       var(--bang-font, 'League Spartan', system-ui, sans-serif);
+  --mono:       var(--bang-mono, 'DM Mono', monospace);
+
+  font-family: var(--font);
+  color: var(--text);
+  padding: 72px 0;
+  position: relative;
+}
+
+.bst-rule { height: 1px; background: linear-gradient(90deg, transparent 0%, rgba(var(--bang-gold-rgb, 201,169,110),0.3) 30%, rgba(var(--bang-gold-rgb, 201,169,110),0.6) 50%, rgba(var(--bang-gold-rgb, 201,169,110),0.3) 70%, transparent 100%); margin-bottom: 72px; }
+.bst-rule:last-child { margin-bottom: 0; margin-top: 72px; }
+
+.bst-inner { max-width: 1100px; margin: 0 auto; padding: 0 32px; display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; }
+
+.bst-overtitle { display: inline-block; font-family: var(--mono); font-size: 0.6rem; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); border: 1px solid rgba(var(--bang-gold-rgb, 201,169,110),0.4); padding: 5px 12px; border-radius: 2px; margin-bottom: 20px; }
+
+.bst-title { font-size: clamp(2rem, 3.5vw, 2.8rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.05; text-transform: uppercase; margin: 0 0 20px; color: var(--text); }
+.bst-title em { font-style: normal; color: var(--gold-light); }
+
+.bst-body { font-size: 0.9rem; color: var(--text-muted); line-height: 1.75; max-width: 420px; margin-bottom: 28px; }
+
+.bst-features { display: flex; flex-direction: column; gap: 10px; margin-bottom: 36px; }
+.bst-feat { display: flex; align-items: center; gap: 10px; font-size: 0.8rem; color: var(--text-muted); }
+.bst-feat-icon { color: var(--gold); font-size: 0.65rem; flex-shrink: 0; }
+
+.bst-cta { display: inline-flex; align-items: center; gap: 10px; background: var(--gold); color: #0a0a0a; font-family: var(--mono); font-size: 0.72rem; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; text-decoration: none; padding: 16px 28px; border-radius: 3px; transition: all 0.2s ease; }
+.bst-cta:hover { background: var(--gold-light); transform: translateY(-2px); box-shadow: 0 10px 32px rgba(var(--bang-gold-rgb, 201,169,110),0.22); color: #0a0a0a; text-decoration: none; }
+.bst-arrow { transition: transform 0.2s; }
+.bst-cta:hover .bst-arrow { transform: translateX(4px); }
+
+.bst-sub { font-size: 0.68rem; color: var(--text-dim); margin-top: 12px; font-family: var(--mono); letter-spacing: 0.06em; }
+
+.bst-right { position: relative; }
+.bst-preview-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; box-shadow: 0 0 0 1px rgba(var(--bang-gold-rgb, 201,169,110),0.08), 0 32px 80px rgba(0,0,0,0.6), 0 0 60px rgba(var(--bang-gold-rgb, 201,169,110),0.04); transform: perspective(1000px) rotateY(-4deg) rotateX(2deg); transition: transform 0.4s ease; }
+.bst-preview-card:hover { transform: perspective(1000px) rotateY(-1deg) rotateX(0deg); }
+
+.bst-preview-header { display: flex; align-items: center; gap: 6px; padding: 10px 14px; background: #0d0d0d; border-bottom: 1px solid var(--border); }
+.bst-preview-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.bst-preview-dot.red { background: #ff5f56; } .bst-preview-dot.amber { background: #ffbd2e; } .bst-preview-dot.green { background: #27c93f; }
+.bst-preview-title { font-family: var(--mono); font-size: 0.58rem; color: var(--text-dim); letter-spacing: 0.1em; margin-left: 6px; }
+
+.bst-preview-body { padding: 18px 20px 20px; }
+
+.bst-mock-pill { transition: all 0.18s ease; cursor: default; }
+.bst-mock-pill.selecting { border-color: rgba(var(--bang-gold-rgb, 201,169,110),0.8) !important; background: rgba(var(--bang-gold-rgb, 201,169,110),0.18) !important; transform: scale(1.04); }
+
+.bst-price-bar-track { height: 3px; background: rgba(255,255,255,0.06); border-radius: 2px; margin-bottom: 4px; overflow: hidden; }
+.bst-price-bar-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-light)); border-radius: 2px; width: 20%; transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.bst-price-bar-labels { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 0.52rem; color: var(--text-dim); letter-spacing: 0.08em; margin-bottom: 14px; }
+
+.bst-mock-price.flash { color: var(--gold-light); }
+
+.bst-mock-label { font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 7px; }
+.bst-mock-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+.bst-mock-pill { font-size: 0.7rem; padding: 6px 10px; border: 1px solid var(--border); border-radius: 3px; color: var(--text-muted); background: var(--bg-deep); display: flex; align-items: center; gap: 5px; }
+.bst-mock-pill span { font-family: var(--mono); font-size: 0.6rem; color: var(--text-dim); }
+.bst-mock-pill.active { border-color: rgba(var(--bang-gold-rgb, 201,169,110),0.5); background: rgba(var(--bang-gold-rgb, 201,169,110),0.07); color: var(--text); }
+.bst-mock-pill.active span { color: var(--gold); }
+
+.bst-mock-divider { height: 1px; background: var(--border); margin: 16px 0; }
+
+.bst-mock-price-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.bst-mock-price-label { font-family: var(--mono); font-size: 0.55rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-dim); margin-bottom: 3px; }
+.bst-mock-price { font-size: 1.8rem; font-weight: 700; letter-spacing: -0.03em; color: var(--text); font-family: var(--font); transition: color 0.3s ease; }
+
+.bst-mock-badge { display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 0.58rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--green); background: rgba(76,175,128,0.08); border: 1px solid rgba(76,175,128,0.2); padding: 5px 9px; border-radius: 3px; }
+.bst-mock-pulse { display: inline-block; width: 6px; height: 6px; background: var(--green); border-radius: 50%; animation: bst-pulse 1.4s ease-in-out infinite; }
+@keyframes bst-pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.65); } }
+
+.bst-mock-btn { background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: #0a0a0a; font-family: var(--mono); font-size: 0.62rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; text-align: center; padding: 12px; border-radius: 3px; cursor: default; }
+
+.bst-urgency-badge { position: absolute; bottom: -18px; right: -18px; background: var(--bg-card); border: 1px solid rgba(var(--bang-gold-rgb, 201,169,110),0.25); border-radius: 50px; padding: 9px 16px; display: flex; align-items: center; gap: 8px; font-size: 0.7rem; color: var(--text-muted); font-family: var(--mono); letter-spacing: 0.06em; box-shadow: 0 8px 24px rgba(0,0,0,0.5); white-space: nowrap; }
+.bst-urgency-badge strong { color: var(--gold); }
+.bst-ub-dot { width: 7px; height: 7px; background: var(--red); border-radius: 50%; flex-shrink: 0; animation: bst-pulse 1.4s ease-in-out infinite; }
+.bst-urgency-badge.bst-full { border-color: rgba(224,90,90,0.4); }
+
+@media (max-width: 860px) {
+  .bst-inner { grid-template-columns: 1fr; gap: 48px; padding: 0 24px; }
+  .bst-right { padding-bottom: 28px; }
+  .bst-preview-card { transform: none; max-width: 480px; margin: 0 auto; }
+  .bst-urgency-badge { right: 0; bottom: 0; }
+  .bst-title { font-size: 1.8rem; }
+  .bang-sim-teaser { padding: 48px 0; }
+  .bst-rule { margin-bottom: 48px; }
+  .bst-rule:last-child { margin-top: 48px; }
+}
+@media (max-width: 480px) {
+  .bst-inner { padding: 0 18px; }
+  .bst-mock-pills { flex-wrap: nowrap; overflow-x: auto; }
+  .bst-urgency-badge { font-size: 0.62rem; right: 4px; }
+}
+</style>
+
+<script>
+/* Animation décorative du mock simulateur (présentation uniquement) */
+(function () {
+  var GROUPS = {
+    config:  { id: 'bst-pills-config',  pills: null },
+    cadran:  { id: 'bst-pills-cadran',  pills: null },
+    boitier: { id: 'bst-pills-boitier', pills: null }
+  };
+  var MIN_PRICE = 320, MAX_PRICE = 950;
+  var currentPrice = 405, countInterval = null;
+
+  function init() {
+    Object.keys(GROUPS).forEach(function (k) {
+      var wrap = document.getElementById(GROUPS[k].id);
+      if (wrap) GROUPS[k].pills = wrap.querySelectorAll('.bst-mock-pill');
+    });
+    if (!GROUPS.config.pills) return;   // bloc absent
+    updateBar(currentPrice);
+    startLoop();
+  }
+  function calcPrice() {
+    var total = 0;
+    Object.keys(GROUPS).forEach(function (k) {
+      var pills = GROUPS[k].pills; if (!pills) return;
+      pills.forEach(function (p) { if (p.classList.contains('active')) total += parseInt(p.dataset.price || '0', 10); });
+    });
+    return total;
+  }
+  function pickRandom(groupKey, cb) {
+    var pills = GROUPS[groupKey].pills;
+    if (!pills || pills.length === 0) { cb && cb(); return; }
+    var active = Array.prototype.findIndex.call(pills, function (p) { return p.classList.contains('active'); });
+    var next = active;
+    while (next === active && pills.length > 1) next = Math.floor(Math.random() * pills.length);
+    var target = pills[next];
+    target.classList.add('selecting');
+    setTimeout(function () {
+      target.classList.remove('selecting');
+      pills.forEach(function (p) { p.classList.remove('active'); });
+      target.classList.add('active');
+      cb && cb();
+    }, 280);
+  }
+  function easeOut(t) { return 1 - Math.pow(1 - t, 3); }
+  function animatePrice(from, to) {
+    if (countInterval) clearInterval(countInterval);
+    var priceEl = document.getElementById('bst-animated-price'); if (!priceEl) return;
+    var steps = 20, stepMs = 500 / steps, diff = to - from, step = 0;
+    priceEl.classList.add('flash');
+    countInterval = setInterval(function () {
+      step++;
+      priceEl.textContent = Math.round(from + diff * easeOut(step / steps)) + ' €';
+      if (step >= steps) { clearInterval(countInterval); priceEl.textContent = to + ' €'; priceEl.classList.remove('flash'); }
+    }, stepMs);
+    updateBar(to); currentPrice = to;
+  }
+  function updateBar(price) {
+    var bar = document.getElementById('bst-price-bar'); if (!bar) return;
+    bar.style.width = Math.min(100, Math.max(5, ((price - MIN_PRICE) / (MAX_PRICE - MIN_PRICE)) * 100)) + '%';
+  }
+  function runStep() {
+    var keys = Object.keys(GROUPS), key = keys[Math.floor(Math.random() * keys.length)];
+    pickRandom(key, function () { animatePrice(currentPrice, calcPrice()); });
+  }
+  function startLoop() {
+    function schedule() { setTimeout(function () { runStep(); schedule(); }, 1400 + Math.random() * 1400); }
+    setTimeout(function () { runStep(); schedule(); }, 1200);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+</script>

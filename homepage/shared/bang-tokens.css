@@ -1,0 +1,40 @@
+/* ============================================================
+   bang. — DESIGN TOKENS (source unique de vérité visuelle)
+   À charger UNE SEULE FOIS, en tête de page (header WordPress).
+   Tous les blocs de la page d'accueil héritent de ces variables.
+   ============================================================ */
+
+:root {
+  /* — OR DE MARQUE (un seul or, fini les 3 nuances différentes) — */
+  --bang-gold:        #c9a96e;   /* or bronze mat — accent principal      */
+  --bang-gold-light:  #e8c98a;   /* or clair — survols / dégradés         */
+  --bang-gold-rgb:    201, 169, 110;   /* pour les rgba(var(--bang-gold-rgb), .x) */
+
+  /* — FONDS — */
+  --bang-bg-deep:     #0a0a0a;   /* fond le plus sombre (hero, portfolio) */
+  --bang-bg-panel:    #13161B;   /* panneaux (gammes, process)            */
+  --bang-bg-soft:     #1a1a1a;   /* fond neutre de secours                */
+  --bang-card:        #111111;   /* cartes                                */
+
+  /* — TEXTE — */
+  --bang-text:        #f0ede8;
+  --bang-text-muted:  #888880;
+  --bang-text-dim:    #44443e;
+
+  /* — TYPOGRAPHIE — */
+  --bang-font:  'League Spartan', system-ui, Impact, sans-serif;  /* titres + corps */
+  --bang-mono:  'DM Mono', ui-monospace, monospace;               /* labels / chiffres */
+
+  /* — RYTHME / LAYOUT — */
+  --bang-maxw:        1280px;     /* largeur de contenu commune            */
+  --bang-section-pad: 96px;       /* padding vertical de section commun     */
+  --bang-gutter:      40px;       /* marge latérale commune                */
+}
+
+/* Réduction du rythme sur mobile, partagée par tous les blocs */
+@media (max-width: 768px) {
+  :root {
+    --bang-section-pad: 60px;
+    --bang-gutter: 22px;
+  }
+}

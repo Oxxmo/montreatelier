@@ -1,0 +1,86 @@
+<!-- ============================================================
+     bang. — BLOC 3 : GAMMES (deux standards)
+     Bloc HTML personnalisé WPBakery.
+     ============================================================ -->
+<style>
+.gammes-section {
+    font-family: var(--bang-font, 'League Spartan', sans-serif);
+    background-color: var(--bang-bg-panel, #13161B);
+    color: #f0f0f0;
+    padding: 100px 0;
+    width: 100%;
+    margin: 0 auto;
+    box-sizing: border-box;
+}
+
+.gammes-header h2 { font-size: clamp(30px, 4vw, 55px); font-weight: 800; text-align: center; text-transform: uppercase; margin-bottom: 20px; letter-spacing: 2px; }
+.gammes-header p { text-align: center; max-width: 700px; margin: 0 auto 60px auto; font-size: 18px; color: #aaaaaa; font-weight: 300; }
+
+.gammes-card-container { display: flex; gap: 30px; max-width: var(--bang-maxw, 1280px); margin: 0 auto; padding: 0 5%; }
+
+.gamme-card { flex: 1; padding: 40px; background-color: transparent; border: 1px solid rgba(255, 255, 255, 0.1); transition: transform 0.3s ease, border-color 0.3s ease; }
+.gamme-card:hover { transform: translateY(-5px); border-color: rgba(var(--bang-gold-rgb, 201,169,110), 0.5); }
+
+.gamme-card h3 { font-size: 24px; font-weight: 600; text-transform: uppercase; margin-bottom: 10px; letter-spacing: 1px; }
+.gamme-card .prix { font-size: 28px; font-weight: 800; color: #ffffff; margin-bottom: 25px; }
+
+.gamme-card ul { list-style: none; padding: 0; margin: 30px 0; }
+.gamme-card li { padding: 10px 0; border-top: 1px dashed rgba(255, 255, 255, 0.1); font-size: 16px; font-weight: 300; }
+.gamme-card li::before { content: "•"; color: var(--bang-gold, #c9a96e); font-weight: bold; display: inline-block; width: 1em; margin-left: -1em; }
+
+.card-signature h3 { color: var(--bang-gold, #c9a96e); }
+.card-signature .prix { color: var(--bang-gold, #c9a96e); }
+.card-signature { border: 2px solid var(--bang-gold, #c9a96e); }
+.card-signature:hover { box-shadow: 0 0 15px rgba(var(--bang-gold-rgb, 201,169,110), 0.4); }
+
+.gammes-btn { display: inline-block; padding: 14px 30px; background-color: transparent; color: #ffffff; font-weight: 600; text-transform: uppercase; text-decoration: none; font-size: 14px; border: 1px solid #ffffff; transition: all 0.3s ease; letter-spacing: 1px; margin-top: 20px; }
+.gammes-btn:hover { background-color: var(--bang-gold, #c9a96e); border-color: var(--bang-gold, #c9a96e); color: var(--bang-bg-panel, #13161B); }
+
+@media (max-width: 768px) {
+    .gammes-card-container { flex-direction: column; }
+    .gamme-card { padding: 30px 20px; }
+}
+</style>
+
+<section id="gammes-section" class="gammes-section">
+    <div class="gammes-header">
+        <h2>Votre projet. Deux standards d'exigence.</h2>
+        <p>
+            Chaque montre est unique. Pour vous garantir la meilleure expérience possible, nous avons défini deux standards d'assemblage selon la provenance et la qualité des composants.
+        </p>
+    </div>
+
+    <div class="gammes-card-container">
+        <div class="gamme-card card-initial">
+            <h3>Configuration Initiale</h3>
+            <p class="prix">320€ - 490€+</p>
+            <p style="font-size:16px; margin-bottom: 20px; font-weight: 600;">Le sur-mesure pour votre quotidien.</p>
+            <ul>
+                <li>Mouvement SSI/TMI NH35/38 (Fiabilité éprouvée)</li>
+                <li>Sourcing optimisé (Meilleur rapport qualité-prix)</li>
+                <li>Assemblage, réglage et tests effectués à l'atelier</li>
+                <li>Verre Saphir standard</li>
+            </ul>
+        </div>
+
+        <div class="gamme-card card-signature">
+            <h3>Configuration Signature</h3>
+            <p class="prix">520€ - 950€ et +</p>
+            <p style="font-size:16px; margin-bottom: 20px; font-weight: 600;">L'excellence sans compromis.</p>
+            <ul>
+                <li>Composants haut de gamme auprès de fournisseurs internationaux</li>
+                <li>Verre Saphir Anti-Reflet (AR) haut de gamme</li>
+                <li>Luminescence Suisse (Super-LumiNova®) haute intensité</li>
+                <li>Mouvement régulé finement à l'atelier</li>
+                <li>Pièces uniques et matériaux uniques (carbone, céramique).</li>
+            </ul>
+        </div>
+    </div>
+
+    <div style="text-align: center; margin-top: 60px;">
+        <p style="color: #aaaaaa;">
+            Maintenant que vous avez une vision de l'exigence bang. configurez votre pièce et obtenez une estimation immédiate.
+        </p>
+        <a href="https://atelier-bang.com/simulateur/" class="gammes-btn">Configurer ma montre</a>
+    </div>
+</section>
