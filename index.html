@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>bang. — catalogue pièces</title>
+<title>bang. — pièces uniques</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -635,7 +635,7 @@ const CONFIG = {
   supabase_key: 'sb_publishable_177KiLL6i-E3SxxRckZpVQ_5oZFD7KF',
   admin_password: 'bang2025',
   shop_name: 'bang.',
-  shop_tagline: 'Notre catalogue de pièces',
+  shop_tagline: 'Nos pièces uniques',
 };
 </script>
 <!-- ══════════════════════════════════════════════════════ -->
@@ -1058,9 +1058,9 @@ function renderLoading(){
 function render(){
   document.getElementById('app').innerHTML = `
     <div class="topbar">
-      <div class="logo" onclick="go('client')" title="Retour au catalogue"><b>${CONFIG.shop_name}</b> <span>${CONFIG.shop_tagline}</span></div>
+      <div class="logo" onclick="go('client')" title="Retour aux pièces uniques"><b>${CONFIG.shop_name}</b> <span>${CONFIG.shop_tagline}</span></div>
       <div class="nav">
-        <button class="nb ${activeTab==='client'?'active':''}" onclick="go('client')">Catalogue</button>
+        <button class="nb ${activeTab==='client'?'active':''}" onclick="go('client')">Pièces uniques</button>
         ${isAdmin ? `
           <button class="nb ${activeTab==='scan'?'active':''}" onclick="go('scan')">Scanner</button>
           <button class="nb ${activeTab==='admin'?'active':''}" onclick="go('admin')">Gestion</button>
@@ -1132,7 +1132,7 @@ function renderChoice(){
       <div class="choice-intro">
         <div class="choice-eyebrow">Atelier bang. — montres custom</div>
         <h1 class="choice-title">Par où souhaitez-vous commencer&nbsp;?</h1>
-        <p class="choice-sub">Composez votre montre sur-mesure étape par étape, ou explorez librement notre catalogue de pièces.</p>
+        <p class="choice-sub">Composez votre montre sur-mesure étape par étape, ou explorez librement nos pièces uniques.</p>
       </div>
       <div class="choice-cards">
         <button class="choice-card choice-card-primary" onclick="chooseMode('config')">
@@ -1143,9 +1143,9 @@ function renderChoice(){
         </button>
         <button class="choice-card" onclick="chooseMode('browse')">
           <div class="choice-ic">&#9788;</div>
-          <div class="choice-card-title">Explorer le catalogue</div>
+          <div class="choice-card-title">Explorer les pièces uniques</div>
           <div class="choice-card-desc">Parcourez toutes nos pièces, ajoutez vos favorites à une sélection et générez votre devis avec un code.</div>
-          <span class="choice-cta">Voir le catalogue &#8594;</span>
+          <span class="choice-cta">Voir les pièces uniques &#8594;</span>
         </button>
       </div>
     </div>`;
@@ -1175,7 +1175,7 @@ function cfgPieces(){ return cfgAllSteps().reduce(function(a,s){ var id=cfgChoic
 function renderConfigurator(){
   const steps=cfgAllSteps();
   const total=steps.length;
-  if(!total){ document.getElementById('view').innerHTML='<div class="alert alert-info">Le catalogue est encore vide — revenez bientôt pour configurer votre montre.</div>'; return; }
+  if(!total){ document.getElementById('view').innerHTML='<div class="alert alert-info">Aucune pièce disponible pour le moment — revenez bientôt pour configurer votre montre.</div>'; return; }
   if(cfgStep>total) cfgStep=total;
   // Barre de progression (étapes + contact)
   let stepper='<div class="cfg-stepper">';
@@ -1237,7 +1237,7 @@ function renderConfigurator(){
   document.getElementById('view').innerHTML=`
     <div class="cfg-top">
       <div class="cfg-brand">Configurateur — <b>votre montre sur-mesure</b></div>
-      <button class="btn-xs" onclick="chooseMode('browse')">Explorer le catalogue ↗</button>
+      <button class="btn-xs" onclick="chooseMode('browse')">Explorer les pièces uniques ↗</button>
     </div>
     ${howtoBanner('cfg','Comment ça marche :',['Choisissez vos pièces, étape par étape','Pas sûr ? Passez l’étape, on en discute','Laissez vos coordonnées : on vous recontacte'])}
     ${stepper}
@@ -1320,7 +1320,7 @@ async function submitConfig(){
         <div class="cfg-done-code">Votre code de suivi<br><strong>${code}</strong></div>
         <p class="cfg-done-note">Notez-le : il vous permettra de retrouver votre configuration.</p>
         <div class="cfg-done-actions">
-          <button class="btn btn-s" onclick="chooseMode('browse')">Explorer le catalogue</button>
+          <button class="btn btn-s" onclick="chooseMode('browse')">Explorer les pièces uniques</button>
           <button class="btn btn-p" onclick="cfgChoices={};cfgStep=0;chooseMode('config')">Nouvelle configuration</button>
         </div>
       </div>`;
@@ -1458,7 +1458,7 @@ function buildCards(){
   var html='';
   if(news.length){
     html+='<div class="new-section" id="sec-news"><div class="new-label">Nouveautés</div><div class="grid" style="margin-bottom:0">'+news.map(oneCard).join('')+'</div></div>';
-    if(rest.length) html+='<div class="new-label" id="sec-cat-label" style="margin-bottom:.875rem">Catalogue</div>';
+    if(rest.length) html+='<div class="new-label" id="sec-cat-label" style="margin-bottom:.875rem">Pièces uniques</div>';
   }
   html+='<div class="grid">'+rest.map(oneCard).join('')+'</div>';
   html+='<div class="empty" id="search-empty" style="display:none">Aucune pièce ne correspond à votre recherche</div>';
@@ -1626,7 +1626,7 @@ async function saveClientSel(){
       +'<div style="font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#999;margin-bottom:8px">Votre code de sélection</div>'
       +'<div style="font-size:24px;font-weight:500;color:#1a1a1a;letter-spacing:.1em;font-family:monospace;margin-bottom:.5rem;padding:.625rem 1rem;background:#fff;border:1px solid #e0ddd8;border-radius:2px;text-align:center">'+code+'</div>'
       +'<button class="copy-code-btn" onclick="copyCode(\''+code+'\',this)">Copier le code</button>'
-      +'<div style="font-size:11px;color:#777;line-height:1.65;margin-top:.875rem">Notez ce code précieusement. Il vous permettra de retrouver et modifier votre sélection à tout moment depuis le catalogue.</div>'
+      +'<div style="font-size:11px;color:#777;line-height:1.65;margin-top:.875rem">Notez ce code précieusement. Il vous permettra de retrouver et modifier votre sélection à tout moment depuis les pièces uniques.</div>'
       +'</div>';
     if(btn){btn.textContent='Enregistré ✓';btn.style.opacity='.5';}
   } else {
@@ -1755,7 +1755,7 @@ function openModal(id){
       +'</div></div>';
   }
   view.innerHTML=
-    '<button class="btn-back-nav" onclick="closeModal()">&#8592; Retour au catalogue</button>'
+    '<button class="btn-back-nav" onclick="closeModal()">&#8592; Retour aux pièces uniques</button>'
     +'<div class="detail">'
     +'<div class="detail-media">'+media+'</div>'
     +'<div class="detail-info">'
@@ -2137,7 +2137,7 @@ function setScanSupplier(i,sel){
   if(v==='__new__'){ var n=(prompt('Nom du nouveau fournisseur :')||'').trim(); if(n && scanRes[i]) scanRes[i].supplier=n; renderScanResults(); return; }
   if(scanRes[i]) scanRes[i].supplier=v;
 }
-// Liste des fournisseurs existants (depuis le catalogue) + valeur courante + option "Nouveau"
+// Liste des fournisseurs existants (depuis les pièces uniques) + valeur courante + option "Nouveau"
 function allSuppliers(){ return [...new Set(items.map(function(i){return (i.supplier||'').trim();}).filter(Boolean))].sort(function(a,b){return a.localeCompare(b,'fr');}); }
 function supplierOptions(current){
   var sup=allSuppliers();
