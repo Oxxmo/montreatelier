@@ -276,6 +276,9 @@ const STAGES = [
   { key: 'termine',     label: 'Terminé' },
 ];
 const STAGE_KEYS = STAGES.map(s => s.key);
+// Étapes qui comptent dans la capacité « x / 7 » (projets engagés).
+// On exclut Brief et Sourcing (exploratoire) ainsi que Terminé.
+const CAP_STAGES = ['proposition', 'assemblage', 'livraison'];
 const MONTHLY_CAP = 7;
 const STORAGE_KEY = 'bang.suivi.projets';
 
@@ -342,10 +345,14 @@ async function removeProject(id){
 
 /* ========== STATS ========== */
 function renderStats(){
-  const active = PROJECTS.filter(p => p.stage !== 'termine');
+  const notDone = PROJECTS.filter(p => (p.stage||'brief') !== 'termine');
+  // Capacité (x / 7) : on ne compte que les projets réellement engagés.
+  // Les étapes exploratoires (Brief, Sourcing) sont exclues — une pile de
+  // briefs ne doit pas donner l'impression d'être surchargé.
+  const active = PROJECTS.filter(p => CAP_STAGES.includes(p.stage||'brief'));
   const toDeliver = PROJECTS.filter(p => p.stage === 'livraison');
   const awaitingDeposit = PROJECTS.filter(p => p.stage === 'proposition' && !p.acompte_recu);
-  const pipeline = active.reduce((s,p) => s + (Number(p.total)||0), 0);
+  const pipeline = notDone.reduce((s,p) => s + (Number(p.total)||0), 0);
   const over = active.length > MONTHLY_CAP;
   const pct = Math.min(100, Math.round(active.length / MONTHLY_CAP * 100));
 
